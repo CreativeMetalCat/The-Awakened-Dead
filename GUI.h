@@ -65,89 +65,14 @@ namespace GUI
 		size_t selectedIndex = 0;
 
 		//returns component with this is name if one is existing
-		Component*GetComponentByName(std::string name)
-		{
-			if (!Components->empty())
-			{
-				for (size_t i = 0; i < Components->size(); i++)
-				{
-					if (Components->at(i)->Name == name) { return Components->at(i); }
-				}
-			}
-		}
+		Component*GetComponentByName(std::string name);
 
 		Container() {}
-		void SelectNext()
-		{
-			do
-				if (selectedIndex + 1 < Components->size())
-				{
-					if (Components->at(selectedIndex + 1)->isSelectable)
-					{
-						Components->at(selectedIndex + 1)->Select();
-						selectedIndex++;
-						return;
-					}
-				}
-				else
-				{
-					selectedIndex = Components->size() - 1;
-					if (Components->at(selectedIndex)->isSelectable)
-					{
-						Components->at(selectedIndex)->Select();
-						return;
-					}
+		void SelectNext();
 
-				}
-			while (selectedIndex < Components->size());
-			return;
-		}
+		void SelectPrevious();
 
-		void SelectPrevious()
-		{
-			int index = 0;
-			do
-			{
-				index = selectedIndex;
-				if (index - 1 < 0)
-				{
-					index = 0;
-					selectedIndex = 0;
-					if (Components->at(0)->isSelectable)
-					{
-						Components->at(0)->Select();
-						return;
-					}
-					else
-					{
-						return;
-					}
-
-				}
-				else
-				{
-					if (Components->at(index - 1)->isSelectable)
-					{
-						Components->at(index)->Select();
-						index--;
-						if (index >= 0) { selectedIndex = index; }
-						else { selectedIndex = 0; }
-						return;
-					}
-
-				}
-
-			} while (index >= 0);
-			return;
-		}
-
-		void Select(size_t index)
-		{
-			if (Components->size() > index)
-			{
-				if (Components->at(index)->isSelectable) { Components->at(index)->Select(); }
-			}
-		}
+		void Select(size_t index);
 
 	};
 
@@ -160,32 +85,11 @@ namespace GUI
 		sf::Sprite Sprite;
 		sf::Vector2f Scale;
 
-		Label(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture) :text(text, font, textSize), Sprite(texture), color(textColor)
-		{
-			Scale.x = texture.getSize().x / this->text.getGlobalBounds().width;
-			Scale.y = texture.getSize().y / this->text.getGlobalBounds().height;
-		}
-		Label(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, sf::IntRect SpriteRect) :text(text, font, textSize), Sprite(texture, SpriteRect)
-		{
-			ComponentRectangle.height = SpriteRect.height;
-			ComponentRectangle.width = SpriteRect.width;
-			ComponentRectangle.top = SpriteRect.top;
-			ComponentRectangle.left = SpriteRect.left;
-		}
+		Label(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture);
+		Label(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, sf::IntRect SpriteRect);
 
-		Label(std::string name, std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture) :Component(name), text(text, font, textSize), Sprite(texture), color(textColor)
-		{
-			Scale.x = texture.getSize().x / this->text.getGlobalBounds().width;
-			Scale.y = texture.getSize().y / this->text.getGlobalBounds().height;
-		}
-		Label(std::string name, std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, sf::IntRect SpriteRect) :Component(name), text(text, font, textSize), Sprite(texture, SpriteRect)
-		{
-			ComponentRectangle.height = SpriteRect.height;
-			ComponentRectangle.width = SpriteRect.width;
-			ComponentRectangle.top = SpriteRect.top;
-			ComponentRectangle.left = SpriteRect.left;
-		}
-
+		Label(std::string name, std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture);
+		Label(std::string name, std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, sf::IntRect SpriteRect);
 		//Disabled because labels are't usually selectable
 		//If you need to make your one just override it 
 		virtual void Select() override {}
@@ -202,42 +106,10 @@ namespace GUI
 		//If you need to make your one just override it 
 		virtual void DeActivate() override {}
 
-		void SetPosition(sf::Vector2f pos) override
-		{
-
-			text.setPosition(pos);
-			this->ComponentRectangle.left = pos.x;
-			this->ComponentRectangle.top = pos.y;
-			Sprite.setPosition(pos);
-
-		}
-		void Draw(sf::RenderWindow*& window) override
-		{
-			window->draw(Sprite);
-			window->draw(text);
-
-		}
-		void Init()override
-		{
-			_originalPos = this->text.getPosition();
-
-			ComponentRectangle.width = this->text.getLocalBounds().width;
-			ComponentRectangle.height = this->text.getLocalBounds().height;
-			Scale.x = this->text.getLocalBounds().width / Sprite.getTexture()->getSize().x;
-			Scale.y = this->text.getLocalBounds().height / Sprite.getTexture()->getSize().y;
-			this->Sprite.setScale(Scale);
-			this->Sprite.setPosition(sf::Vector2f((this->ComponentRectangle.left), (this->ComponentRectangle.top + this->text.getLocalBounds().height / 2)));
-			this->text.setPosition(sf::Vector2f(this->ComponentRectangle.left, this->ComponentRectangle.top));
-			this->text.setFillColor(color);
-			this->text.setOutlineColor(color);
-		}
-		sf::Vector2<float> GetPosition()override
-		{
-			sf::Vector2f vec;
-			vec.x = ComponentRectangle.left;
-			vec.y = ComponentRectangle.top;
-			return  vec;
-		}
+		void SetPosition(sf::Vector2f pos)override;
+		void Draw(sf::RenderWindow*& window) override;
+		void Init()override;
+		sf::Vector2<float> GetPosition()override;
 	};
 
 	//base class for buttons
@@ -249,80 +121,32 @@ namespace GUI
 		//base sprite for button
 		sf::Sprite Sprite;
 
-		Button(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture) :text(text, font, textSize), Sprite(texture)
-		{
-			/*Sprite.setTextureRect(ToIntRect(this->text.getGlobalBounds()));*/
-			Scale.x = texture.getSize().x / this->text.getGlobalBounds().width;
-			Scale.y = texture.getSize().y / this->text.getGlobalBounds().height;
-		}
-		Button(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Sprite sprite) :text(text, font, textSize)
-		{
-			this->Sprite = sprite;
-		}
-		Button(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, sf::IntRect SpriteRect) :text(text, font, textSize), Sprite(texture, SpriteRect)
-		{
-			ComponentRectangle.height = SpriteRect.height;
-			ComponentRectangle.width = SpriteRect.width;
-			ComponentRectangle.top = SpriteRect.top;
-			ComponentRectangle.left = SpriteRect.left;
-		}
+		Button(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture);
+		Button(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Sprite sprite);
+		Button(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, sf::IntRect SpriteRect);
 
 		//Disabled
 		//If you need to make your one just override it 
-		virtual void Select() override
-		{
-			text.setColor(sf::Color::Red);
-		}
+		virtual void Select() override;
 
 		//Disabled 
 		//If you need to make your one just override it 
-		virtual void UnSelect() override { text.setColor(sf::Color::White); }
+		virtual void UnSelect() override;
 
-		virtual sf::Vector2f GetPosition()override
-		{
-			sf::Vector2f vec;
-			vec.x = ComponentRectangle.left;
-			vec.y = ComponentRectangle.top;
-			return  vec;
-		}
-		void Init()override
-		{
-			ComponentRectangle.width = this->text.getLocalBounds().width;
-			ComponentRectangle.height = this->text.getLocalBounds().width;
-			Scale.x = this->text.getLocalBounds().width / Sprite.getTexture()->getSize().x;
-			Scale.y = this->text.getLocalBounds().height / Sprite.getTexture()->getSize().y;
-			this->Sprite.setScale(Scale);
-			this->Sprite.setPosition(sf::Vector2f((this->ComponentRectangle.left), (this->ComponentRectangle.top + this->text.getLocalBounds().height / 2)));
-			this->text.setPosition(sf::Vector2f(this->ComponentRectangle.left, this->ComponentRectangle.top));
-		}
-		void SetPosition(sf::Vector2f pos) override
-		{
-
-			text.setPosition(pos);
-			this->ComponentRectangle.left = pos.x;
-			this->ComponentRectangle.top = pos.y;
-			Sprite.setPosition(pos);
-
-		}
+		virtual sf::Vector2f GetPosition()override;
+		void Init()override;
+		void SetPosition(sf::Vector2f pos) override;
 
 		//Calls class component Action;
 		//.
 		//If you need to make your one just override it 
-		virtual void Activate() override
-		{
-			Action();
-		}
+		virtual void Activate() override;
 
 		//Disabled 
 		//If you need to make your one just override it 
-		virtual void DeActivate() override {}
+		virtual void DeActivate() override;
 
-		void Draw(sf::RenderWindow*& window) override
-		{
-			window->draw(Sprite);
-			window->draw(text);
-
-		}
+		void Draw(sf::RenderWindow*& window) override;
 	};
 }
 
