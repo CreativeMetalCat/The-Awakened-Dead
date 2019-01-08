@@ -42,6 +42,8 @@
 
 #define M_PI           3.14159265358979323846  /* pi */
 
+#include "GUI.h"
+
 #include "SFML/Graphics.hpp"
 #include <iostream>
 #include <vector>
@@ -62,6 +64,8 @@
 
 const int SCREENWIDTH = 1080;
 const int SCREENHEIGHT = 720;
+
+bool DEBUG_DRAWCOLLISION = true;
 
 ////sf::Font font;
 //sf::Texture solder;
@@ -603,31 +607,80 @@ namespace Animation
 }
 
 
-class SceneObjectContactListener;
+class ObjectContactListener;
 
 //Base Class for EVERY object in scene. Drawable & not
-class SceneObject
+class Object
 {
+private:
+	
 protected:
 	//NOT a proper collision object made for setting sfml properties of object
 	//e.g. 
 	//sprites,scales,positions
 	sf::FloatRect collision;
+
+	//required to be used in update because box2d doesn't work sometimes
+	bool _impulseApplied = true;
+
+	//temp value
+	b2Vec2 _impulse;
+
+	//required to be used in update because box2d doesn't work sometimes
+	bool _velocitySet = true;
+
+	//temp value
+	b2Vec2 _velocity;
 public:
+	//is set manually or by some function in children class
+	//unnessesary if alternative already exists
+	bool physBodyInitialized = false;
+
+	//is set manually or by some function in children class
+	//unnessesary if alternative already exists
+	bool bodyIsSensor = false;
+
 	//Way of checking if collision should be considered
 	bool HasCollision = true;
-	std::vector<SceneObject*>*CollidingObjects = new std::vector< SceneObject*>();
+	std::vector<Object*>*CollidingObjects = new std::vector< Object*>();
 	int RotationAngle = 0;
 	sf::Vector2f Scale;
 
 	//physical body
 	b2Body*body;
 
-	std::function<void(SceneObject*object)>OnCollision = [this](SceneObject*object) 
+	virtual void applyImpulse(b2Vec2 impulse)
 	{
-		CollidingObjects->push_back(object); 
+		_impulse = impulse;
+		_impulseApplied = false;
+	}
+
+	virtual void applyImpulse(sf::Vector2f impulse)
+	{
+		_impulse = b2Vec2(impulse.x,impulse.y);
+		_impulseApplied = false;
+	}
+
+	virtual void setVelocity(b2Vec2 vel)
+	{
+		_velocity = vel;
+		_velocitySet = false;
+	}
+
+	virtual void setVelocity(sf::Vector2f vel)
+	{
+		_velocity = b2Vec2(vel.x,vel.y);
+		_velocitySet = false;
+	}
+
+	std::function<void(Object*object)>OnCollision = [this](Object*object) 
+	{
+		if (this->bodyIsSensor)
+		{
+			CollidingObjects->push_back(object);
+		}
 	};
-	std::function<void(SceneObject*object)>LeftCollision = [this](SceneObject*object)
+	std::function<void(Object*object)>LeftCollision = [this](Object*object)
 	{
 		if (!CollidingObjects->empty())
 		{
@@ -636,17 +689,24 @@ public:
 
 	};
 
-	virtual void Update(sf::Time dt) {}
-	const sf::FloatRect GetSceneObjectRectangle()
+	virtual void Update(sf::Time dt) 
+	{
+		if (physBodyInitialized)
+		{
+			this->collision.left = body->GetPosition().x;
+			this->collision.top = body->GetPosition().y;
+		}
+	}
+	const sf::FloatRect GetObjectRectangle()
 	{
 		return collision;
 	}
 	int Layer = 0;
 	bool Visible = true;
-	SceneObject*Parent = NULL;
-	std::vector<SceneObject*>*Children = new std::vector<SceneObject*>();
+	Object*Parent = NULL;
+	std::vector<Object*>*Children = new std::vector<Object*>();
 
-	void AttachChild(SceneObject*&object)
+	void AttachChild(Object*&object)
 	{
 		object->Parent = this;
 		Children->push_back(object);
@@ -656,11 +716,12 @@ public:
 	{
 
 	}
-	SceneObject* DetachChild(int id)
+
+	Object* DetachChild(int id)
 	{
 		if (!Children->empty() && (id > 0 && id < Children->size()))
 		{
-			SceneObject*res;
+			Object*res;
 			Children->at(id)->Parent = NULL;
 			auto i = std::find(Children->begin(), Children->end(), this->Children->at(id));
 			res = Children->at(id);
@@ -671,7 +732,7 @@ public:
 		return nullptr;
 	}
 
-	SceneObject* DetachChild(SceneObject*&object)
+	Object* DetachChild(Object*&object)
 	{
 		if (!Children->empty())
 		{
@@ -684,7 +745,7 @@ public:
 				}
 			}
 			auto it = std::find(Children->begin(), Children->end(), object);
-			SceneObject*res;
+			Object*res;
 			res = Children->at(i);
 			Children->erase(it);
 			return res;
@@ -692,28 +753,28 @@ public:
 		return nullptr;
 	}
 
-	SceneObject(sf::Vector2f position)
+	Object(sf::Vector2f position)
 	{
 		this->collision.left = position.x;
 		this->collision.top = position.y;
 	}
-	SceneObject(sf::Vector2f position, float width, float height)
+	Object(sf::Vector2f position, float width, float height)
 	{
 		this->collision.left = position.x;
 		this->collision.top = position.y;
 		this->collision.width = width;
 		this->collision.height = height;
 	}
-	SceneObject() {}
+	Object() {}
 
-	virtual sf::Vector2f GetSceneObjectPosition()
+	virtual sf::Vector2f GetObjectPosition()
 	{
 		sf::Vector2f res;
 		res.x = collision.left;
 		res.y = collision.top;
 		return res;
 	}
-	virtual void SetSceneObjectPosition(sf::Vector2f pos)
+	virtual void SetObjectPosition(sf::Vector2f pos)
 	{
 		collision.left = pos.x;
 		collision.top = pos.y;
@@ -727,7 +788,7 @@ public:
 	virtual void Draw(sf::RenderWindow&window) {};
 
 	//only stores angle right now
-	virtual void SetSceneObjectRotation(int angle)
+	virtual void SetObjectRotation(int angle)
 	{
 		RotationAngle = angle;
 
@@ -735,35 +796,35 @@ public:
 		{
 			for (size_t i = 0; i < Children->size(); i++)
 			{
-				Children->at(i)->SetSceneObjectRotation(angle);
+				Children->at(i)->SetObjectRotation(angle);
 			}
 		}
 	}
 
 
 	//Doesn't do anything right now
-	virtual void RotateSceneObject(int angle)
+	virtual void RotateObject(int angle)
 	{
 		if (!this->Children->empty())
 		{
 			for (size_t i = 0; i < Children->size(); i++)
 			{
-				Children->at(i)->RotateSceneObject(angle);
+				Children->at(i)->RotateObject(angle);
 			}
 		}
 	}
 
-	void SetSceneObjectRectangleWidth(float width)
+	void SetObjectRectangleWidth(float width)
 	{
 		collision.width = width;
 	}
 
-	void SetSceneObjectRectangleHeight(float height)
+	void SetObjectRectangleHeight(float height)
 	{
 		collision.height = height;
 	}
 
-	void SetSceneObjectRectangle(sf::FloatRect rect) { this->collision = rect; }
+	void SetObjectRectangle(sf::FloatRect rect) { this->collision = rect; }
 
 	//if you need to locate sprites, text etc.
 	virtual void Init() {}
@@ -771,7 +832,7 @@ public:
 };
 
 //Base class for ALL drawable objects in scene that use sprites.
-class SceneActor :public SceneObject
+class SceneActor :public Object
 {
 protected:
 	
@@ -782,20 +843,20 @@ public:
 	void SetSprite(sf::Sprite) { this->sprite = sprite; }
 
 
-	SceneActor(sf::Vector2f position, sf::Sprite sprite) :SceneObject(position)
+	SceneActor(sf::Vector2f position, sf::Sprite sprite) :Object(position)
 	{
 		this->sprite = sprite;
 		sprite.setPosition(position);
 
 	}
 
-	SceneActor(sf::Vector2f position, sf::Sprite sprite, float width, float height) :SceneObject(position, width, height)
+	SceneActor(sf::Vector2f position, sf::Sprite sprite, float width, float height) :Object(position, width, height)
 	{
 		this->sprite = sprite;
 		sprite.setPosition(position);
 
 	}
-	SceneActor(sf::Sprite sprite) :SceneObject()
+	SceneActor(sf::Sprite sprite) :Object()
 	{
 		this->sprite = sprite;
 	}
@@ -821,6 +882,29 @@ public:
 		
 	}
 
+};
+
+class SceneTile :public SceneActor
+{
+public:
+	SceneTile(sf::Vector2f position, sf::Sprite sprite) :SceneActor(position, sprite)
+	{
+		this->sprite = sprite;
+		sprite.setPosition(position);
+
+	}
+
+	SceneTile(sf::Vector2f position, sf::Sprite sprite, float width, float height) :SceneActor(position,sprite, width, height)
+	{
+		this->sprite = sprite;
+		sprite.setPosition(position);
+
+	}
+	SceneTile(sf::Sprite sprite) :SceneActor(sprite)
+	{
+		this->sprite = sprite;
+	}
+	SceneTile() {}
 };
 
 //Sprite that is dynamically spawn and destroyed(not restricted to that) after some time(unless LifeTime is set to -1)
@@ -855,19 +939,21 @@ public:
 	//animFrame sizes MUST not be scaled and taked from original image's size
 	Decal(sf::Vector2f position,float animFrameDuration,bool isRepeated, float LifeTime,float animFrameWidth,float animFrameHeight, sf::Sprite sprite):SceneActor(position,sprite),mLifeTime(LifeTime)
 	{
-
+		body = nullptr;
 		Anim = new Animation::SpriteSheetAnimation(animFrameDuration, NULL, sf::Vector2f(animFrameWidth, animFrameHeight), sprite);
 		Anim->IsRepated = isRepeated;
 	}
 	//If lifeTime = -1.f it will be infinite
 	Decal(sf::Vector2f position, float LifeTime, sf::Sprite sprite) :SceneActor(position, sprite), mLifeTime(LifeTime)
 	{
+		body = nullptr;
 		Anim = new Animation::SpriteSheetAnimation(0.f, NULL, sf::Vector2f(sprite.getTextureRect().width, sprite.getTextureRect().height), sprite);
 		Anim->IsRepated = true;
 	}
 	//If lifeTime = -1.f it will be infinite
 	Decal(sf::Vector2f position, float LifeTime, sf::Sprite sprite, float width, float height) :SceneActor(position, sprite,width,height), mLifeTime(LifeTime)
 	{
+		body = nullptr;
 		Anim = new Animation::SpriteSheetAnimation(0.f, NULL, sf::Vector2f(width, height), sprite);
 		Anim->IsRepated = true;
 	}
@@ -875,6 +961,7 @@ public:
 	//animFrame sizes MUST not be scaled and taked from original image's size
 	Decal(sf::Vector2f position, float animFrameDuration, bool isRepeated, float LifeTime, float animFrameWidth, float animFrameHeight, sf::Sprite sprite, float width, float height) :SceneActor(position, sprite, width, height), mLifeTime(LifeTime)
 	{
+		body = nullptr;
 		Scale.x = width / animFrameWidth;
 		Scale.y = height / animFrameHeight;
 
@@ -929,6 +1016,25 @@ public:
 
 	void Update(sf::Time dt) override
 	{
+		if (body != nullptr)
+		{
+			if (!_impulseApplied)
+			{
+			
+				b2Vec2 imp = b2Vec2(_impulse.x*dt.asMilliseconds(), _impulse.y*dt.asMilliseconds());
+				/*b2Vec2 p = body->GetWorldPoint(body->GetPosition());*/
+				body->ApplyLinearImpulse(imp,body->GetPosition(),true);
+				_impulseApplied = true;
+			}
+			if (!_velocitySet)
+			{
+				body->SetLinearVelocity(b2Vec2(_velocity));
+				_velocitySet = true;
+			}
+
+			this->Anim->sprite.setPosition(sf::Vector2f(body->GetPosition().x, body->GetPosition().y));
+		}
+		
 		if (mLifeTime != -1.f)
 		{
 			mLivedTime += dt.asSeconds();
@@ -959,7 +1065,9 @@ public:
 	}*/
 };
 
-class SceneObjectContactListener:public b2ContactListener
+
+
+class ObjectContactListener:public b2ContactListener
 {
 private:
 
@@ -972,8 +1080,8 @@ public:
 		void* bodyUserDataB = contact->GetFixtureB()->GetBody()->GetUserData();
 		if (bodyUserDataA&&bodyUserDataB)
 		{
-			static_cast<SceneObject*>(bodyUserDataA)->OnCollision(static_cast<SceneObject*>(bodyUserDataB));
-			static_cast<SceneObject*>(bodyUserDataB)->OnCollision(static_cast<SceneObject*>(bodyUserDataA));
+			static_cast<Object*>(bodyUserDataA)->OnCollision(static_cast<Object*>(bodyUserDataB));
+			static_cast<Object*>(bodyUserDataB)->OnCollision(static_cast<Object*>(bodyUserDataA));
 		}
 	}
 	void EndContact(b2Contact*contact)
@@ -982,8 +1090,8 @@ public:
 		void* bodyUserDataB = contact->GetFixtureB()->GetBody()->GetUserData();
 		if (bodyUserDataA&&bodyUserDataB)
 		{
-			static_cast<SceneObject*>(bodyUserDataA)->LeftCollision(static_cast<SceneObject*>(bodyUserDataB));
-			static_cast<SceneObject*>(bodyUserDataB)->LeftCollision(static_cast<SceneObject*>(bodyUserDataA));
+			static_cast<Object*>(bodyUserDataA)->LeftCollision(static_cast<Object*>(bodyUserDataB));
+			static_cast<Object*>(bodyUserDataB)->LeftCollision(static_cast<Object*>(bodyUserDataA));
 		}
 	}
 };
@@ -1019,7 +1127,7 @@ class PixelParticleSystemObject : public sf::Drawable, public sf::Transformable
 public:
 	sf::Texture* texture;
 	sf::Color color;
-	SceneObject*emitterObject;
+	Object*emitterObject;
 	//Time before system stops
 	//-1 for infinite time
 	float MaxTime = 0.0f;
@@ -1034,7 +1142,7 @@ public:
 	//MaxTime:
 	//Time before system stops
 	//-1 for infinite time
-	PixelParticleSystemObject(unsigned int count, float MaxTime, SceneObject*&emitterObject, sf::Color color) :m_particles(count), color(color), MaxTime(MaxTime), emitterObject(emitterObject), m_vertices(sf::Points, count), m_lifetime(sf::seconds(0.1f)), m_emitter(0.f, 0.f)
+	PixelParticleSystemObject(unsigned int count, float MaxTime, Object*&emitterObject, sf::Color color) :m_particles(count), color(color), MaxTime(MaxTime), emitterObject(emitterObject), m_vertices(sf::Points, count), m_lifetime(sf::seconds(0.1f)), m_emitter(0.f, 0.f)
 	{
 
 	}
@@ -1057,7 +1165,7 @@ public:
 			MaxTime -= elapsed.asSeconds();
 		}
 
-		m_emitter = emitterObject->GetSceneObjectPosition();
+		m_emitter = emitterObject->GetObjectPosition();
 		if (MaxTime > 0)
 		{
 			for (std::size_t i = 0; i < m_particles.size(); ++i)
@@ -1116,6 +1224,7 @@ protected:
 	sf::Time m_lifetime;
 	sf::Vector2f m_emitter;
 };
+
 sf::IntRect ToIntRect(sf::FloatRect rect)
 {
 	sf::IntRect res;
@@ -1125,330 +1234,9 @@ sf::IntRect ToIntRect(sf::FloatRect rect)
 	res.left = rect.left;
 	return res;
 }
-namespace GUI
-{
-	class Component
-	{
-	protected:
-		bool _isSelected = false;
-
-		sf::Vector2f _originalPos;
-	public:
-
-		std::string Name = "";
-		bool isSelectable = true;
-		
-		//gets position where object was put in creation
-		//.
-		//can be rewritten in childer classes if needed
-		sf::Vector2f GetOriginalPosition()const { return _originalPos; }
-
-		//can be used for state(mode)-dependent action by using lamba-expressions
-		//e.g change state or affect state objects
-		std::function<void()> Action = []() {};
-
-		//so every GUI object will have rectangle
-		sf::FloatRect ComponentRectangle;
-
-		//perform action when object is selected
-		//e.g change color of the text, size,texture
-		virtual void Select() = 0;
-
-		virtual void Init() {}
-		//perform action when object is unselected
-		//e.g change color of the text, size,texture
-		virtual void UnSelect() = 0;
-
-		const bool IsSelected() { return _isSelected; }
-
-		//basic function
-		//name says it all
-		virtual void SetPosition(sf::Vector2f pos) = 0;
 
 
-		virtual sf::Vector2f GetPosition() = 0;
 
-		Component(std::string Name) { this->Name = Name; }
-
-		Component(){}
-
-		// supposed happen after Select(),or instead of it. (depends on event handling in state(mode))
-
-		virtual void Activate() = 0;
-
-		// supposed happen after UnSelect(),or instead of it. (depends on event handling in state(mode))
-		virtual void DeActivate() = 0;
-
-		virtual void Draw(sf::RenderWindow*& window) = 0;
-	};
-
-	class Container
-	{
-	public:
-		std::vector<Component*>*Components = new std::vector<Component*>();
-		size_t selectedIndex = 0;
-
-		//returns component with this is name if one is existing
-		Component*GetComponentByName(std::string name)
-		{
-			if (!Components->empty())
-			{
-				for (size_t i = 0; i < Components->size(); i++)
-				{
-					if (Components->at(i)->Name == name) { return Components->at(i); }
-				}
-			}
-		}
-
-		Container() {}
-		void SelectNext()
-		{
-			do
-				if (selectedIndex + 1 < Components->size())
-				{
-					if (Components->at(selectedIndex + 1)->isSelectable)
-					{
-						Components->at(selectedIndex + 1)->Select();
-						selectedIndex++;
-						return;
-					}
-				}
-				else
-				{
-					selectedIndex = Components->size() - 1;
-					if (Components->at(selectedIndex)->isSelectable)
-					{
-						Components->at(selectedIndex)->Select();
-						return;
-					}
-
-				}
-			while (selectedIndex < Components->size());
-			return;
-		}
-
-		void SelectPrevious()
-		{
-			int index = 0;
-			do
-			{
-				index = selectedIndex;
-				if (index - 1 < 0)
-				{
-					index = 0;
-					selectedIndex = 0;
-					if (Components->at(0)->isSelectable)
-					{
-						Components->at(0)->Select();
-						return;
-					}
-					else
-					{
-						return;
-					}
-
-				}
-				else
-				{
-					if (Components->at(index - 1)->isSelectable)
-					{
-						Components->at(index)->Select();
-						index--;
-						if (index >= 0) { selectedIndex = index; }
-						else { selectedIndex = 0; }
-						return;
-					}
-
-				}
-
-			} while (index >= 0);
-			return;
-		}
-
-		void Select(size_t index)
-		{
-			if (Components->size() > index)
-			{
-				if (Components->at(index)->isSelectable) { Components->at(index)->Select(); }
-			}
-		}
-
-	};
-
-	class Label : public Component
-	{
-	protected:
-		sf::Color color;
-	public:
-		sf::Text text;
-		sf::Sprite Sprite;
-		sf::Vector2f Scale;
-
-		Label(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture) :text(text, font, textSize), Sprite(texture), color(textColor)
-		{
-			Scale.x = texture.getSize().x / this->text.getGlobalBounds().width;
-			Scale.y = texture.getSize().y / this->text.getGlobalBounds().height;
-		}
-		Label(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, sf::IntRect SpriteRect) :text(text, font, textSize), Sprite(texture, SpriteRect)
-		{
-			ComponentRectangle.height = SpriteRect.height;
-			ComponentRectangle.width = SpriteRect.width;
-			ComponentRectangle.top = SpriteRect.top;
-			ComponentRectangle.left = SpriteRect.left;
-		}
-
-		Label(std::string name,std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture) :Component(name), text(text, font, textSize), Sprite(texture), color(textColor)
-		{
-			Scale.x = texture.getSize().x / this->text.getGlobalBounds().width;
-			Scale.y = texture.getSize().y / this->text.getGlobalBounds().height;
-		}
-		Label(std::string name, std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, sf::IntRect SpriteRect) :Component(name),  text(text, font, textSize), Sprite(texture, SpriteRect)
-		{
-			ComponentRectangle.height = SpriteRect.height;
-			ComponentRectangle.width = SpriteRect.width;
-			ComponentRectangle.top = SpriteRect.top;
-			ComponentRectangle.left = SpriteRect.left;
-		}
-
-		//Disabled because labels are't usually selectable
-		//If you need to make your one just override it 
-		virtual void Select() override {}
-
-		//Disabled because labels are't usually selectable
-		//If you need to make your one just override it 
-		virtual void UnSelect() override {}
-
-		//Disabled because labels are't usually selectable
-		//If you need to make your one just override it 
-		virtual void Activate() override {}
-
-		//Disabled because labels are't usually selectable
-		//If you need to make your one just override it 
-		virtual void DeActivate() override {}
-
-		void SetPosition(sf::Vector2f pos) override
-		{
-			
-			text.setPosition(pos);
-			this->ComponentRectangle.left = pos.x;
-			this->ComponentRectangle.top = pos.y;
-			Sprite.setPosition(pos);
-
-		}
-		void Draw(sf::RenderWindow*& window) override
-		{
-			window->draw(Sprite);
-			window->draw(text);
-
-		}
-		void Init()override
-		{
-			_originalPos = this->text.getPosition();
-
-			ComponentRectangle.width = this->text.getLocalBounds().width;
-			ComponentRectangle.height = this->text.getLocalBounds().height;
-			Scale.x = this->text.getLocalBounds().width / Sprite.getTexture()->getSize().x;
-			Scale.y = this->text.getLocalBounds().height / Sprite.getTexture()->getSize().y;
-			this->Sprite.setScale(Scale);
-			this->Sprite.setPosition(sf::Vector2f((this->ComponentRectangle.left), (this->ComponentRectangle.top + this->text.getLocalBounds().height / 2)));
-			this->text.setPosition(sf::Vector2f(this->ComponentRectangle.left, this->ComponentRectangle.top));
-			this->text.setFillColor(color);
-			this->text.setOutlineColor(color);
-		}
-		sf::Vector2<float> GetPosition()override
-		{
-			sf::Vector2f vec;
-			vec.x = ComponentRectangle.left;
-			vec.y = ComponentRectangle.top;
-			return  vec;
-		}
-	};
-
-	//base class for buttons
-	class Button :public Component
-	{
-	public:
-		sf::Text text;
-		sf::Vector2f Scale;
-		//base sprite for button
-		sf::Sprite Sprite;
-
-		Button(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture) :text(text, font, textSize), Sprite(texture)
-		{
-			/*Sprite.setTextureRect(ToIntRect(this->text.getGlobalBounds()));*/
-			Scale.x = texture.getSize().x / this->text.getGlobalBounds().width;
-			Scale.y = texture.getSize().y / this->text.getGlobalBounds().height;
-		}
-		Button(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Sprite sprite) :text(text, font, textSize)
-		{
-			this->Sprite = sprite;
-		}
-		Button(std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, sf::IntRect SpriteRect) :text(text, font, textSize), Sprite(texture, SpriteRect)
-		{
-			ComponentRectangle.height = SpriteRect.height;
-			ComponentRectangle.width = SpriteRect.width;
-			ComponentRectangle.top = SpriteRect.top;
-			ComponentRectangle.left = SpriteRect.left;
-		}
-
-		//Disabled
-		//If you need to make your one just override it 
-		virtual void Select() override
-		{
-			text.setColor(sf::Color::Red);
-		}
-
-		//Disabled 
-		//If you need to make your one just override it 
-		virtual void UnSelect() override { text.setColor(sf::Color::White); }
-
-		virtual sf::Vector2f GetPosition()override
-		{
-			sf::Vector2f vec;
-			vec.x = ComponentRectangle.left;
-			vec.y = ComponentRectangle.top;
-			return  vec;
-		}
-		void Init()override
-		{
-			ComponentRectangle.width = this->text.getLocalBounds().width;
-			ComponentRectangle.height = this->text.getLocalBounds().width;
-			Scale.x = this->text.getLocalBounds().width / Sprite.getTexture()->getSize().x;
-			Scale.y = this->text.getLocalBounds().height / Sprite.getTexture()->getSize().y;
-			this->Sprite.setScale(Scale);
-			this->Sprite.setPosition(sf::Vector2f((this->ComponentRectangle.left), (this->ComponentRectangle.top + this->text.getLocalBounds().height / 2)));
-			this->text.setPosition(sf::Vector2f(this->ComponentRectangle.left, this->ComponentRectangle.top));
-		}
-		void SetPosition(sf::Vector2f pos) override
-		{
-
-			text.setPosition(pos);
-			this->ComponentRectangle.left = pos.x;
-			this->ComponentRectangle.top = pos.y;
-			Sprite.setPosition(pos);
-
-		}
-
-		//Calls class component Action;
-		//.
-		//If you need to make your one just override it 
-		virtual void Activate() override
-		{
-			Action();
-		}
-
-		//Disabled 
-		//If you need to make your one just override it 
-		virtual void DeActivate() override {}
-
-		void Draw(sf::RenderWindow*& window) override
-		{
-			window->draw(Sprite);
-			window->draw(text);
-
-		}
-	};
-}
 
 
 
@@ -1495,6 +1283,11 @@ public:
 	{
 		font.loadFromFile(filename);
 	}
+
+	~FontResource()
+	{
+		this->font.~Font();
+	}
 };
 class TextureResource :public Resource
 {
@@ -1518,6 +1311,11 @@ public:
 		texture.loadFromFile(filename);
 		texture.setRepeated(textureIsRepeated);
 		texture.setSmooth(textureIsSmooth);
+	}
+	~TextureResource()
+	{
+		texture.~Texture();
+		this->name.~basic_string();
 	}
 };
 class ShaderResource :public Resource
@@ -1715,6 +1513,90 @@ public:
 	}
 };
 
+//@description
+//physical object that can be pushed around 
+//@e.g.
+//chair, table,box
+//@note: altrought every object based on Object class can be used in similar way it's better to have class specificly for that
+//because it's simplier to update one class and cheking errors there then changing base class and wathcing all project crash
+class PropPhysics :public SceneActor
+{
+protected:
+
+public:
+	PropPhysics(sf::Vector2f position, sf::Sprite sprite, float width, float height) :SceneActor(position, sprite, width, height)
+	{
+		this->sprite = sprite;
+		sprite.setPosition(position);
+
+	}
+	PropPhysics(sf::Sprite sprite) :SceneActor(sprite)
+	{
+		this->sprite = sprite;
+	}
+	PropPhysics() {}
+
+	void Init()override
+	{
+		sf::Vector2f scale;
+		scale.x = collision.width / sprite.getTextureRect().width;
+		scale.y = collision.height / sprite.getTextureRect().height;
+		sprite.setScale(scale);
+		sprite.setPosition(sf::Vector2f(this->collision.left, this->collision.top));
+		sprite.setOrigin(sprite.getTextureRect().width / 2, sprite.getTextureRect().height / 2);
+	}
+
+	//function is better than lamba expression in this case
+	virtual void onCollision(Object*&object, Context*&context, std::string stateName)
+	{
+		if (bodyIsSensor)
+		{
+			CollidingObjects->push_back(object);
+		}
+		b2Vec2 objectImpulse = b2Vec2(object->body->GetLinearVelocity().x*object->body->GetMass(), object->body->GetLinearVelocity().y*object->body->GetMass());
+		b2Vec2 thisImpulse = b2Vec2(this->body->GetLinearVelocity().x*this->body->GetMass(), this->body->GetLinearVelocity().y*this->body->GetMass());
+		b2Vec2 impulse = objectImpulse + thisImpulse;
+
+		this->applyImpulse(impulse);
+	}
+	void Update(sf::Time dt) override
+	{
+		if (body != nullptr && physBodyInitialized)
+		{
+			if (!_impulseApplied)
+			{
+
+				b2Vec2 imp = b2Vec2(_impulse.x*dt.asMilliseconds(), _impulse.y*dt.asMilliseconds());
+				/*b2Vec2 p = body->GetWorldPoint(body->GetPosition());*/
+				body->ApplyLinearImpulse(imp, body->GetPosition(), true);
+				_impulseApplied = true;
+			}
+			if (!_velocitySet)
+			{
+				body->SetLinearVelocity(b2Vec2(_velocity));
+				_velocitySet = true;
+			}
+
+			this->collision.left = body->GetPosition().x;
+			this->collision.top = body->GetPosition().y ;
+
+			sprite.setPosition(sf::Vector2f(body->GetPosition().x/* + this->sprite.getTextureRect().width / 2*/, body->GetPosition().y /*+ this->sprite.getTextureRect().height / 2*/));
+			sprite.setRotation(body->GetAngle());
+		}
+	}
+	//function is better than lamba expression in this case
+	virtual void leftCollision(Object*&object, Context*&context, std::string stateName)
+	{
+
+		if (!this->CollidingObjects->empty())
+		{
+			if (std::find(this->CollidingObjects->begin(), this->CollidingObjects->end(), object) != this->CollidingObjects->end())
+			{
+				this->CollidingObjects->erase(std::find(this->CollidingObjects->begin(), this->CollidingObjects->end(), object));
+			}
+		}
+	}
+};
 //Base class for states. Hadles drawing, events and object updates. Similar to idea of gamemods in unreal engine 4
 //When creating own states - for base functions you MUST use override
 class State
@@ -1732,7 +1614,7 @@ public:
 	//e.g.
 	//Play state has world objects
 	//Menu\pause-Menu buttons, logos, etc.
-	std::vector<SceneObject*>*StateSceneObjects = new std::vector<SceneObject*>();
+	std::vector<Object*>*StateObjects = new std::vector<Object*>();
 	virtual void HandleEvent(sf::Event& event) = 0;
 	virtual void Draw() = 0;
 	virtual void Update(sf::Time dt) = 0;
@@ -1871,7 +1753,9 @@ public:
 	void Init()
 	{
 
+		std::cout << "Initialasing resourses..." << std::endl;
 		Resources->InitResources();
+		std::cout << "Initialased resourses" << std::endl;
 		Context context = {};
 		context.window = &window;
 		context.game = this;
@@ -1984,7 +1868,10 @@ public:
 
 	}
 
-	State* GetStateByName(std::string name)
+	//@note
+	//you can NOT use that to get state's world parametr
+	//due to the way yhe c++ work you will get a copy of the world parametr wich will not affect the original
+	State*& GetStateByName(std::string name)
 	{
 		if (!States->empty())
 		{
@@ -1996,7 +1883,7 @@ public:
 				}
 			}
 		}
-		return nullptr;
+		throw(std::range_error("No states with given name: " + name + " were found"));
 	}
 };
 
@@ -2069,7 +1956,7 @@ public:
 };
 
 //class for hadling movement of npc's etc.
-class MovingPawn :public SceneObject
+class MovingPawn :public Object
 {
 protected:
 	float mTravelledDist = 0.0f;
@@ -2087,7 +1974,7 @@ public:
 	void SetMovementDone(bool b) { Done = b; }
 	const bool GetIsMovementDone() { return Done; }
 
-	MovingPawn(float Speed, sf::Vector2f position, float rectWidth, float rectHeight) :SceneObject(position, rectWidth, rectHeight)
+	MovingPawn(float Speed, sf::Vector2f position, float rectWidth, float rectHeight) :Object(position, rectWidth, rectHeight)
 	{
 		this->Speed = Speed;
 	}
@@ -2116,7 +2003,7 @@ public:
 				float vx = Speed * std::cos(rads);
 				float vy = Speed * std::sin(rads);
 				this->body->SetLinearVelocity(b2Vec2(vx, vy));
-				this->SetSceneObjectRotation(Pattern->at(dirIndex).Angle);
+				this->SetObjectRotation(Pattern->at(dirIndex).Angle);
 				mTravelledDist += Speed * 10.f * dt.asSeconds();
 			}
 		}
@@ -2158,7 +2045,7 @@ public:
 		Anim = new Animation::SpriteSheetAnimation(0.1f, 1, sf::Vector2f(FrameWidth, FrameHeight), sprite);
 		Anim->IsRepated = true;
 	}
-	sf::Vector2f GetSceneObjectPosition() override
+	sf::Vector2f GetObjectPosition() override
 	{
 		return Anim->sprite.getPosition();
 	}
@@ -2282,19 +2169,19 @@ public:
 		}
 	}
 
-	virtual void onCollision(SceneObject*&object, Context*&context, std::string stateName)
+	virtual void onCollision(Object*&object, Context*&context, std::string stateName)
 	{
-		if (object->GetSceneObjectRectangle().intersects(this->reactCollision))
+		if (object->GetObjectRectangle().intersects(this->reactCollision))
 		{
 			sf::Vector2f diff;
-			diff.x = object->GetSceneObjectPosition().x - this->GetSceneObjectPosition().x;
-			diff.y = object->GetSceneObjectPosition().y - this->GetSceneObjectPosition().x;
+			diff.x = object->GetObjectPosition().x - this->GetObjectPosition().x;
+			diff.y = object->GetObjectPosition().y - this->GetObjectPosition().x;
 
-			this->SetSceneObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+			this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
 		}
 	}
 
-	virtual void apllyDamage(float damage, SceneObject*object, Context*&context, std::string stateName)
+	virtual void apllyDamage(float damage, Object*object, Context*&context, std::string stateName)
 	{
 		Animation::Animation blood_a = Animation::Animation("blood_a");
 		blood_a.FrameIndexes->push_back(Animation::CellIndex(0, 0));
@@ -2309,9 +2196,9 @@ public:
 		blood->Init();
 		blood->animations->push_back(blood_a);
 		blood->SetAnimation("blood_a");
-		context->game->GetStateByName(stateName)->StateSceneObjects->push_back(blood);
+		context->game->GetStateByName(stateName)->StateObjects->push_back(blood);
 	}
-	virtual void leftCollision(SceneObject*&object, Context*&context, std::string stateName)
+	virtual void leftCollision(Object*&object, Context*&context, std::string stateName)
 	{
 
 	}
@@ -2350,7 +2237,7 @@ public:
 		collision.top += vec.y;
 		sprite.move(vec);
 	}
-	void SetSceneObjectRotation(int angle)override
+	void SetObjectRotation(int angle)override
 	{
 		this->Anim->sprite.setRotation(angle);
 		this->RotationAngle = angle;
@@ -2361,16 +2248,16 @@ public:
 		this->Anim->sprite.setScale(this->Scale);
 		this->Anim->sprite.setPosition(sf::Vector2f(collision.left, collision.top));
 		this->Anim->sprite.setOrigin(sf::Vector2<float>(/*this->Anim->getTextureRect().width*Scale.x/2, this->Anim->getTextureRect().height*Scale.y/2*/0,0));
-		this->OnCollision = [this](SceneObject*object)
+		this->OnCollision = [this](Object*object)
 		{
-			if (object->GetSceneObjectRectangle().intersects(this->reactCollision))
+			if (object->GetObjectRectangle().intersects(this->reactCollision))
 			{
 				sf::Vector2f diff;
-				diff.x = object->GetSceneObjectPosition().x - this->GetSceneObjectPosition().x;
-				diff.y = object->GetSceneObjectPosition().y - this->GetSceneObjectPosition().x;
+				diff.x = object->GetObjectPosition().x - this->GetObjectPosition().x;
+				diff.y = object->GetObjectPosition().y - this->GetObjectPosition().x;
 
 
-				this->SetSceneObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+				this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
 			}
 		};
 	}
@@ -2396,7 +2283,7 @@ public:
 //		Anim->IsRepated = true;
 //	}
 //
-//	sf::Vector2f GetSceneObjectPosition() override
+//	sf::Vector2f GetObjectPosition() override
 //	{
 //		return Anim->sprite.getPosition();
 //	}
@@ -2406,11 +2293,11 @@ public:
 //		this->Anim->sprite.setScale(this->Scale);
 //		this->Anim->sprite.setPosition(sf::Vector2f(collision.left, collision.top));
 //
-//		this->OnCollision = [this](SceneObject*object)
+//		this->OnCollision = [this](Object*object)
 //		{
 //			sf::Vector2f diff;
-//			diff.x = object->body->GetPosition().x - this->GetSceneObjectPosition().x;
-//			diff.y = object->body->GetPosition().y - this->GetSceneObjectPosition().y;
+//			diff.x = object->body->GetPosition().x - this->GetObjectPosition().x;
+//			diff.y = object->body->GetPosition().y - this->GetObjectPosition().y;
 //
 //			float distance = sqrt((pow(static_cast<double>(diff.x), 2), pow(static_cast<double>(diff.y), 2)));
 //			this->Pattern->clear();
@@ -2466,139 +2353,6 @@ public:
 //	}
 //};
 
-class npc_zombie :public MovingPawn
-{
-protected:
-	//index of current animation
-	size_t animIndex = 0;
-	
-	bool IsDead = false;
-
-	void UpdateSprites()
-	{
-		if (currentAnimation != NULL)
-		{
-
-			currentAnimation->CurrentSprite.setRotation(RotationAngle);
-		}
-		else
-		{
-
-		} 
-	}
-public:
-	float Health = 100.f;
-
-	Animation::SpritesAnimation*currentAnimation = nullptr;
-	Animation::SpritesAnimationsContainer*spritesAnimations = new Animation::SpritesAnimationsContainer();
-
-	virtual void onDamage(float damage, SceneObject*object, Context*&context, std::string stateName)
-	{
-		Health -= damage;
-		
-		if (Health <= 0)
-		{
-			IsDead = true;
-			Animation::Animation rhand_anim = Animation::Animation("rhand");
-			rhand_anim.FrameIndexes->push_back(Animation::CellIndex(0, 0));
-
-
-			Decal*rhand = new Decal(sf::Vector2f(this->body->GetPosition().x, this->body->GetPosition().y), 0.05f, true, 20.0f, 512, 512, sf::Sprite(context->game->Resources->getTextureResourceDataByName("zombie_right_hand")->texture), 100, 100);
-			rhand->Init();
-			rhand->animations->push_back(rhand_anim);
-			rhand->SetAnimation("rhand");
-			context->game->GetStateByName(stateName)->StateSceneObjects->push_back(rhand);
-		}
-		
-		
-	}
-	virtual void leftCollision(SceneObject*&object, Context*&context, std::string stateName)
-	{
-
-	}
-
-	npc_zombie(sf::Vector2f position,float speed, float width, float height) :MovingPawn(speed,position,width,height)
-	{
-		collision.width = width;
-		collision.height = height;
-	}
-
-	bool SetAnimation(std::string name)
-	{
-		if (!spritesAnimations->animations->empty())
-		{
-			for (size_t i = 0; i < spritesAnimations->animations->size(); i++)
-			{
-				if (spritesAnimations->animations->at(i)->Name == name)
-				{
-					spritesAnimations->AnimIndex = i;
-					currentAnimation = spritesAnimations->animations->at(i);
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
-	sf::Vector2f GetSceneObjectPosition() override
-	{
-		return sf::Vector2f(collision.left,collision.top);
-	}
-
-	virtual void Draw(sf::RenderWindow*&window)override
-	{
-		if (IsDead != true)
-		{
-			if (currentAnimation != NULL)
-			{
-				window->draw(this->currentAnimation->CurrentSprite);
-			}
-		}
-		
-
-		if (!Children->empty())
-		{
-			for (size_t i = 0; i < this->Children->size(); i++)
-			{
-				Children->at(i)->Draw(window);
-			}
-		}
-	}
-
-	void Init()override
-	{
-		if (!spritesAnimations->animations->empty())
-		{
-			for (size_t in = 0; in < spritesAnimations->animations->size(); in++)
-			{
-				if (!spritesAnimations->animations->at(in)->Sprites->empty())
-				{
-					for (size_t i = 0; i < spritesAnimations->animations->at(in)->Sprites->size(); i++)
-					{
-						sf::Vector2f scale;
-						scale.x = collision.width / spritesAnimations->animations->at(in)->Sprites->at(i).getTexture()->getSize().x;
-						scale.y = collision.height / spritesAnimations->animations->at(in)->Sprites->at(i).getTexture()->getSize().y;
-
-						spritesAnimations->animations->at(in)->Sprites->at(i).setRotation(RotationAngle);
-						spritesAnimations->animations->at(in)->Sprites->at(i).setScale(scale);
-						spritesAnimations->animations->at(in)->Sprites->at(i).setOrigin(sf::Vector2f(spritesAnimations->animations->at(in)->Sprites->at(i).getTextureRect().width / 2, spritesAnimations->animations->at(in)->Sprites->at(i).getTextureRect().height / 2));
-					}
-				}
-			}
-		}
-	}
-
-	void Update(sf::Time dt)
-	{
-		SetAnimation("skeleton_idle");
-		if (currentAnimation != NULL)
-		{
-			currentAnimation->UpdateAnimation(dt);
-			currentAnimation->CurrentSprite.setPosition(sf::Vector2f(body->GetPosition().x, body->GetPosition().y));
-		}
-		this->UpdateMovement(dt);
-	}
-};
 
 class projectile :public SceneActor
 {
@@ -2611,6 +2365,7 @@ protected:
 	bool IsInitialized = false;
 
 	b2Vec2 Velocity;
+
 public:
 	sf::Vector2<float>Origin;
 	float MaxDistance = 0.0f;
@@ -2629,7 +2384,7 @@ public:
 		sprite.move(vec);
 	}
 
-	virtual void projectileOnCollision(SceneObject*&object, Context*&context, std::string stateName)
+	virtual void projectileOnCollision(Object*&object, Context*&context, std::string stateName)
 	{
 
 		if (npc_test_turret* ntt = dynamic_cast<npc_test_turret*>(object))
@@ -2660,7 +2415,7 @@ public:
 
 		float a = static_cast<float>((atan2(diff.x, diff.y)*(180 / M_PI)));
 		Decal*blood;
-		if (dynamic_cast<npc_zombie*>(object))
+		/*if (dynamic_cast<npc_zombie*>(object))
 		{
 
 
@@ -2669,7 +2424,7 @@ public:
 			blood->Init();
 			blood->animations->push_back(blood_a);
 			blood->SetAnimation("blood_a");
-			context->game->GetStateByName(stateName)->StateSceneObjects->push_back(blood);
+			context->game->GetStateByName(stateName)->StateObjects->push_back(blood);
 		}
 		else
 		{
@@ -2680,11 +2435,11 @@ public:
 			blood->Init();
 			blood->animations->push_back(blood_a);
 			blood->SetAnimation("blood_a");
-			context->game->GetStateByName(stateName)->StateSceneObjects->push_back(blood);
-		}
+			context->game->GetStateByName(stateName)->StateObjects->push_back(blood);
+		}*/
 	}
 
-	virtual void projectileOnLeftCollision(SceneObject*&object, Context*&context, std::string stateName)
+	virtual void projectileOnLeftCollision(Object*&object, Context*&context, std::string stateName)
 	{
 
 		if (!this->CollidingObjects->empty())
@@ -2696,7 +2451,7 @@ public:
 		}
 	}
 
-	sf::Vector2f GetSceneObjectPosition()override
+	sf::Vector2f GetObjectPosition()override
 	{
 		if (IsInitialized)
 		{
@@ -2710,19 +2465,19 @@ public:
 	void Launch(sf::Vector2<float> destination, sf::Vector2<float> origin, b2World&world, b2Filter filter)
 	{
 		IsDone = false;
-		this->SetSceneObjectPosition(origin);
+		this->SetObjectPosition(origin);
 
 		Origin = origin;
 		difference = destination - origin;
 		if (IsInitialized) { world.DestroyBody(this->body); }
 
 		b2BodyDef def;
-		def.position.Set(origin.x + this->GetSceneObjectRectangle().width / 2, origin.y + this->GetSceneObjectRectangle().height / 2);
+		def.position.Set(origin.x + this->GetObjectRectangle().width / 2, origin.y + this->GetObjectRectangle().height / 2);
 		def.type = b2BodyType::b2_dynamicBody;
 		this->body = world.CreateBody(&def);
 
 		b2PolygonShape shape;
-		shape.SetAsBox(this->GetSceneObjectRectangle().width / 2, this->GetSceneObjectRectangle().height / 2);
+		shape.SetAsBox(this->GetObjectRectangle().width / 2, this->GetObjectRectangle().height / 2);
 
 		b2FixtureDef TriggerFixture;
 		TriggerFixture.filter = filter;
@@ -2736,8 +2491,8 @@ public:
 
 
 		/*sf::Vector2f diff;
-		diff.x = event.mouseMove.x - player->GetSceneObjectPosition().x;
-		diff.y = event.mouseMove.y - player->GetSceneObjectPosition().y;*/
+		diff.x = event.mouseMove.x - player->GetObjectPosition().x;
+		diff.y = event.mouseMove.y - player->GetObjectPosition().y;*/
 
 
 		//degs
@@ -2756,18 +2511,18 @@ public:
 	{
 		Origin = origin;
 		IsDone = false;
-		this->SetSceneObjectPosition(origin);
+		this->SetObjectPosition(origin);
 		this->Init();
 
 		if (IsInitialized) { world.DestroyBody(this->body); }
 		b2BodyDef def;
-		def.position.Set(origin.x + this->GetSceneObjectRectangle().width / 2, origin.y + this->GetSceneObjectRectangle().height / 2);
+		def.position.Set(origin.x + this->GetObjectRectangle().width / 2, origin.y + this->GetObjectRectangle().height / 2);
 		def.type = b2BodyType::b2_dynamicBody;
 		this->body = world.CreateBody(&def);
 		def.bullet = true;
 
 		b2PolygonShape shape;
-		shape.SetAsBox(this->GetSceneObjectRectangle().width / 2, this->GetSceneObjectRectangle().height / 2);
+		shape.SetAsBox(this->GetObjectRectangle().width / 2, this->GetObjectRectangle().height / 2);
 
 		b2FixtureDef TriggerFixture;
 		TriggerFixture.filter = filter;
@@ -2781,8 +2536,8 @@ public:
 
 
 		/*sf::Vector2f diff;
-		diff.x = event.mouseMove.x - player->GetSceneObjectPosition().x;
-		diff.y = event.mouseMove.y - player->GetSceneObjectPosition().y;*/
+		diff.x = event.mouseMove.x - player->GetObjectPosition().x;
+		diff.y = event.mouseMove.y - player->GetObjectPosition().y;*/
 
 
 
@@ -2816,7 +2571,7 @@ public:
 			}
 		}
 	}
-	void  SetSceneObjectPosition(sf::Vector2f pos) override
+	void  SetObjectPosition(sf::Vector2f pos) override
 	{
 		collision.left = pos.x;
 		collision.top = pos.y;
@@ -2827,6 +2582,7 @@ public:
 };
 
 //base class for items that can be put in the inventory etc.
+//this class is made for data handling
 class Item
 {
 private:
@@ -2854,7 +2610,6 @@ class Weapon:public Item
 protected:
 
 public:
-	std::string name;
 
 	projectile*Projectile;
 
@@ -2872,13 +2627,13 @@ public:
 
 	void fire(State&state)
 	{
-
+	
 	}
-	std::function<void(SceneObject*object)>projectileOnCollision = [this](SceneObject*object)
+	std::function<void(Object*object)>projectileOnCollision = [this](Object*object)
 	{
 		Projectile->CollidingObjects->push_back(object);
 	};
-	std::function<void(SceneObject*object)>projectileLeftCollision = [this](SceneObject*object)
+	std::function<void(Object*object)>projectileLeftCollision = [this](Object*object)
 	{
 		if (!Projectile->CollidingObjects->empty())
 		{
@@ -2899,6 +2654,8 @@ class ItemContainer
 {
 protected:
 
+	
+
 	//number of items per strip
 	//mostly needed for displaying items in states
 	int _stripLenght = 1;
@@ -2909,10 +2666,31 @@ protected:
 
 	//-1 for infinite
 	int _maxItemsCount = 1;
+
+
 public:
+
+	//used by gui components such as ItemInventoryUIC
+	sf::Vector2f onScreenPosition;
+
+	//id of item that's beeing used by mouse etc.
+	//assinged by state
+	int currentItemId = -1;
+	
+	//should container be drawn
+	bool isVisible = false;
+	
+	//can be interacted with (mouse clicks etc.)
+	bool isActive = false;
+
 
 	//all items in container
 	std::vector<Item*>*_items = new std::vector<Item*>();
+
+	const bool isEmpty()const
+	{
+		return _items->empty();
+	}
 
 	//doesn't add if stack is full
 	void addItem(Item*&item)
@@ -2931,9 +2709,27 @@ public:
 	{
 		if (!_items->empty())
 		{
+			
+			int stripId = 0;
+			int rowId = 0;
 			for (size_t i = 0; i < _items->size(); i++)
 			{
-				_items->at(i)->Draw(window);
+				
+				if (stripId <= _stripLenght)
+				{
+					_items->at(i)->sprite.setPosition(onScreenPosition.x+20*stripId, onScreenPosition.y*rowId);
+					_items->at(i)->Draw(window);
+					stripId++;
+				}
+				else
+				{
+					stripId = 0;
+					rowId++;
+					if (rowId > _rowLenght)
+					{
+
+					}
+				}
 			}
 		}
 	}
@@ -2954,6 +2750,13 @@ public:
 		}
 	}
 
+	int getStripLenght()const { return _stripLenght; }
+
+	int getRowLenght()const { return _rowLenght; }
+
+	void setStripLenght(int stripLenght) { _stripLenght = stripLenght; }
+
+	void setRowLenght(int rowLenght) { _rowLenght = rowLenght; }
 
 	ItemContainer(int maxItemsCount, int stripLenght, int rowLenght)
 	{
@@ -2970,6 +2773,29 @@ public:
 		this->_maxItemsCount = -1;
 	}
 };
+
+namespace GUI
+{
+	// gui component (UIC - user interface component) for drawing and hadling interactions with ItemContainers
+	//0
+	//0
+	//WARNING!
+	//this class is Specificly made for "the awakened dead" game and mostly consists of data only
+	class ItemInventoryUIC : public Container
+	{
+	public:
+		//all item containers that will be used by this class
+		std::vector<ItemContainer*>*_itemContainers = new std::vector<ItemContainer*>();
+
+		void Init();
+
+		//updates all GUI components of conteiner based on data from ItemContainers
+		void Update(sf::Time st)
+		{
+
+		}
+	};
+}
 
 class Player :public SceneActor
 {
@@ -3032,7 +2858,7 @@ public:
 
 	std::vector<Weapon*>*weapons = new std::vector<Weapon*>();
 	
-	ItemContainer*Weapons = new ItemContainer(3, 1, 3);
+	ItemContainer*items = new ItemContainer(3, 1, 3);
 
 	float MaxSpeed = 1.f;
 	float accel = 0.5f;
@@ -3071,7 +2897,7 @@ public:
 		return false;
 	}
 
-	sf::Vector2f GetSceneObjectPosition() override
+	sf::Vector2f GetObjectPosition() override
 	{
 		return sf::Vector2f(collision.left, collision.top);
 	}
@@ -3110,12 +2936,12 @@ public:
 			}
 			if (currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
 			{
-				Scale.x = GetSceneObjectRectangle().width / sprite.getTexture()->getSize().x;
-				Scale.y = GetSceneObjectRectangle().height / sprite.getTexture()->getSize().y;
+				Scale.x = GetObjectRectangle().width / sprite.getTexture()->getSize().x;
+				Scale.y = GetObjectRectangle().height / sprite.getTexture()->getSize().y;
 
-				if (body->GetLinearVelocity().x > 0 || body->GetLinearVelocity().y > 0)
+				if (body->GetLinearVelocity().x != 0 || body->GetLinearVelocity().y != 0)
 				{
-						SetAnimation("solder_move_pistol");
+					SetAnimation("solder_pistol_move");
 				}
 			}
 			UpdateSprites();
@@ -3128,7 +2954,7 @@ public:
 		if (currentAnimation != NULL)
 		{
 			currentAnimation->UpdateAnimation(dt);
-			currentAnimation->CurrentSprite.setPosition(sf::Vector2f(body->GetPosition().x, body->GetPosition().y));
+			currentAnimation->CurrentSprite.setPosition(sf::Vector2f(body->GetPosition().x+50, body->GetPosition().y+50));
 		}
 
 		/*if (!animations->empty())
@@ -3193,7 +3019,7 @@ public:
 		sprite.move(vec);
 	}
 
-	void SetSceneObjectPosition(sf::Vector2f pos)override
+	void SetObjectPosition(sf::Vector2f pos)override
 	{
 		collision.left = pos.x;
 		collision.top = pos.y;
@@ -3240,6 +3066,195 @@ public:
 	
 };
 
+class npc_zombie :public MovingPawn
+{
+protected:
+	//index of current animation
+	size_t animIndex = 0;
+
+	bool IsDead = false;
+
+	void UpdateSprites()
+	{
+		if (currentAnimation != NULL)
+		{
+
+			currentAnimation->CurrentSprite.setRotation(RotationAngle);
+		}
+		else
+		{
+
+		}
+	}
+public:
+	float Health = 100.f;
+
+	Animation::SpritesAnimation*currentAnimation = nullptr;
+	Animation::SpritesAnimationsContainer*spritesAnimations = new Animation::SpritesAnimationsContainer();
+
+	virtual void onDamage(float damage, Object*object, Context*&context, std::string stateName)
+	{
+		Health -= damage;
+
+		if (Health <= 0)
+		{
+			IsDead = true;
+			Animation::Animation rhand_anim = Animation::Animation("rhand");
+			rhand_anim.FrameIndexes->push_back(Animation::CellIndex(0, 0));
+
+
+			Decal*rhand = new Decal(sf::Vector2f(this->body->GetPosition().x + 60, this->body->GetPosition().y), 0.05f, true, 20.0f, 123, 53, sf::Sprite(context->game->Resources->getTextureResourceDataByName("zombie_right_hand")->texture), 51, 27);
+			b2PolygonShape shape;
+			shape.SetAsBox(rhand->GetObjectRectangle().width / 2, rhand->GetObjectRectangle().height / 2);
+
+			b2BodyDef def;
+			def.position.Set(rhand->GetObjectPosition().x + rhand->GetObjectRectangle().width / 2, rhand->GetObjectPosition().y + rhand->GetObjectRectangle().height / 2);
+			def.type = b2BodyType::b2_dynamicBody;
+
+			rhand->body = context->game->GetStateByName(stateName)->world.CreateBody(&def);
+
+			rhand->body->CreateFixture(&shape, 0.5f);
+			rhand->body->SetUserData(rhand);
+
+			rhand->Init();
+			rhand->animations->push_back(rhand_anim);
+			rhand->SetAnimation("rhand");
+
+			rhand->applyImpulse(b2Vec2(100, 0));
+
+			context->game->GetStateByName(stateName)->StateObjects->push_back(rhand);
+
+
+			Decal*lhand = new Decal(sf::Vector2f(this->body->GetPosition().x, this->body->GetPosition().y + 30), 0.05f, true, 20.0f, 123, 53, sf::Sprite(context->game->Resources->getTextureResourceDataByName("zombie_left_hand")->texture), 51, 27);
+
+			//b2BodyDef def;
+			def.position.Set(lhand->GetObjectPosition().x + lhand->GetObjectRectangle().width / 2, lhand->GetObjectPosition().y + lhand->GetObjectRectangle().height / 2);
+			def.type = b2BodyType::b2_dynamicBody;
+			lhand->body = context->game->GetStateByName(stateName)->world.CreateBody(&def);
+
+			/*b2PolygonShape shape;*/
+			shape.SetAsBox(lhand->GetObjectRectangle().width / 2, lhand->GetObjectRectangle().height / 2);
+
+
+			lhand->body->CreateFixture(&shape, 0.5f);
+			lhand->body->SetUserData(lhand);
+			lhand->Init();
+			lhand->animations->push_back(rhand_anim);
+			lhand->SetAnimation("rhand");
+			context->game->GetStateByName(stateName)->StateObjects->push_back(lhand);
+
+			/*Decal*meat_chunk = new Decal(sf::Vector2f(this->body->GetPosition().x, this->body->GetPosition().y), 0.05f, true, 20.0f, 35, 65, sf::Sprite(context->game->Resources->getTextureResourceDataByName("meat_chunk")->texture), 100, 100);
+			meat_chunk->Init();
+			meat_chunk->animations->push_back(rhand_anim);
+			meat_chunk->SetAnimation("rhand");
+			context->game->GetStateByName(stateName)->StateObjects->push_back(meat_chunk);*/
+		}
+
+
+	}
+	virtual void leftCollision(Object*&object, Context*&context, std::string stateName)
+	{
+
+	}
+
+	virtual void onCollision(Object*&object, Context*&context, std::string stateName)
+	{
+		if (dynamic_cast<Player*>(object))
+		{
+			std::cout << "found player" << std::endl;
+		}
+	}
+
+	npc_zombie(sf::Vector2f position, float speed, float width, float height) :MovingPawn(speed, position, width, height)
+	{
+		collision.width = width;
+		collision.height = height;
+	}
+
+	bool SetAnimation(std::string name)
+	{
+		if (!spritesAnimations->animations->empty())
+		{
+			for (size_t i = 0; i < spritesAnimations->animations->size(); i++)
+			{
+				if (spritesAnimations->animations->at(i)->Name == name)
+				{
+					spritesAnimations->AnimIndex = i;
+					currentAnimation = spritesAnimations->animations->at(i);
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	sf::Vector2f GetObjectPosition() override
+	{
+		return sf::Vector2f(collision.left, collision.top);
+	}
+
+	virtual void Draw(sf::RenderWindow*&window)override
+	{
+		if (IsDead != true)
+		{
+			if (currentAnimation != NULL)
+			{
+				window->draw(this->currentAnimation->CurrentSprite);
+			}
+		}
+
+
+		if (!Children->empty())
+		{
+			for (size_t i = 0; i < this->Children->size(); i++)
+			{
+				Children->at(i)->Draw(window);
+			}
+		}
+	}
+
+	void Init()override
+	{
+		if (!spritesAnimations->animations->empty())
+		{
+			for (size_t in = 0; in < spritesAnimations->animations->size(); in++)
+			{
+				if (!spritesAnimations->animations->at(in)->Sprites->empty())
+				{
+					for (size_t i = 0; i < spritesAnimations->animations->at(in)->Sprites->size(); i++)
+					{
+						sf::Vector2f scale;
+						scale.x = collision.width / spritesAnimations->animations->at(in)->Sprites->at(i).getTexture()->getSize().x;
+						scale.y = collision.height / spritesAnimations->animations->at(in)->Sprites->at(i).getTexture()->getSize().y;
+
+						spritesAnimations->animations->at(in)->Sprites->at(i).setRotation(RotationAngle);
+						spritesAnimations->animations->at(in)->Sprites->at(i).setScale(scale);
+						spritesAnimations->animations->at(in)->Sprites->at(i).setOrigin(sf::Vector2f(spritesAnimations->animations->at(in)->Sprites->at(i).getTextureRect().width / 2, spritesAnimations->animations->at(in)->Sprites->at(i).getTextureRect().height / 2));
+					}
+				}
+			}
+		}
+
+	}
+
+	void Update(sf::Time dt)
+	{
+		SetAnimation("skeleton_idle");
+		if (physBodyInitialized)
+		{
+			this->collision.left = body->GetPosition().x;
+			this->collision.top = body->GetPosition().y;
+		}
+		if (currentAnimation != NULL)
+		{
+			currentAnimation->UpdateAnimation(dt);
+			currentAnimation->CurrentSprite.setPosition(sf::Vector2f(body->GetPosition().x, body->GetPosition().y));
+		}
+		this->UpdateMovement(dt);
+	}
+};
+
+
 class proje :public projectile
 {
 public:
@@ -3248,7 +3263,7 @@ public:
 		collision.width = Width;
 		collision.height = Height;
 	}
-	virtual void projectileOnCollision(SceneObject*&object, Context*&context, std::string stateName) override
+	virtual void projectileOnCollision(Object*&object, Context*&context, std::string stateName) override
 	{
 
 		Animation::Animation blood_a = Animation::Animation("blood_a");
@@ -3291,11 +3306,11 @@ public:
 			blood->Init();
 			blood->animations->push_back(blood_a);
 			blood->SetAnimation("blood_a");
-			context->game->GetStateByName(stateName)->StateSceneObjects->push_back(blood);
+			context->game->GetStateByName(stateName)->StateObjects->push_back(blood);
 		}
 	}
 
-	virtual void projectileOnLeftCollision(SceneObject*&object, Context*&context, std::string stateName)override
+	virtual void projectileOnLeftCollision(Object*&object, Context*&context, std::string stateName)override
 	{
 
 		if (!this->CollidingObjects->empty())
@@ -3312,7 +3327,7 @@ public:
 
 
 
-class TextObject :public SceneObject
+class TextObject :public Object
 {
 protected:
 	sf::Color Color;
@@ -3335,7 +3350,7 @@ public:
 		textObj = sf::Text(text, font, size);
 	}
 	virtual void OnCollision() {}
-	virtual void SetSceneObjectPosition(sf::Vector2f pos) override
+	virtual void SetObjectPosition(sf::Vector2f pos) override
 	{
 		collision.left = pos.x;
 		collision.top = pos.y;
@@ -3409,11 +3424,11 @@ public:
 	virtual void Draw()override
 	{
 
-		if (!this->StateSceneObjects->empty())
+		if (!this->StateObjects->empty())
 		{
-			for (size_t i = 0; i < this->StateSceneObjects->size(); i++)
+			for (size_t i = 0; i < this->StateObjects->size(); i++)
 			{
-				if (!dynamic_cast<SceneActor*>(this->StateSceneObjects->at(i)))
+				if (!dynamic_cast<SceneActor*>(this->StateObjects->at(i)))
 				{
 
 				}
@@ -3421,7 +3436,7 @@ public:
 				else
 				{
 
-					context->window->draw(dynamic_cast<SceneActor*>(this->StateSceneObjects->at(i))->sprite);
+					context->window->draw(dynamic_cast<SceneActor*>(this->StateObjects->at(i))->sprite);
 				}
 			}
 
@@ -3644,7 +3659,7 @@ public:
 	bool WalkLeft = false;
 	bool WalkRight = false;
 
-	SceneObjectContactListener contact_listener;
+	ObjectContactListener contact_listener;
 	FMOD::ChannelGroup* PlayerSoundsGroup;
 	PixelParticleSystem cursorParticles = PixelParticleSystem(300, sf::Color::Red);
 
@@ -3659,12 +3674,13 @@ public:
 
 	void Init()override
 	{
+		
 
 #pragma region mapLoading
 		//loading resources for game from tad_tileset.tsx
 		using namespace tinyxml2;
 		XMLDocument doc;
-		doc.LoadFile("./maps/t_t1.tmx");
+		doc.LoadFile("./../maps/t_t1.tmx");
 
 
 		XMLElement* root = doc.FirstChildElement("map");
@@ -3674,9 +3690,10 @@ public:
 		//current tile id y
 		int cTileIdy = 0;
 
-		int layerMaxWidth = 16;
-		int layerMaxHeight = 16;
+		int layerMaxWidth =0;
+		int layerMaxHeight = 0;
 
+		
 		for (tinyxml2::XMLElement* child = root->FirstChildElement(); child != NULL; child = child->NextSiblingElement())
 		{
 			if (child == nullptr) { XMLCheckResult(XML_ERROR_PARSING_ELEMENT); break; }
@@ -3684,67 +3701,201 @@ public:
 			if (name == "layer")
 			{
 				int layerId = child->FindAttribute("id")->IntValue();
-				/*layerMaxWidth = child->FindAttribute("width")->IntValue();
-				layerMaxHeight = child->FindAttribute("height")->IntValue();*/
+				layerMaxWidth = child->FindAttribute("width")->IntValue();
+				layerMaxHeight = child->FindAttribute("height")->IntValue();
 
 				XMLElement*data = child->FirstChildElement("data");
 				if (data != nullptr)
 				{
 					XMLElement*chunk = data->FirstChildElement("chunk");
-
-					for (tinyxml2::XMLElement* tile = chunk->FirstChildElement(); tile != NULL; tile = tile->NextSiblingElement())
+					if (chunk != NULL)
 					{
-						int gid;
-						gid = tile->FindAttribute("gid")->IntValue();
-						gid--;
-
-						sf::Vector2f pos = sf::Vector2f(64 * cTileIdx, 64 * cTileIdy );
-						SceneActor*ta = new SceneActor(pos, sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture), 64, 64);
-						ta->Init();
-						StateSceneObjects->push_back(ta);
-
-						cTileIdx++;
-						if (cTileIdx >= layerMaxWidth)
+						for (tinyxml2::XMLElement* tile = chunk->FirstChildElement(); tile != NULL; tile = tile->NextSiblingElement())
 						{
-							cTileIdx = 0;
-							cTileIdy++;
+
+							if (tile->FindAttribute("gid") != NULL)
+							{
+								int gid;
+								gid = tile->FindAttribute("gid")->IntValue();
+								gid--;
+
+								sf::Vector2f pos = sf::Vector2f(64 * cTileIdx, 64 * cTileIdy);
+								SceneTile*ta = new SceneTile(pos, sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture), 64, 64);
+								ta->Init();
+								StateObjects->push_back(ta);
+
+
+							}
+							cTileIdx++;
+							if (cTileIdx >= layerMaxWidth)
+							{
+								cTileIdx = 0;
+								cTileIdy++;
+							}
 						}
 					}
+					else
+					{
+						for (tinyxml2::XMLElement* tile = data->FirstChildElement(); tile != NULL; tile = tile->NextSiblingElement())
+						{
 
+							if (tile->FindAttribute("gid") != NULL)
+							{
+								int gid;
+								gid = tile->FindAttribute("gid")->IntValue();
+								gid--;
+
+								sf::Vector2f pos = sf::Vector2f(64 * cTileIdx, 64 * cTileIdy);
+								SceneTile*ta = new SceneTile(pos, sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture), 64, 64);
+								ta->Init();
+								StateObjects->push_back(ta);
+
+
+							}
+							cTileIdx++;
+							if (cTileIdx >= layerMaxWidth)
+							{
+								cTileIdx = 0;
+								cTileIdy++;
+							}
+						}
+					}
 				}
+				
+			}
+			
+			else if (name == "objectgroup")
+			{
+				for (tinyxml2::XMLElement* obj = child->FirstChildElement(); obj != NULL; obj = obj->NextSiblingElement())
+				{
+
+					if (obj->FindAttribute("type") != NULL)
+					{
+						std::string type = obj->FindAttribute("type")->Value();
+
+						if (type == "info_player_start")
+						{
+							float posX = obj->FindAttribute("x")->FloatValue();
+							float posY = obj->FindAttribute("y")->FloatValue();
+							this->player->SetObjectPosition(sf::Vector2f(posX, posY));
+						}
+						if (type == "solid_object")
+						{
+							float posX = obj->FindAttribute("x")->FloatValue();
+							float posY = obj->FindAttribute("y")->FloatValue();
+							float width = obj->FindAttribute("width")->FloatValue();
+							float height = obj->FindAttribute("height")->FloatValue();
+							this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height));
+						}
+
+
+					}
+					else if (obj->FindAttribute("template") != NULL)
+					{
+						std::string templateName = obj->FindAttribute("template")->Value();
+
+						XMLDocument tempDoc;
+
+						const char* d = "./../maps/";
+
+						char result[100];   // array to hold the result.
+
+						strcpy(result, d); // copy string one into the result.
+						strcat(result, templateName.c_str()); // append string two to the result.
+
+							
+						tempDoc.LoadFile(result);
+
+						XMLElement* root = tempDoc.FirstChildElement("template");
+
+						XMLElement*tileSetData = root->FirstChildElement("tileset");
+
+						if (tileSetData != NULL)
+						{
+
+						}
+
+						XMLElement*objData = root->FirstChildElement("object");
+						if (objData != NULL)
+						{
+							if (objData->FindAttribute("type") != NULL)
+							{
+								std::string type = objData->FindAttribute("type")->Value();
+
+
+								int gid;
+								gid = objData->FindAttribute("gid")->IntValue();
+								gid--;
+								if (type == "info_player_start")
+								{
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+									this->player->SetObjectPosition(sf::Vector2f(posX, posY));
+								}
+								if (type == "solid_object")
+								{
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+									float width = objData->FindAttribute("width")->FloatValue();
+									float height = objData->FindAttribute("height")->FloatValue();
+									this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height));
+								}
+								if (type == "PropPhysics")
+								{
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+									float width = objData->FindAttribute("width")->FloatValue();
+									float height = objData->FindAttribute("height")->FloatValue();
+
+									this->StateObjects->push_back(new PropPhysics(sf::Vector2f(posX, posY), sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture), width, height));
+								}
+							}
+						}
+					}
+				}
+
 			}
 		}
 		//end of loading resources for game from tad_tileset.tsx
 #pragma endregion
-
-		Animation::SpritesAnimation*anim =new  Animation::SpritesAnimation(true,0.2f, "solder_rifle_move");
+		Animation::SpritesAnimation*rifle_move =new  Animation::SpritesAnimation(true,0.2f, "solder_rifle_move");
 		for (int i = 0; i < 20; i++)
 		{
-			anim->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_rifle_move_" + std::to_string(i))->texture));
+			rifle_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_rifle_move_" + std::to_string(i))->texture));
 		}
-		player->spritesAnimations->addAnimation(anim);
+		player->spritesAnimations->addAnimation(rifle_move);
+		Animation::SpritesAnimation*pistol_move = new  Animation::SpritesAnimation(true, 0.2f, "solder_pistol_move");
+		for (int i = 0; i < 20; i++)
+		{
+			pistol_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_pistol_move_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(pistol_move);
 		player->Init();
 
 		npc_zombie*z = new npc_zombie(sf::Vector2f(500, 500),1.f, 100, 100);
 		z->Init();
+		z->OnCollision = [this, z](Object*object)
+		{
+			z->onCollision(object, this->context, "PlayState");
+		};
 		/*z->AddMovement(MovementDirection(-95.0f, 10.0f));*/
 
-		SolidObject*wall = new SolidObject(sf::Vector2f(100, 300), sf::Sprite(context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture), 300, 300);
-		wall->Init();
+		/*SolidObject*wall = new SolidObject(sf::Vector2f(100, 300), sf::Sprite(context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture), 300, 300);
+		wall->Init();*/
 
 		npc_test_turret*tt = new npc_test_turret(sf::Vector2<float>(500, 100), sf::FloatRect(250, 50, 300, 100), 100, 100, 45, 32, sf::Sprite(context->game->Resources->getTextureResourceDataByName("officer_walk")->texture));
 		tt->Init();
-		tt->OnCollision = [tt](SceneObject*object)
+		tt->OnCollision = [tt](Object*object)
 		{
 			sf::Vector2f diff;
-			diff.x = object->body->GetPosition().x - tt->GetSceneObjectPosition().x;
-			diff.y = object->body->GetPosition().y - tt->GetSceneObjectPosition().y;
+			diff.x = object->body->GetPosition().x - tt->GetObjectPosition().x;
+			diff.y = object->body->GetPosition().y - tt->GetObjectPosition().y;
 
 
-			tt->SetSceneObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+			tt->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
 
 		};
-		tt->LeftCollision = [tt](SceneObject*object)
+		tt->LeftCollision = [tt](Object*object)
 		{
 			/*std::cout << "l" << std::endl;*/
 		};
@@ -3774,7 +3925,7 @@ public:
 		helper->AddMovement(MovementDirection(65.0f, 10.0f));
 		helper->AddMovement(MovementDirection(-15.0f, 10.0f));
 
-		helper->OnCollision = [helper](SceneObject*object)
+		helper->OnCollision = [helper](Object*object)
 		{
 			helper->DisplayText = true;
 			MovementDirection dir(helper->Pattern->at(helper->dirIndex).Angle*-1, helper->Pattern->at(helper->dirIndex).Distance);
@@ -3785,7 +3936,7 @@ public:
 			helper->SetAnimation("unr");
 
 		};
-		helper->LeftCollision = [helper](SceneObject*object)
+		helper->LeftCollision = [helper](Object*object)
 		{
 			helper->DisplayText = false;
 			if (!helper->CollidingObjects->empty())
@@ -3802,10 +3953,10 @@ public:
 
 		/*helper->sprite.setPosition(100, 100);*/
 		helper->Init();
-		this->StateSceneObjects->push_back(wall);
-		this->StateSceneObjects->push_back(helper);
-		this->StateSceneObjects->push_back(tt);
-		this->StateSceneObjects->push_back(z);
+		/*this->StateObjects->push_back(wall);*/
+		this->StateObjects->push_back(helper);
+		this->StateObjects->push_back(tt);
+		this->StateObjects->push_back(z);
 
 
 
@@ -3833,48 +3984,117 @@ public:
 		
 		
 
-		if (!StateSceneObjects->empty())
+		if (!StateObjects->empty())
 		{
-			for (size_t i = 0; i < StateSceneObjects->size(); i++)
+			for (size_t i = 0; i < StateObjects->size(); i++)
 			{
-				if (SolidObject*obj = dynamic_cast<SolidObject*>(StateSceneObjects->at(i)))
+				if (SolidObject*obj = dynamic_cast<SolidObject*>(StateObjects->at(i)))
 				{
 					b2BodyDef def;
-					def.position.Set(obj->GetSceneObjectPosition().x + obj->GetSceneObjectRectangle().width / 2, obj->GetSceneObjectPosition().y + obj->GetSceneObjectRectangle().height / 2);
+					def.position.Set(obj->GetObjectPosition().x + obj->GetObjectRectangle().width / 2, obj->GetObjectPosition().y + obj->GetObjectRectangle().height / 2);
 					def.type = b2BodyType::b2_staticBody;
 					obj->body = world.CreateBody(&def);
 
 					b2PolygonShape shape;
-					shape.SetAsBox(obj->GetSceneObjectRectangle().width / 2, obj->GetSceneObjectRectangle().height / 2);
+					shape.SetAsBox(obj->GetObjectRectangle().width / 2, obj->GetObjectRectangle().height / 2);
 
 					
 					obj->body->CreateFixture(&shape, 0.f);
 					obj->body->SetUserData(obj);
 					
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = false;
 				}
-				else if (dynamic_cast<SceneActor*>(StateSceneObjects->at(i)))
-				{
-
-				}
-				else
+				else if (dynamic_cast<SceneTile*>(StateObjects->at(i)))
 				{
 					
+				}
+				else if (npc_zombie*z = dynamic_cast<npc_zombie*>(StateObjects->at(i)))
+				{
 					b2BodyDef def;
-					def.position.Set(StateSceneObjects->at(i)->GetSceneObjectPosition().x + StateSceneObjects->at(i)->GetSceneObjectRectangle().width / 2, StateSceneObjects->at(i)->GetSceneObjectPosition().y + StateSceneObjects->at(i)->GetSceneObjectRectangle().height / 2);
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
 					def.type = b2BodyType::b2_dynamicBody;
-					StateSceneObjects->at(i)->body = world.CreateBody(&def);
+					StateObjects->at(i)->body = world.CreateBody(&def);
 
 					b2PolygonShape shape;
-					shape.SetAsBox(StateSceneObjects->at(i)->GetSceneObjectRectangle().width / 2, StateSceneObjects->at(i)->GetSceneObjectRectangle().height / 2);
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2PolygonShape senseShape;
+					senseShape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width , StateObjects->at(i)->GetObjectRectangle().height );
 
 					b2FixtureDef TriggerFixture;
 					TriggerFixture.filter = filter;
 					TriggerFixture.density = 0.f;
 					TriggerFixture.shape = &shape;
-					TriggerFixture.isSensor = 1;
+					TriggerFixture.isSensor = 0;
 
-					StateSceneObjects->at(i)->body->CreateFixture(&TriggerFixture);
-					StateSceneObjects->at(i)->body->SetUserData(StateSceneObjects->at(i));
+					b2FixtureDef senceFixture;
+					senceFixture.filter = filter;
+					senceFixture.density = 0.f;
+					senceFixture.shape = &senseShape;
+					senceFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->CreateFixture(&senceFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					//is set by main fixture and/or purpose of the object itself
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+				}
+				else if (PropPhysics*pp = dynamic_cast<PropPhysics*>(StateObjects->at(i)))
+				{
+					b2PolygonShape shapeA;
+					shapeA.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+
+					b2BodyDef defA;
+					defA.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					defA.type = b2BodyType::b2_dynamicBody;
+
+					StateObjects->at(i)->body = world.CreateBody(&defA);
+
+					StateObjects->at(i)->body->CreateFixture(&shapeA, 1.f);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+					StateObjects->at(i)->Init();
+					StateObjects->at(i)->OnCollision = [this, pp](Object*object)
+					{
+						pp->onCollision(object, this->context, "PlayState");
+					};
+					pp->LeftCollision = [this, pp](Object*object)
+					{
+						pp->leftCollision(object, this->context, "PlayState");
+					};
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = false;
+
+
+					StateObjects->at(i)->Init();
+				}
+				else
+				{
+					
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_dynamicBody;
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 0;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					StateObjects->at(i)->Init();
 				}
 			}
 		}
@@ -3883,22 +4103,24 @@ public:
 		filter2.categoryBits = 0x1;
 
 		//player body begin
-		b2BodyDef def;
-		def.position.Set(player->GetSceneObjectPosition().x + player->GetSceneObjectRectangle().width / 2, player->GetSceneObjectPosition().y + player->GetSceneObjectRectangle().height / 2);
-		def.type = b2BodyType::b2_dynamicBody;
-		player->body = world.CreateBody(&def);
+		player->Init();
+
+		b2BodyDef defP;
+		defP.position.Set(player->GetObjectPosition().x + player->GetObjectRectangle().width / 2, player->GetObjectPosition().y + player->GetObjectRectangle().height / 2);
+		defP.type = b2BodyType::b2_dynamicBody;
+		player->body = world.CreateBody(&defP);
 
 		/*b2PolygonShape shape;
-		shape.SetAsBox(player->GetSceneObjectRectangle().width / 2, player->GetSceneObjectRectangle().height / 2);*/
-		b2CircleShape shape;
-		shape.m_radius = player->sprite.getTextureRect().width*player->Scale.x /*/ 2*/;
+		shape.SetAsBox(player->GetObjectRectangle().width / 2, player->GetObjectRectangle().height / 2);*/
+		b2CircleShape shapeP;
+		shapeP.m_radius = 50;
 
-		b2FixtureDef TriggerFixture;
-		TriggerFixture.filter = filter2;
-		TriggerFixture.density = 0.f;
-		TriggerFixture.shape = &shape;
+		b2FixtureDef TriggerFixtureP;
+		TriggerFixtureP.filter = filter2;
+		TriggerFixtureP.density = 1.f;
+		TriggerFixtureP.shape = &shapeP;
 
-		player->body->CreateFixture(&TriggerFixture);
+		player->body->CreateFixture(&TriggerFixtureP);
 		player->body->SetUserData(player);
 
 
@@ -3935,33 +4157,151 @@ public:
 			}
 
 		}
+
+
+		Animation::Animation rhand_anim = Animation::Animation("rhand");
+		rhand_anim.FrameIndexes->push_back(Animation::CellIndex(0, 0));
+
+		/*Decal*rhand = new Decal(sf::Vector2f(60.f, 200.f), 0.05f, true, 20.0f, 123, 53, sf::Sprite(context->game->Resources->getTextureResourceDataByName("zombie_right_hand")->texture), 510, 270);
+		b2PolygonShape shapeH;
+		shapeH.SetAsBox(rhand->GetObjectRectangle().width / 2, rhand->GetObjectRectangle().height / 2);
+
+		b2BodyDef defH;
+		defH.position.Set(rhand->GetObjectPosition().x + rhand->GetObjectRectangle().width / 2, rhand->GetObjectPosition().y + rhand->GetObjectRectangle().height / 2);
+		defH.type = b2BodyType::b2_dynamicBody;
+
+		rhand->body = world.CreateBody(&defH);
+
+		rhand->body->CreateFixture(&shapeH, 0.5f);
+		rhand->body->SetUserData(rhand);
+
+		rhand->Init();
+		rhand->animations->push_back(rhand_anim);
+		rhand->SetAnimation("rhand");
+
+		rhand->applyImpulse(b2Vec2(100, 0));
+
+		StateObjects->push_back(rhand);*/
+
+
+		PropPhysics*armChair = new PropPhysics(sf::Vector2f(400, 400), sf::Sprite(context->game->Resources->getTextureResourceDataByName("3")->texture), 100, 100);
+		b2PolygonShape shapeA;
+		shapeA.SetAsBox(armChair->GetObjectRectangle().width / 2, armChair->GetObjectRectangle().height / 2);
+
+		
+		b2BodyDef defA;
+		defA.position.Set(armChair->GetObjectPosition().x + armChair->GetObjectRectangle().width / 2, armChair->GetObjectPosition().y + armChair->GetObjectRectangle().height / 2);
+		defA.type = b2BodyType::b2_dynamicBody;
+
+		armChair->body = world.CreateBody(&defA);
+
+		armChair->body->CreateFixture(&shapeA,1.f);
+		armChair->body->SetUserData(armChair);
+		armChair->Init();
+		armChair->OnCollision = [this, armChair](Object*object)
+		{
+			armChair->onCollision(object, this->context, "PlayState");
+		};
+		armChair->LeftCollision = [this, armChair](Object*object)
+		{
+			armChair->leftCollision(object, this->context, "PlayState");
+		};
+		armChair->physBodyInitialized = true;
+		armChair->bodyIsSensor = false;
+		StateObjects->push_back(armChair);
 	}
 	PlayState(std::string Name) :State(Name),world(b2Vec2(0.f,0.f))
 	{
-		
-
 		world.SetContactListener(&contact_listener);
-
-
 	}
 	virtual void Draw() override
 	{
 
-		if (!this->StateSceneObjects->empty())
+		if (!this->StateObjects->empty())
 		{
-			for (size_t i = 0; i < this->StateSceneObjects->size(); i++)
+			for (size_t i = 0; i < this->StateObjects->size(); i++)
 			{
 
-
-				/*context->window->draw(dynamic_cast<SceneActor*>(this->StateSceneObjects->at(i))->sprite);*/
-				this->StateSceneObjects->at(i)->Draw(context->window);
 				
+				/*context->window->draw(dynamic_cast<SceneActor*>(this->StateObjects->at(i))->sprite);*/
+				this->StateObjects->at(i)->Draw(context->window);
+				if (DEBUG_DRAWCOLLISION)
+				{
+					if (this->StateObjects->at(i)->physBodyInitialized == true)
+					{
+
+						if (this->StateObjects->at(i)->body->GetFixtureList() != NULL)
+						{
+							
+							
+							
+							for (b2Fixture*fix = this->StateObjects->at(i)->body->GetFixtureList(); fix != NULL; fix = fix->GetNext())
+							{
+								if (fix->GetType() == b2Shape::Type::e_circle)
+								{
+									b2CircleShape*coll = dynamic_cast<b2CircleShape*>(fix->GetShape());
+									sf::CircleShape cs = sf::CircleShape(coll->m_radius);
+									cs.setPosition(sf::Vector2f(this->StateObjects->at(i)->body->GetPosition().x, this->StateObjects->at(i)->body->GetPosition().y));
+									context->window->draw(cs);
+								}
+								if (fix->GetType() == b2Shape::Type::e_polygon)
+								{
+									b2PolygonShape*coll = dynamic_cast<b2PolygonShape*>(fix->GetShape());
+
+									sf::VertexArray va = sf::VertexArray(sf::PrimitiveType::LineStrip);
+
+									for (int ind = 0; ind < coll->m_count; ind++)
+									{
+										va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[ind].x + this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[ind].y + this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
+									}
+									va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[0].x + this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[0].y + this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
+									context->window->draw(va);
+								}
+							}
+							/*if (this->StateObjects->at(i)->body->GetFixtureList()->GetType() == b2Shape::Type::e_circle)
+							{
+								b2CircleShape*coll = dynamic_cast<b2CircleShape*>(this->StateObjects->at(i)->body->GetFixtureList()->GetShape());
+								sf::CircleShape cs = sf::CircleShape(coll->m_radius);
+								cs.setPosition(sf::Vector2f(this->StateObjects->at(i)->body->GetPosition().x, this->StateObjects->at(i)->body->GetPosition().y));
+								context->window->draw(cs);
+							}
+							if (this->StateObjects->at(i)->body->GetFixtureList()->GetType() == b2Shape::Type::e_polygon)
+							{
+								b2PolygonShape*coll = dynamic_cast<b2PolygonShape*>(this->StateObjects->at(i)->body->GetFixtureList()->GetShape());
+
+								sf::VertexArray va = sf::VertexArray(sf::PrimitiveType::LineStrip);
+
+								for (int ind = 0; ind < coll->m_count; ind++)
+								{
+										va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[ind].x+ this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[ind].y +this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
+								}							
+								context->window->draw(va);
+							}*/
+						}
+
+					}
+				}
+
 				/*context->window->draw(projObj->sprite);*/
 
 			}
 
 		}
 		player->Draw(context->window);
+		if (DEBUG_DRAWCOLLISION)
+		{
+			if (player->body->GetFixtureList() != NULL)
+			{
+				if (player->body->GetFixtureList()->GetType() == b2Shape::Type::e_circle)
+				{
+					b2CircleShape*coll = dynamic_cast<b2CircleShape*>(player->body->GetFixtureList()->GetShape());
+					sf::CircleShape cs = sf::CircleShape(coll->m_radius);
+					cs.setPosition(sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y));
+					cs.setFillColor(sf::Color::Red);
+					context->window->draw(cs);
+				}
+			}
+		}
 		/*if (!player->Projectiles->empty())
 		{
 			for (size_t i = 0; i < player->Projectiles->size(); i++)
@@ -3975,8 +4315,8 @@ public:
 			context->window->draw(pixelParticleSystems->at(i));
 		}
 		/*sf::VertexArray lines(sf::LinesStrip, 2);
-		lines[0].position = player->GetSceneObjectPosition();
-		lines[1].position = projObj->GetSceneObjectPosition();
+		lines[0].position = player->GetObjectPosition();
+		lines[1].position = projObj->GetObjectPosition();
 		context->window->draw(lines);*/
 
 		if (!PlayerUI->Components->empty())
@@ -3986,25 +4326,31 @@ public:
 				PlayerUI->Components->at(i)->Draw(context->window);
 			}
 		}
+
+
+		if (!player->items->isEmpty()&&player->items->isVisible)
+		{
+			player->items->drawItems(context->window);
+		}
 	}
 
-	bool CheckObjectCollision(SceneObject*&object)
+	bool CheckObjectCollision(Object*&object)
 	{
-		if (StateSceneObjects->empty()) { return false; }
+		if (StateObjects->empty()) { return false; }
 		bool res = false;
 		for (b2ContactEdge* ce = object->body->GetContactList(); ce; ce->next)
 		{
 			b2Contact* c = ce->contact;
-			for (size_t i = 0; i < StateSceneObjects->size(); i++)
+			for (size_t i = 0; i < StateObjects->size(); i++)
 			{
-				if (object != StateSceneObjects->at(i)&&c->GetFixtureA()!=c->GetFixtureB())
+				if (object != StateObjects->at(i)&&c->GetFixtureA()!=c->GetFixtureB())
 				{
-					if (std::find(object->CollidingObjects->begin(), object->CollidingObjects->end(), StateSceneObjects->at(i)) == object->CollidingObjects->end())
+					if (std::find(object->CollidingObjects->begin(), object->CollidingObjects->end(), StateObjects->at(i)) == object->CollidingObjects->end())
 					{
-						if (c->GetFixtureA() == StateSceneObjects->at(i)->body->GetFixtureList())
+						if (c->GetFixtureA() == StateObjects->at(i)->body->GetFixtureList())
 						{
-							StateSceneObjects->at(i)->OnCollision(object);
-							object->OnCollision(StateSceneObjects->at(i));
+							StateObjects->at(i)->OnCollision(object);
+							object->OnCollision(StateObjects->at(i));
 							res = true;
 							break;
 						}
@@ -4015,10 +4361,10 @@ public:
 					}
 					else
 					{
-						if (c->GetFixtureA() != StateSceneObjects->at(i)->body->GetFixtureList())
+						if (c->GetFixtureA() != StateObjects->at(i)->body->GetFixtureList())
 						{
-							object->LeftCollision(StateSceneObjects->at(i));
-							StateSceneObjects->at(i)->LeftCollision(object);
+							object->LeftCollision(StateObjects->at(i));
+							StateObjects->at(i)->LeftCollision(object);
 						}
 					}
 				}
@@ -4029,66 +4375,66 @@ public:
 	}
 	bool CheckProjectileCollision(projectile *proj)
 	{
-		/*if (StateSceneObjects->empty()) { return false; }
+		/*if (StateObjects->empty()) { return false; }
 		bool res = false;
-		for (size_t i = 0; i < StateSceneObjects->size(); i++)
+		for (size_t i = 0; i < StateObjects->size(); i++)
 		{
-			if (std::find(proj->CollidingObjects->begin(), proj->CollidingObjects->end(), StateSceneObjects->at(i)) == proj->CollidingObjects->end())
+			if (std::find(proj->CollidingObjects->begin(), proj->CollidingObjects->end(), StateObjects->at(i)) == proj->CollidingObjects->end())
 			{
-				for (b2ContactEdge* ce = StateSceneObjects->at(i)->body->GetContactList(); ce; ce->next)
+				for (b2ContactEdge* ce = StateObjects->at(i)->body->GetContactList(); ce; ce->next)
 				{
 					b2Contact* c = ce->contact;
-					if (c->GetFixtureA() == StateSceneObjects->at(i)->body->GetFixtureList())
+					if (c->GetFixtureA() == StateObjects->at(i)->body->GetFixtureList())
 					{
-						StateSceneObjects->at(i)->OnCollision(proj);
-						proj->OnCollision(StateSceneObjects->at(i));
+						StateObjects->at(i)->OnCollision(proj);
+						proj->OnCollision(StateObjects->at(i));
 						res = true;
 					}
 					else
 					{
-						proj->LeftCollision(StateSceneObjects->at(i));
-						StateSceneObjects->at(i)->LeftCollision(proj);
+						proj->LeftCollision(StateObjects->at(i));
+						StateObjects->at(i)->LeftCollision(proj);
 					}
 				}
 			}
 			else
 			{
-				for (b2ContactEdge* ce = StateSceneObjects->at(i)->body->GetContactList(); ce; ce->next)
+				for (b2ContactEdge* ce = StateObjects->at(i)->body->GetContactList(); ce; ce->next)
 				{
 					b2Contact* c = ce->contact;
-					if (c->GetFixtureA() == StateSceneObjects->at(i)->body->GetFixtureList())
+					if (c->GetFixtureA() == StateObjects->at(i)->body->GetFixtureList())
 					{
 						res = true;
 					}
 					else
 					{
-						proj->LeftCollision(StateSceneObjects->at(i));
-						StateSceneObjects->at(i)->LeftCollision(proj);
+						proj->LeftCollision(StateObjects->at(i));
+						StateObjects->at(i)->LeftCollision(proj);
 					}
 				}
 			}
 		}*/
 
 
-		//if (StateSceneObjects->empty()) { return false; }
-		//for (size_t i = 0; i < StateSceneObjects->size(); i++)
+		//if (StateObjects->empty()) { return false; }
+		//for (size_t i = 0; i < StateObjects->size(); i++)
 		//{
-		//	if (std::find(proj->CollidingObjects->begin(), proj->CollidingObjects->end(), StateSceneObjects->at(i)) == proj->CollidingObjects->end())
+		//	if (std::find(proj->CollidingObjects->begin(), proj->CollidingObjects->end(), StateObjects->at(i)) == proj->CollidingObjects->end())
 		//	{
 
-		//		if (proj->GetSceneObjectRectangle().intersects(StateSceneObjects->at(i)->GetSceneObjectRectangle()))
+		//		if (proj->GetObjectRectangle().intersects(StateObjects->at(i)->GetObjectRectangle()))
 		//		{
-		//			StateSceneObjects->at(i)->OnCollision(proj);
-		//			proj->OnCollision(StateSceneObjects->at(i));
+		//			StateObjects->at(i)->OnCollision(proj);
+		//			proj->OnCollision(StateObjects->at(i));
 		//			/*return true;*/
 		//		}
 		//	}
 		//	else
 		//	{
-		//		if (!proj->GetSceneObjectRectangle().intersects(StateSceneObjects->at(i)->GetSceneObjectRectangle()))
+		//		if (!proj->GetObjectRectangle().intersects(StateObjects->at(i)->GetObjectRectangle()))
 		//		{
-		//			proj->LeftCollision(StateSceneObjects->at(i));
-		//			StateSceneObjects->at(i)->LeftCollision(proj);
+		//			proj->LeftCollision(StateObjects->at(i));
+		//			StateObjects->at(i)->LeftCollision(proj);
 		//		}
 		//	}
 		//}
@@ -4097,19 +4443,19 @@ public:
 	}
 	bool CheckPlayerCollision()
 	{
-		if (StateSceneObjects->empty()) { return false; }
+		if (StateObjects->empty()) { return false; }
 		bool res = false;
 		for (b2ContactEdge* ce = player->body->GetContactList(); ce; ce->next)
 		{
 			b2Contact* c = ce->contact;
-			for (size_t i = 0; i < StateSceneObjects->size(); i++)
+			for (size_t i = 0; i < StateObjects->size(); i++)
 			{
-				if (std::find(player->CollidingObjects->begin(), player->CollidingObjects->end(), StateSceneObjects->at(i)) == player->CollidingObjects->end())
+				if (std::find(player->CollidingObjects->begin(), player->CollidingObjects->end(), StateObjects->at(i)) == player->CollidingObjects->end())
 				{
-					if (c->GetFixtureA() == StateSceneObjects->at(i)->body->GetFixtureList())
+					if (c->GetFixtureA() == StateObjects->at(i)->body->GetFixtureList())
 					{
-						StateSceneObjects->at(i)->OnCollision(player);
-						player->OnCollision(StateSceneObjects->at(i));
+						StateObjects->at(i)->OnCollision(player);
+						player->OnCollision(StateObjects->at(i));
 						res = true;
 						break;
 					}
@@ -4120,33 +4466,33 @@ public:
 				}
 				else
 				{
-					if (c->GetFixtureA() != StateSceneObjects->at(i)->body->GetFixtureList())
+					if (c->GetFixtureA() != StateObjects->at(i)->body->GetFixtureList())
 					{						
-						player->LeftCollision(StateSceneObjects->at(i));
-						StateSceneObjects->at(i)->LeftCollision(player);
+						player->LeftCollision(StateObjects->at(i));
+						StateObjects->at(i)->LeftCollision(player);
 					}
 				}
 			}
 			break;
 		}
 		
-		/*if (StateSceneObjects->empty()) { return false; }
-		for (size_t i = 0; i < StateSceneObjects->size(); i++)
+		/*if (StateObjects->empty()) { return false; }
+		for (size_t i = 0; i < StateObjects->size(); i++)
 		{
-			if (std::find(player->CollidingObjects->begin(), player->CollidingObjects->end(), StateSceneObjects->at(i)) == player->CollidingObjects->end())
+			if (std::find(player->CollidingObjects->begin(), player->CollidingObjects->end(), StateObjects->at(i)) == player->CollidingObjects->end())
 			{
-				if (player->GetSceneObjectRectangle().intersects(StateSceneObjects->at(i)->GetSceneObjectRectangle()))
+				if (player->GetObjectRectangle().intersects(StateObjects->at(i)->GetObjectRectangle()))
 				{
-					StateSceneObjects->at(i)->OnCollision(player);
-					player->OnCollision(StateSceneObjects->at(i));
+					StateObjects->at(i)->OnCollision(player);
+					player->OnCollision(StateObjects->at(i));
 					return true;
 				}
 
 			}
 			else
 			{
-				StateSceneObjects->at(i)->LeftCollision(player);
-				player->LeftCollision(StateSceneObjects->at(i));
+				StateObjects->at(i)->LeftCollision(player);
+				player->LeftCollision(StateObjects->at(i));
 			}
 		}
 		return false;*/
@@ -4170,9 +4516,37 @@ public:
 		{
 			context->window->close();
 		}
+		if (event.key.code == sf::Keyboard::Tab&&event.type == sf::Event::EventType::KeyPressed)
+		{
+			if (!player->weapons->empty())
+			{
+				player->items->setStripLenght(player->weapons->size());
+				for (size_t i = 0; i < player->weapons->size(); i++)
+				{
+					Item*w = new Item(player->weapons->at(i)->name);
+					w->sprite = player->weapons->at(i)->sprite;
+					w->sprite.setTextureRect(player->weapons->at(i)->sprite.getTextureRect());
+					player->items->addItem(w);
+				}
+				player->items->isVisible = !player->items->isVisible;
+				player->items->isActive = !player->items->isActive;
+
+			}
+			
+		}
 		if (event.mouseButton.button == sf::Mouse::Left&&event.type == sf::Event::EventType::MouseButtonPressed)
 		{
-			
+			if (player->items->isActive&&player->items->isEmpty())
+			{
+				for (size_t i = 0; i < player->items->_items->size(); i++)
+				{
+					if (player->items->_items->at(i)->sprite.getGlobalBounds().contains(sf::Vector2f(event.mouseButton.x, event.mouseButton.y)))
+					{
+						player->items->currentItemId = i;
+					}
+				}
+			}
+
 			if (!Channels->empty())
 			{
 				for (size_t i = 0; i < Channels->size(); i++)
@@ -4181,13 +4555,28 @@ public:
 					Channels->at(i)->isPlaying(&res);
 					if (Channels->at(i) == NULL)
 					{
-						context->game->lowSoundSystem->playSound(shoot, 0, false, &Channels->at(i));
+						if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
+						{
+							context->game->lowSoundSystem->playSound(shoot, 0, false, &Channels->at(i));
+						}
+						if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_RIFLE)
+						{
+							context->game->lowSoundSystem->playSound(shoot2, 0, false, &Channels->at(i));
+						}
+						
 
 						break;
 					}
 					else if (res == false)
 					{
-						context->game->lowSoundSystem->playSound(shoot, 0, false, &Channels->at(i));
+						if(player->currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
+						{
+							context->game->lowSoundSystem->playSound(shoot, 0, false, &Channels->at(i));
+						}
+						if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_RIFLE)
+						{
+							context->game->lowSoundSystem->playSound(shoot2, 0, false, &Channels->at(i));
+						}
 
 						break;
 					}
@@ -4195,15 +4584,17 @@ public:
 
 			}
 
+			this->world;
+			this->context->game->GetStateByName("PlayState")->world;
 			Animation::Animation blood_a = context->game->animationsData->getAnimationDataByName("blood_a");
 
 			b2Filter filter;
 			filter.categoryBits = 1;
 
+			sf::Vector2f mousePos = sf::Vector2f(event.mouseButton.x + player->GetObjectPosition().x - (SCREENWIDTH / 2), event.mouseButton.y + player->GetObjectPosition().y - (SCREENHEIGHT / 2));
 			sf::Vector2f diff;
-
-			diff.x = event.mouseButton.x - player->GetSceneObjectPosition().x;
-			diff.y = event.mouseButton.y - player->GetSceneObjectPosition().y;
+			diff.x = mousePos.x - player->GetObjectPosition().x;
+			diff.y = mousePos.y - player->GetObjectPosition().y;
 
 			if (player->currentWeapon->ammoInTheClip <= 0)
 			{
@@ -4221,11 +4612,11 @@ public:
 			{
 				proje* bullet = new proje(sf::Vector2f(0, 0), 10.f, 10.f, 50.0f, player->currentWeapon->projectileSpeed*10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
 
-				bullet->OnCollision = [this, blood_a, bullet](SceneObject*object)
+				bullet->OnCollision = [this, blood_a, bullet](Object*object)
 				{
 					bullet->projectileOnCollision(object, this->context, "PlayState");
 				};
-				bullet->LeftCollision = [this, bullet](SceneObject*object)
+				bullet->LeftCollision = [this, bullet](Object*object)
 				{
 					bullet->projectileOnLeftCollision(object, this->context, "PlayState");
 				};
@@ -4240,12 +4631,12 @@ public:
 				
 				projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 50.0f, player->currentWeapon->projectileSpeed, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
 
-				bullet->OnCollision = [this, blood_a, bullet](SceneObject*object)
+				bullet->OnCollision = [this, blood_a, bullet](Object*object)
 				{
 
 					bullet->projectileOnCollision(object, this->context, "PlayState");
 				};
-				bullet->LeftCollision = [this, bullet](SceneObject*object)
+				bullet->LeftCollision = [this, bullet](Object*object)
 				{
 					bullet->projectileOnLeftCollision(object, this->context, "PlayState");
 				};
@@ -4259,9 +4650,9 @@ public:
 		}
 		if (event.mouseButton.button == sf::Mouse::Right&&event.type == sf::Event::EventType::MouseButtonPressed)
 		{
-			/*projObj->SetSceneObjectPosition(sf::Vector2f(player->GetSceneObjectRectangle().left, player->GetSceneObjectRectangle().top));
+			/*projObj->SetObjectPosition(sf::Vector2f(player->GetObjectRectangle().left, player->GetObjectRectangle().top));
 			dest = sf::Vector2f(event.mouseButton.x, event.mouseButton.y);
-			diff = dest - player->GetSceneObjectPosition();
+			diff = dest - player->GetObjectPosition();
 			int vo = 0;*/
 			if (!Channels->empty())
 			{
@@ -4301,12 +4692,12 @@ public:
 
 			sf::Vector2f diff;
 
-			diff.x = event.mouseButton.x - player->GetSceneObjectPosition().x;
-			diff.y = event.mouseButton.y - player->GetSceneObjectPosition().y;
+			diff.x = event.mouseButton.x - player->GetObjectPosition().x;
+			diff.y = event.mouseButton.y - player->GetObjectPosition().y;
 
 			projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 50.0f, player->currentWeapon->projectileSpeed, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
 
-			bullet->OnCollision = [this, blood_a, bullet](SceneObject*object)
+			bullet->OnCollision = [this, blood_a, bullet](Object*object)
 			{
 
 				if (dynamic_cast<projectile*>(object)) { return; }
@@ -4315,8 +4706,8 @@ public:
 
 
 				sf::Vector2f diff;
-				/*diff.x = object->GetSceneObjectPosition().x - bullet->Origin.x;
-				diff.y = object->GetSceneObjectPosition().y - bullet->Origin.y;*/
+				/*diff.x = object->GetObjectPosition().x - bullet->Origin.x;
+				diff.y = object->GetObjectPosition().y - bullet->Origin.y;*/
 
 				//Use location where bullet hit rather then hitted object's location(looks more realistic)
 				diff.x = bullet->body->GetPosition().x - bullet->Origin.x;
@@ -4334,7 +4725,7 @@ public:
 					blood->Init();
 					blood->animations->push_back(blood_a);
 					blood->SetAnimation("blood_a");
-					this->StateSceneObjects->push_back(blood);
+					this->StateObjects->push_back(blood);
 				}
 				else
 				{
@@ -4345,10 +4736,10 @@ public:
 					blood->Init();
 					blood->animations->push_back(blood_a);
 					blood->SetAnimation("blood_a");
-					this->StateSceneObjects->push_back(blood);
+					this->StateObjects->push_back(blood);
 				}
 			};
-			bullet->LeftCollision = [this, bullet](SceneObject*object)
+			bullet->LeftCollision = [this, bullet](Object*object)
 			{
 				if (!bullet->CollidingObjects->empty())
 				{
@@ -4382,9 +4773,11 @@ public:
 		}
 		if (event.type == sf::Event::EventType::MouseMoved)
 		{
+			sf::Vector2f mousePos = sf::Vector2f(event.mouseMove.x + player->GetObjectPosition().x - (SCREENWIDTH / 2), event.mouseMove.y + player->GetObjectPosition().y - (SCREENHEIGHT / 2));
 			sf::Vector2f diff;
-			diff.x = event.mouseMove.x - player->GetSceneObjectPosition().x;
-			diff.y = event.mouseMove.y - player->GetSceneObjectPosition().y;
+			diff.x = mousePos.x - player->GetObjectPosition().x;
+			diff.y = mousePos.y - player->GetObjectPosition().y;
+		
 
 			/*std::cout << atan2(diff.y, diff.x)*(180 / M_PI) << std::endl;*/
 		/*	player->Anim->sprite.setRotation((atan2(diff.y, diff.x)*(180 / M_PI)));*/
@@ -4541,37 +4934,37 @@ public:
 
 		/*if (WalkLeft)
 		{
-			dynamic_cast<SceneActor*>(this->StateSceneObjects->at(0))->sprite.move(-m);
+			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(-m);
 		}
 		if (WalkRight)
 		{
-			dynamic_cast<SceneActor*>(this->StateSceneObjects->at(0))->sprite.move(m);
+			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(m);
 		}
 		if (WalkUp)
 		{
-			dynamic_cast<SceneActor*>(this->StateSceneObjects->at(0))->sprite.move(-m2);
+			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(-m2);
 		}
 		if (WalkDown)
 		{
-			dynamic_cast<SceneActor*>(this->StateSceneObjects->at(0))->sprite.move(m2);
+			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(m2);
 		}*/
 
 
 		/*if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
 		{
-			dynamic_cast<SceneActor*>(this->StateSceneObjects->at(0))->sprite.move(-m);
+			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(-m);
 		}
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
 		{
-			dynamic_cast<SceneActor*>(this->StateSceneObjects->at(0))->sprite.move(m);
+			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(m);
 		}
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
 		{
-			dynamic_cast<SceneActor*>(this->StateSceneObjects->at(0))->sprite.move(-m2);
+			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(-m2);
 		}
 		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
 		{
-			dynamic_cast<SceneActor*>(this->StateSceneObjects->at(0))->sprite.move(m2);
+			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(m2);
 		}*/
 
 	}
@@ -4579,10 +4972,18 @@ public:
 	virtual void Update(sf::Time dt) override
 	{
 		
-		
+		if (!player->items->isEmpty() && player->items->isActive)
+		{
+			if (player->items->currentItemId != -1)
+			{
+				sf::Vector2i  mousePos = sf::Mouse::getPosition() - context->window->getPosition();
+				player->items->_items->at(player->items->currentItemId)->sprite.setPosition(sf::Vector2f(mousePos.x, mousePos.y));
+			}
+			
+		}
 		
 		player->body->SetLinearVelocity(b2Vec2(player->Velocity.x*5,player->Velocity.y*5));
-		world.Step(1.f / dt.asSeconds(), 1, 1);
+		world.Step(1.f / dt.asSeconds(),1, 1);
 		player->Update(dt);
 		context->window->setFramerateLimit(300);
 		context->game->lowSoundSystem->update();
@@ -4595,45 +4996,45 @@ public:
 		{
 			for (size_t i = 0; i < PlayerUI->Components->size(); i++)
 			{
-				PlayerUI->Components->at(i)->SetPosition(sf::Vector2f(50+PlayerUI->Components->at(i)->GetOriginalPosition().x + player->GetSceneObjectPosition().x - (SCREENWIDTH / 2), PlayerUI->Components->at(i)->GetOriginalPosition().y + player->GetSceneObjectPosition().y - (SCREENHEIGHT / 2)));
+				PlayerUI->Components->at(i)->SetPosition(sf::Vector2f(50+PlayerUI->Components->at(i)->GetOriginalPosition().x + player->GetObjectPosition().x - (SCREENWIDTH / 2), PlayerUI->Components->at(i)->GetOriginalPosition().y + player->GetObjectPosition().y - (SCREENHEIGHT / 2)));
 			}
 		}
 
 		sf::View view;
-		view.setCenter(player->GetSceneObjectPosition());;
+		view.setCenter(player->GetObjectPosition());;
 		context->window->setView(view);
 		/*CheckPlayerCollision();
-		if (!StateSceneObjects->empty())
+		if (!StateObjects->empty())
 		{
-			for (size_t i = 0; i < StateSceneObjects->size(); i++)
+			for (size_t i = 0; i < StateObjects->size(); i++)
 			{
-				CheckObjectCollision(StateSceneObjects->at(i));
+				CheckObjectCollision(StateObjects->at(i));
 			}
 		}*/
-		/*dynamic_cast<npc_moving_helper*>(StateSceneObjects->at(1))->Update(dt);
-		dynamic_cast<npc_test_turret*>(StateSceneObjects->at(2))->Update(dt);*/
-		if (!StateSceneObjects->empty())
+		/*dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->Update(dt);
+		dynamic_cast<npc_test_turret*>(StateObjects->at(2))->Update(dt);*/
+		if (!StateObjects->empty())
 		{
-			for (size_t i = 0; i < StateSceneObjects->size(); i++)
+			for (size_t i = 0; i < StateObjects->size(); i++)
 			{
-				StateSceneObjects->at(i)->Update(dt);
-				if (Decal*d = dynamic_cast<Decal*>(StateSceneObjects->at(i)))
+				StateObjects->at(i)->Update(dt);
+				if (Decal*d = dynamic_cast<Decal*>(StateObjects->at(i)))
 				{
 					if (d->IsDone())
 					{
-						if (std::find(StateSceneObjects->begin(), StateSceneObjects->end(), StateSceneObjects->at(i)) != StateSceneObjects->end())
+						if (std::find(StateObjects->begin(), StateObjects->end(), StateObjects->at(i)) != StateObjects->end())
 						{
-							StateSceneObjects->erase(std::find(StateSceneObjects->begin(), StateSceneObjects->end(), StateSceneObjects->at(i)));
+							StateObjects->erase(std::find(StateObjects->begin(), StateObjects->end(), StateObjects->at(i)));
 						}
 					}
 				}
 			}
 		}
-		/*if (dynamic_cast<npc_moving_helper*>(StateSceneObjects->at(1))->dirIndex == dynamic_cast<npc_moving_helper*>(StateSceneObjects->at(1))->Pattern->size() - 1)
+		/*if (dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->dirIndex == dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->Pattern->size() - 1)
 		{
 			cursorParticles.Stop();
 		}*/
-	/*	cursorParticles.setEmitter(dynamic_cast<npc_moving_helper*>(StateSceneObjects->at(1))->GetSceneObjectPosition());*/
+	/*	cursorParticles.setEmitter(dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->GetObjectPosition());*/
 		for (size_t i = 0; i < pixelParticleSystems->size(); i++)
 		{
 			pixelParticleSystems->at(i).update(dt);
@@ -4717,7 +5118,7 @@ int main(int argc, char** argv)
 	
 
 	/*solder.setRepeated(true);*/
-	auto solder = new TextureResource("solder", "./textures/player_idle.gif", false, false);
+	auto solder = new TextureResource("solder", "./../textures/player_idle.gif", false, false);
 	solder->CreateResourceFromFile();
 
 	/*Animation::Animation animr = Animation::Animation("solder_move_rifle");
@@ -4751,18 +5152,22 @@ int main(int argc, char** argv)
 	MenuState ms = MenuState("MenuState");
 
 	
+	TextureResource *letterT = new TextureResource("letter", "./../textures/Letter.png", false, false);
+	letterT->CreateResourceFromFile();
 
-	Weapon*w=new Weapon(1.f,1.f);
+	Weapon*w=new Weapon("rifle",1.f,1.f);
 	w->weaponType = WEAPON_TYPE_TAD_RIFLE;
 	w->ammoPerClip = 3;
 	w->ammoInTheClip = w->ammoPerClip;
-	w->name = "rifle";
+	w->sprite = sf::Sprite(letterT->texture);
+	
 
-	Weapon*w1 = new Weapon(0.00001f, 1.f);
+	Weapon*w1 = new Weapon("pistol",0.00001f, 1.f);
 	w1->weaponType = WEAPON_TYPE_TAD_PISTOL;
 	w1->ammoPerClip = 4;
 	w1->ammoInTheClip = w1->ammoPerClip;
-	w1->name = "pistol";
+	w1->sprite = sf::Sprite(letterT->texture);
+	
 
 
 	player->weapons->push_back(w);
@@ -4819,30 +5224,43 @@ int main(int argc, char** argv)
 
 	for (int i = 0; i < 20; i++)
 	{
-		game.Resources->AddTextureResource(new TextureResource("solder_rifle_move_" + std::to_string(i), "./textures/Top_Down_Survivor/rifle/move/survivor-move_rifle_" + std::to_string(i) + ".png", false, false));
+		game.Resources->AddTextureResource(new TextureResource("solder_rifle_move_" + std::to_string(i), "./../textures/Top_Down_Survivor/rifle/move/survivor-move_rifle_" + std::to_string(i) + ".png", false, false));
+	}
+	for (int i = 0; i < 20; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_pistol_move_" + std::to_string(i), "./../textures/Top_Down_Survivor/handgun/move/survivor-move_handgun_" + std::to_string(i) + ".png", false, false));
 	}
 
 	for (int i = 0; i < 17; i++)
 	{
-		game.Resources->AddTextureResource(new TextureResource("skeleton-idle_" + std::to_string(i), "./textures/zombie/idle/skeleton-idle_" + std::to_string(i) + ".png", false, false));
+		game.Resources->AddTextureResource(new TextureResource("skeleton-idle_" + std::to_string(i), "./../textures/zombie/idle/skeleton-idle_" + std::to_string(i) + ".png", false, false));
 	}
 
 	sf::View view;
-	game.Resources->AddTextureResource(new TextureResource("solder", "./textures/player_idle.gif",false,false));
-	game.Resources->AddTextureResource(new TextureResource("textBoxTexture1","./textures/textbox1.png" , false, false));
-	game.Resources->AddTextureResource(new TextureResource("proj", "./textures/projectile.png", false, false));
-	game.Resources->AddTextureResource(new TextureResource("blood1", "./textures/blood/blood_a_0002.png", false, false));
-	game.Resources->AddTextureResource(new TextureResource("blood_yellow_1", "./textures/blood/blood_yellow_b_0001.png", false, false));
-	game.Resources->AddTextureResource(new TextureResource("blood_a_anim", "./textures/blood/blood_a_anim.png", false, false));
-	game.Resources->AddTextureResource(new TextureResource("solder_rifle", "./textures/survivor-move_rifle_0.png", false, false));
-	game.Resources->AddTextureResource(new TextureResource("officer_walk", "./textures/bk_officer/officer_walk_strip.png", false, false));
-	game.Resources->AddTextureResource(new TextureResource("zombie_right_hand", "./textures/zombie/zombie_right_hand.png", false, false));
-	game.Resources->AddTextureResource(new TextureResource("zombie_left_hand", "./textures/zombie/zombie_left_hand.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("solder", "./../textures/player_idle.gif",false,false));
+	game.Resources->AddTextureResource(new TextureResource("textBoxTexture1","./../textures/textbox1.png" , false, false));
+	game.Resources->AddTextureResource(new TextureResource("proj", "./../textures/projectile.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("blood1", "./../textures/blood/blood_a_0002.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("blood_yellow_1", "./../textures/blood/blood_yellow_b_0001.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("blood_a_anim", "./../textures/blood/blood_a_anim.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("solder_rifle", "./../textures/survivor-move_rifle_0.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("officer_walk", "./../textures/bk_officer/officer_walk_strip.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("zombie_right_hand", "./../textures/zombie/zombie_right_hand.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("zombie_left_hand", "./../textures/zombie/zombie_left_hand.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("zombie_head", "./../textures/zombie/zombie_head.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("meat_chunk", "./../textures/zombie/meat_chunk.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("letter", "./../textures/Letter.png", false, false));
+
+
+	
+	Item*let = new Item("letter");
+	let->sprite = sf::Sprite(letterT->texture);
+	
 
 	//loading resources for game from tad_tileset.tsx
 	using namespace tinyxml2;
 	XMLDocument doc;
-	doc.LoadFile("./maps/tad_tileset.tsx");
+	doc.LoadFile("./../maps/tad_tileset.tsx");
 
 
 	XMLElement* root = doc.FirstChildElement("tileset");
@@ -4871,7 +5289,7 @@ int main(int argc, char** argv)
 
 	
 
-	game.Resources->AddFontResource(new FontResource("calibri", "./fonts/calibri.ttf"));
+	game.Resources->AddFontResource(new FontResource("calibri", "./../fonts/calibri.ttf"));
 	try
 	{
 
