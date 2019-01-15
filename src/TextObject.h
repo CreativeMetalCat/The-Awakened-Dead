@@ -19,7 +19,7 @@ public:
 		return Color;
 	}
 	sf::Text textObj;
-	TextObject(std::string text, sf::Font&font, sf::Color color, int size)
+	TextObject(std::string text, sf::Font&font, sf::Color color, int size, bool useTextSize = true)
 	{
 		this->Text = text;
 		this->Color = color;
