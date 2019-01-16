@@ -13,6 +13,7 @@
 #include "ReverbObject.h"
 #include "TestProjectile.h"
 #include "SolidObject.h"
+#include "TextObject.h"
 
 #include <tinyxml2.h>
 #include <tinyxml2.cpp>
@@ -149,6 +150,13 @@ public:
 
 		reverbs->clear();
 
+		if (player->physBodyInitialized)
+		{
+			player->body->GetWorld()->DestroyBody(player->body);
+		}
+		
+
+
 		for (size_t i = 0; i < StateObjects->size(); i++)
 		{
 			if (StateObjects->at(i)->physBodyInitialized == true)
@@ -156,8 +164,9 @@ public:
 				StateObjects->at(i)->body->GetWorld()->DestroyBody(StateObjects->at(i)->body);
 			}
 		}
-		StateObjects->clear();
 
+		StateObjects->clear();
+		
 		//loading resources for game from tad_tileset.tsx
 		using namespace tinyxml2;
 		XMLDocument doc;
@@ -288,7 +297,69 @@ public:
 							float height = obj->FindAttribute("height")->FloatValue();
 							this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height));
 						}
+						if (type == "TextObject")
+						{
+							float posX = obj->FindAttribute("x")->FloatValue();
+							float posY = obj->FindAttribute("y")->FloatValue();
+							float width = obj->FindAttribute("width")->FloatValue();
+							float height = obj->FindAttribute("height")->FloatValue();
 
+							int r = 255;
+							int g = 255;
+							int b = 255;
+							int a = 255;
+							
+							std::string text; 
+							std::string fontName="calibri";
+							int pixelSize = 25;
+							sf::Color color = sf::Color::Black;
+							
+							if (obj->FirstChildElement("text") != NULL)
+							{
+								XMLElement*textProps = obj->FirstChildElement("text");
+
+								if (textProps->FindAttribute("fontfamily") != NULL)
+								{
+									fontName = textProps->FindAttribute("fontfamily")->Value();
+								}
+								if (textProps->FindAttribute("pixelsize") != NULL)
+								{
+									pixelSize = textProps->FindAttribute("pixelsize")->IntValue();
+								}
+								text = textProps->GetText();
+							}
+							XMLElement*objProps = obj->FirstChildElement("properties");
+
+							if (objProps != NULL)
+							{
+								for (tinyxml2::XMLElement* Prop = objProps->FirstChildElement(); Prop != NULL; Prop = Prop->NextSiblingElement())
+								{
+									if (Prop->FindAttribute("name") != NULL)
+									{
+										std::string f = Prop->FindAttribute("name")->Value();
+										if (f == "Red")
+										{
+											r = Prop->FindAttribute("value")->IntValue();
+										}
+										if (f == "Green")
+										{
+											g = Prop->FindAttribute("value")->IntValue();
+										}
+										if (f == "Blue")
+										{
+											b = Prop->FindAttribute("value")->IntValue();
+										}
+										if (f == "Alpha")
+										{
+											a = Prop->FindAttribute("value")->IntValue();
+										}
+									}
+								}
+							}
+							
+							color = sf::Color(r, g, b, a);
+							this->StateObjects->push_back(new TextObject(sf::Vector2f(posX,posY),text,color,sf::Text(text,context->game->Resources->getFontResourceDataByName(fontName)->font, pixelSize)));
+						}
 
 					}
 					else if (obj->FindAttribute("template") != NULL)
@@ -636,6 +707,126 @@ public:
 									}
 									this->StateObjects->push_back(new PropPhysics(sf::Vector2f(posX, posY), sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture), width, height, mass, mat_type, massDepend));
 								}
+
+								if (type == "TextObject")
+								{
+
+									int r = 255;
+									int g = 255;
+									int b = 255;
+									int a = 255;
+
+									std::string text;
+									std::string fontName = "calibri";
+									int pixelSize = 25;
+									sf::Color color = sf::Color::Black;
+
+									float posX = 0.f;
+									float posY = 0.f;
+									float width = 0.f;
+									float height = 0.f;
+									posX = obj->FindAttribute("x")->FloatValue();
+									posY = obj->FindAttribute("y")->FloatValue();
+									if (obj->FindAttribute("width") != NULL)
+									{
+										float width = obj->FindAttribute("width")->FloatValue();
+									}
+									else
+									{
+										float width = objData->FindAttribute("width")->FloatValue();
+									}
+
+									if (obj->FindAttribute("height") != NULL)
+									{
+										float height = obj->FindAttribute("height")->FloatValue();
+									}
+									else
+									{
+										float height = objData->FindAttribute("height")->FloatValue();
+									}
+
+									if (objData->FirstChildElement("text") != NULL)
+									{
+										XMLElement*textData = objData->FirstChildElement("text");
+
+										if (obj->FirstChildElement("text") != NULL)
+										{
+											XMLElement*textProps = obj->FirstChildElement("text");
+
+											if (textProps->FindAttribute("fontfamily") != NULL)
+											{
+												fontName = textProps->FindAttribute("fontfamily")->Value();
+											}
+											else if (textData->FindAttribute("fontfamily") != NULL)
+											{
+												fontName = textData->FindAttribute("fontfamily")->Value();
+											}
+
+											if (textProps->FindAttribute("pixelsize") != NULL)
+											{
+												pixelSize = textProps->FindAttribute("pixelsize")->IntValue();
+											}
+											else if (textData->FindAttribute("pixelsize") != NULL)
+											{
+												pixelSize = textData->FindAttribute("pixelsize")->IntValue();
+											}
+
+											text = textProps->GetText();
+										}
+
+									}
+									else
+									{
+										if (obj->FirstChildElement("text") != NULL)
+										{
+											XMLElement*textProps = obj->FirstChildElement("text");
+
+											if (textProps->FindAttribute("fontfamily") != NULL)
+											{
+												fontName = textProps->FindAttribute("fontfamily")->Value();
+											}
+											if (textProps->FindAttribute("pixelsize") != NULL)
+											{
+												pixelSize = textProps->FindAttribute("pixelsize")->IntValue();
+											}
+											text = textProps->GetText();
+										}
+									}
+
+
+									
+									XMLElement*objProps = obj->FirstChildElement("properties");
+
+									if (objProps != NULL)
+									{
+										for (tinyxml2::XMLElement* Prop = objProps->FirstChildElement(); Prop != NULL; Prop = Prop->NextSiblingElement())
+										{
+											if (Prop->FindAttribute("name") != NULL)
+											{
+												std::string f = Prop->FindAttribute("name")->Value();
+												if (f == "Red")
+												{
+													r = Prop->FindAttribute("value")->IntValue();
+												}
+												if (f == "Green")
+												{
+													g = Prop->FindAttribute("value")->IntValue();
+												}
+												if (f == "Blue")
+												{
+													b = Prop->FindAttribute("value")->IntValue();
+												}
+												if (f == "Alpha")
+												{
+													a = Prop->FindAttribute("value")->IntValue();
+												}
+											}
+										}
+									}
+
+									color = sf::Color(r, g, b, a);
+									this->StateObjects->push_back(new TextObject(sf::Vector2f(posX, posY), text, color, sf::Text(text, context->game->Resources->getFontResourceDataByName(fontName)->font, pixelSize)));
+								}
 							}
 						}
 					}
@@ -670,6 +861,10 @@ public:
 					StateObjects->at(i)->bodyIsSensor = false;
 				}
 				else if (SceneTile*obj = dynamic_cast<SceneTile*>(StateObjects->at(i)))
+				{
+
+				}
+				else if (dynamic_cast<TextObject*>(StateObjects->at(i)))
 				{
 
 				}
