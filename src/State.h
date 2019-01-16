@@ -28,6 +28,9 @@ protected:
 	//to keep track of state type
 	int ID = 0;
 public:
+
+	std::string current_map = "";
+
 	bool worldIsPaused = false;
 
 	b2World world;
@@ -45,6 +48,17 @@ public:
 	virtual void Update(sf::Time dt) = 0;
 	virtual void Init() = 0;
 
+	//basic function
+	//needs better version
+	bool operator==(State &state)
+	{
+		if (Name == state.Name) { return true; }
+	}
+	//states might handle this differently
+	virtual void LoadMap(std::string name)
+	{
+
+	}
 	//creates physical body for object using given data
 	//Data HAS to be created before calling
 	virtual void CreatePhysicsObject(Object*object, b2BodyDef bodyDef, std::vector<b2FixtureDef>*&fixtures, bool addToStateObjectContainer, float mass = 1.f)

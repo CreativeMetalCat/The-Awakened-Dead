@@ -15,8 +15,12 @@
 #include "SolidObject.h"
 #include "TextObject.h"
 
+#ifndef TINYXML2_INCLUDED
 #include <tinyxml2.h>
 #include <tinyxml2.cpp>
+#endif // !TINYXML2_INCLUDED
+
+
 
 #include <fmod.hpp>
 #include <fmod_errors.h>
@@ -41,7 +45,9 @@ class PlayState :public State
 {
 
 public:
+	bool _map_is_loaded = false;
 
+	int Current_area_id = 0;
 	GUI::Container*PlayerUI = new GUI::Container();
 
 	Player*player;
@@ -198,6 +204,24 @@ public:
 			std::string name = child->Name();
 			if (name == "layer")
 			{
+				int layer_area_id = 0;
+
+				XMLElement*tileProps = child->FirstChildElement("properties");
+
+				if (tileProps != NULL)
+				{
+					for (tinyxml2::XMLElement* Prop = tileProps->FirstChildElement(); Prop != NULL; Prop = Prop->NextSiblingElement())
+					{
+						if (Prop->FindAttribute("name") != NULL)
+						{
+							std::string f = Prop->FindAttribute("name")->Value();
+							if (f == "area_id")
+							{
+								layer_area_id = Prop->FindAttribute("value")->IntValue();
+							}
+						}
+					}
+				}
 				int layerId = child->FindAttribute("id")->IntValue();
 				layerMaxWidth = child->FindAttribute("width")->IntValue();
 				layerMaxHeight = child->FindAttribute("height")->IntValue();
@@ -224,7 +248,8 @@ public:
 									pos,
 									sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture),
 									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().x,
-									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().y
+									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().y,
+									layer_area_id
 								);
 								ta->Init();
 								StateObjects->push_back(ta);
@@ -256,7 +281,8 @@ public:
 									pos,
 									sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture),
 									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().x,
-									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().y
+									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().y,
+									layer_area_id
 								);
 								ta->Init();
 								StateObjects->push_back(ta);
@@ -276,6 +302,25 @@ public:
 
 			else if (name == "objectgroup")
 			{
+				int layer_area_id = 0;
+
+				XMLElement*tileProps = child->FirstChildElement("properties");
+
+				if (tileProps != NULL)
+				{
+					for (tinyxml2::XMLElement* Prop = tileProps->FirstChildElement(); Prop != NULL; Prop = Prop->NextSiblingElement())
+					{
+						if (Prop->FindAttribute("name") != NULL)
+						{
+							std::string f = Prop->FindAttribute("name")->Value();
+							if (f == "area_id")
+							{
+								layer_area_id = Prop->FindAttribute("value")->IntValue();
+							}
+						}
+					}
+				}
+
 				for (tinyxml2::XMLElement* obj = child->FirstChildElement(); obj != NULL; obj = obj->NextSiblingElement())
 				{
 
@@ -295,7 +340,7 @@ public:
 							float posY = obj->FindAttribute("y")->FloatValue();
 							float width = obj->FindAttribute("width")->FloatValue();
 							float height = obj->FindAttribute("height")->FloatValue();
-							this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height));
+							this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height,layer_area_id));
 						}
 						if (type == "TextObject")
 						{
@@ -358,7 +403,7 @@ public:
 							}
 							
 							color = sf::Color(r, g, b, a);
-							this->StateObjects->push_back(new TextObject(sf::Vector2f(posX,posY),text,color,sf::Text(text,context->game->Resources->getFontResourceDataByName(fontName)->font, pixelSize)));
+							this->StateObjects->push_back(new TextObject(sf::Vector2f(posX,posY),text,color,sf::Text(text,context->game->Resources->getFontResourceDataByName(fontName)->font, pixelSize),true,layer_area_id));
 						}
 
 					}
@@ -666,7 +711,7 @@ public:
 									float posY = obj->FindAttribute("y")->FloatValue();
 									float width = objData->FindAttribute("width")->FloatValue();
 									float height = objData->FindAttribute("height")->FloatValue();
-									this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height));
+									this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height,layer_area_id));
 								}
 								if (type == "PropPhysics")
 								{
@@ -705,7 +750,7 @@ public:
 
 										}
 									}
-									this->StateObjects->push_back(new PropPhysics(sf::Vector2f(posX, posY), sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture), width, height, mass, mat_type, massDepend));
+									this->StateObjects->push_back(new PropPhysics(sf::Vector2f(posX, posY), sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture), width, height, mass, mat_type, massDepend,layer_area_id));
 								}
 
 								if (type == "TextObject")
@@ -825,7 +870,7 @@ public:
 									}
 
 									color = sf::Color(r, g, b, a);
-									this->StateObjects->push_back(new TextObject(sf::Vector2f(posX, posY), text, color, sf::Text(text, context->game->Resources->getFontResourceDataByName(fontName)->font, pixelSize)));
+									this->StateObjects->push_back(new TextObject(sf::Vector2f(posX, posY), text, color, sf::Text(text, context->game->Resources->getFontResourceDataByName(fontName)->font, pixelSize),true,layer_area_id));
 								}
 							}
 						}
@@ -973,6 +1018,7 @@ public:
 		defP.type = b2BodyType::b2_dynamicBody;
 		defP.bullet = true;
 		player->body = world.CreateBody(&defP);
+		
 
 		/*b2PolygonShape shape;
 		shape.SetAsBox(player->GetObjectRectangle().width / 2, player->GetObjectRectangle().height / 2);*/
@@ -992,7 +1038,10 @@ public:
 
 		//player body end
 		player->Init();
+
+		_map_is_loaded = true;
 	}
+
 
 	void Init()override
 	{
@@ -1000,230 +1049,6 @@ public:
 
 		context->window->setFramerateLimit(300);
 
-		//#pragma region mapLoading
-		//		//loading resources for game from tad_tileset.tsx
-		//		using namespace tinyxml2;
-		//		XMLDocument doc;
-		//		doc.LoadFile("./../maps/t_t1.tmx");
-		//
-		//
-		//		XMLElement* root = doc.FirstChildElement("map");
-		//
-		//		//current tile id x
-		//		int cTileIdx = 0;
-		//		//current tile id y
-		//		int cTileIdy = 0;
-		//
-		//		int layerMaxWidth =0;
-		//		int layerMaxHeight = 0;
-		//
-		//		
-		//		for (tinyxml2::XMLElement* child = root->FirstChildElement(); child != NULL; child = child->NextSiblingElement())
-		//		{
-		//			if (child == nullptr) { XMLCheckResult(XML_ERROR_PARSING_ELEMENT); break; }
-		//			std::string name = child->Name();
-		//			if (name == "layer")
-		//			{
-		//				int layerId = child->FindAttribute("id")->IntValue();
-		//				layerMaxWidth = child->FindAttribute("width")->IntValue();
-		//				layerMaxHeight = child->FindAttribute("height")->IntValue();
-		//
-		//				XMLElement*data = child->FirstChildElement("data");
-		//				if (data != nullptr)
-		//				{
-		//					XMLElement*chunk = data->FirstChildElement("chunk");
-		//					if (chunk != NULL)
-		//					{
-		//						for (tinyxml2::XMLElement* tile = chunk->FirstChildElement(); tile != NULL; tile = tile->NextSiblingElement())
-		//						{
-		//
-		//							if (tile->FindAttribute("gid") != NULL)
-		//							{
-		//								int gid;
-		//								gid = tile->FindAttribute("gid")->IntValue();
-		//								gid--;
-		//
-		//								sf::Vector2f pos = sf::Vector2f(64 * cTileIdx, 64 * cTileIdy);
-		//								
-		//								SceneTile*ta = new SceneTile
-		//								(
-		//									pos,
-		//									sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture),
-		//									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().x,
-		//									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().y
-		//								);
-		//								ta->Init();
-		//								StateObjects->push_back(ta);
-		//
-		//
-		//							}
-		//							cTileIdx++;
-		//							if (cTileIdx >= layerMaxWidth)
-		//							{
-		//								cTileIdx = 0;
-		//								cTileIdy++;
-		//							}
-		//						}
-		//					}
-		//					else
-		//					{
-		//						for (tinyxml2::XMLElement* tile = data->FirstChildElement(); tile != NULL; tile = tile->NextSiblingElement())
-		//						{
-		//
-		//							if (tile->FindAttribute("gid") != NULL)
-		//							{
-		//								int gid;
-		//								gid = tile->FindAttribute("gid")->IntValue();
-		//								gid--;
-		//
-		//								sf::Vector2f pos = sf::Vector2f(64 * cTileIdx, 64 * cTileIdy);
-		//								SceneTile*ta = new SceneTile
-		//								(
-		//									pos,
-		//									sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture),
-		//									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().x,
-		//									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().y
-		//								); 
-		//								ta->Init();
-		//								StateObjects->push_back(ta);
-		//							}
-		//							cTileIdx++;
-		//							if (cTileIdx >= layerMaxWidth)
-		//							{
-		//								cTileIdx = 0;
-		//								cTileIdy++;
-		//								if (cTileIdy > layerMaxHeight) { cTileIdy = 0; }
-		//							}
-		//						}
-		//					}
-		//				}
-		//				
-		//			}
-		//			
-		//			else if (name == "objectgroup")
-		//			{
-		//				for (tinyxml2::XMLElement* obj = child->FirstChildElement(); obj != NULL; obj = obj->NextSiblingElement())
-		//				{
-		//
-		//					if (obj->FindAttribute("type") != NULL)
-		//					{
-		//						std::string type = obj->FindAttribute("type")->Value();
-		//
-		//						if (type == "info_player_start")
-		//						{
-		//							float posX = obj->FindAttribute("x")->FloatValue();
-		//							float posY = obj->FindAttribute("y")->FloatValue();
-		//							this->player->SetObjectPosition(sf::Vector2f(posX, posY));
-		//						}
-		//						if (type == "solid_object")
-		//						{
-		//							float posX = obj->FindAttribute("x")->FloatValue();
-		//							float posY = obj->FindAttribute("y")->FloatValue();
-		//							float width = obj->FindAttribute("width")->FloatValue();
-		//							float height = obj->FindAttribute("height")->FloatValue();
-		//							this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height));
-		//						}
-		//
-		//
-		//					}
-		//					else if (obj->FindAttribute("template") != NULL)
-		//					{
-		//						std::string templateName = obj->FindAttribute("template")->Value();
-		//
-		//						XMLDocument tempDoc;
-		//
-		//						const char* d = "./../maps/";
-		//
-		//						char result[100];   // array to hold the result.
-		//
-		//						strcpy(result, d); // copy string one into the result.
-		//						strcat(result, templateName.c_str()); // append string two to the result.
-		//
-		//							
-		//						tempDoc.LoadFile(result);
-		//
-		//						XMLElement* root = tempDoc.FirstChildElement("template");
-		//
-		//						XMLElement*tileSetData = root->FirstChildElement("tileset");
-		//
-		//						if (tileSetData != NULL)
-		//						{
-		//
-		//						}
-		//
-		//						XMLElement*objData = root->FirstChildElement("object");
-		//						if (objData != NULL)
-		//						{
-		//							if (objData->FindAttribute("type") != NULL)
-		//							{
-		//								std::string type = objData->FindAttribute("type")->Value();
-		//
-		//
-		//								int gid;
-		//								gid = objData->FindAttribute("gid")->IntValue();
-		//								gid--;
-		//								if (type == "info_player_start")
-		//								{
-		//									float posX = obj->FindAttribute("x")->FloatValue();
-		//									float posY = obj->FindAttribute("y")->FloatValue();
-		//									this->player->SetObjectPosition(sf::Vector2f(posX, posY));
-		//								}
-		//								if (type == "solid_object")
-		//								{
-		//									float posX = obj->FindAttribute("x")->FloatValue();
-		//									float posY = obj->FindAttribute("y")->FloatValue();
-		//									float width = objData->FindAttribute("width")->FloatValue();
-		//									float height = objData->FindAttribute("height")->FloatValue();
-		//									this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height));
-		//								}
-		//								if (type == "PropPhysics")
-		//								{
-		//									float posX = obj->FindAttribute("x")->FloatValue();
-		//									float posY = obj->FindAttribute("y")->FloatValue();
-		//									float width = objData->FindAttribute("width")->FloatValue();
-		//									float height = objData->FindAttribute("height")->FloatValue();
-		//
-		//									XMLElement*props = objData->FirstChildElement("properties");
-		//									float mass = 1.f;
-		//									int mat_type = 0;
-		//									bool massDepend = true;
-		//									if (props != NULL)
-		//									{
-		//										for (tinyxml2::XMLElement* prop = props->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
-		//										{
-		//											
-		//											if (prop->FindAttribute("name")!=NULL)
-		//											{
-		//												std::string f = prop->FindAttribute("name")->Value();
-		//												if (f == "mass")
-		//												{
-		//													mass = prop->FindAttribute("value")->FloatValue();
-		//												}
-		//												 f = prop->FindAttribute("name")->Value();
-		//												if (f == "mat_type")
-		//												{
-		//													mat_type = prop->FindAttribute("value")->IntValue();
-		//												}
-		//												f = prop->FindAttribute("name")->Value();
-		//												if (f == "sounddependsonmass")
-		//												{
-		//													massDepend = prop->FindAttribute("value")->BoolValue();
-		//												}
-		//											}
-		//
-		//										}
-		//									}
-		//									this->StateObjects->push_back(new PropPhysics(sf::Vector2f(posX, posY), sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture), width, height,mass, mat_type,massDepend));
-		//								}
-		//							}
-		//						}
-		//					}
-		//				}
-		//
-		//			}
-		//		}
-		//		//end of loading resources for game from tad_tileset.tsx
-		//#pragma endregion
 		Animation::SpritesAnimation*rifle_move = new  Animation::SpritesAnimation(true, 0.2f, "solder_rifle_move");
 		for (int i = 0; i < 20; i++)
 		{
@@ -1288,133 +1113,9 @@ public:
 		b2Filter filter;
 		filter.categoryBits = 0x1;
 
-
-		/*ReverbObject *hallReverb = new ReverbObject(sf::Vector3f(0,0,0),5.f,3000.f,FMOD_PRESET_UNDERWATER);
-		hallReverb->createReverb(context->game->lowSoundSystem);*/
-
-		/*if (!StateObjects->empty())
-		{
-			for (size_t i = 0; i < StateObjects->size(); i++)
-			{
-				if (SolidObject*obj = dynamic_cast<SolidObject*>(StateObjects->at(i)))
-				{
-					b2BodyDef def;
-					def.position.Set(obj->GetObjectPosition().x + obj->GetObjectRectangle().width / 2, obj->GetObjectPosition().y + obj->GetObjectRectangle().height / 2);
-					def.type = b2BodyType::b2_staticBody;
-					obj->body = world.CreateBody(&def);
-
-					b2PolygonShape shape;
-					shape.SetAsBox(obj->GetObjectRectangle().width / 2, obj->GetObjectRectangle().height / 2);
-
-
-					obj->body->CreateFixture(&shape, 0.f);
-					obj->body->SetUserData(obj);
-
-					StateObjects->at(i)->physBodyInitialized = true;
-					StateObjects->at(i)->bodyIsSensor = false;
-				}
-				else if (SceneTile*obj=dynamic_cast<SceneTile*>(StateObjects->at(i)))
-				{
-
-				}
-				else if (npc_zombie*z = dynamic_cast<npc_zombie*>(StateObjects->at(i)))
-				{
-					b2BodyDef def;
-					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
-					def.type = b2BodyType::b2_dynamicBody;
-					StateObjects->at(i)->body = world.CreateBody(&def);
-
-					b2PolygonShape shape;
-					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
-
-					b2PolygonShape senseShape;
-					senseShape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width , StateObjects->at(i)->GetObjectRectangle().height );
-
-					b2FixtureDef TriggerFixture;
-					TriggerFixture.filter = filter;
-					TriggerFixture.density = 0.f;
-					TriggerFixture.shape = &shape;
-					TriggerFixture.isSensor = 0;
-
-					b2FixtureDef senceFixture;
-					senceFixture.filter = filter;
-					senceFixture.density = 0.f;
-					senceFixture.shape = &senseShape;
-					senceFixture.isSensor = 1;
-
-					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
-					StateObjects->at(i)->body->CreateFixture(&senceFixture);
-					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
-
-					StateObjects->at(i)->physBodyInitialized = true;
-					//is set by main fixture and/or purpose of the object itself
-					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
-				}
-				else if (PropPhysics*pp = dynamic_cast<PropPhysics*>(StateObjects->at(i)))
-				{
-					b2MassData propMass;
-					propMass.mass = pp->mass/10;
-					propMass.center =b2Vec2(pp->GetObjectRectangle().left + pp->GetObjectRectangle().width/2, pp->GetObjectRectangle().top + pp->GetObjectRectangle().height / 2);
-					b2PolygonShape shapeA;
-					shapeA.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
-
-
-					b2BodyDef defA;
-					defA.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
-					defA.type = b2BodyType::b2_dynamicBody;
-
-					StateObjects->at(i)->body = world.CreateBody(&defA);
-
-					StateObjects->at(i)->body->CreateFixture(&shapeA, 1.f);
-					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
-					StateObjects->at(i)->Init();
-					StateObjects->at(i)->OnCollision = [this, pp](Object*object)
-					{
-						pp->onCollision(object, this->context, "PlayState");
-					};
-					pp->LeftCollision = [this, pp](Object*object)
-					{
-						pp->leftCollision(object, this->context, "PlayState");
-					};
-					StateObjects->at(i)->physBodyInitialized = true;
-					StateObjects->at(i)->bodyIsSensor = false;
-
-					StateObjects->at(i)->body->SetMassData(&propMass);
-					StateObjects->at(i)->Init();
-				}
-				else
-				{
-
-					b2BodyDef def;
-					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
-					def.type = b2BodyType::b2_dynamicBody;
-
-					StateObjects->at(i)->body = world.CreateBody(&def);
-
-					b2PolygonShape shape;
-					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
-
-					b2FixtureDef TriggerFixture;
-					TriggerFixture.filter = filter;
-					TriggerFixture.density = 0.f;
-					TriggerFixture.shape = &shape;
-					TriggerFixture.isSensor = 0;
-
-					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
-					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
-
-					StateObjects->at(i)->physBodyInitialized = true;
-					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
-
-					StateObjects->at(i)->Init();
-				}
-			}
-		}*/
-
-
 		b2Filter filter2;
 		filter2.categoryBits = 0x1;
-		this->LoadMap("td_reverb.tmx");
+		/*this->LoadMap("td_reverb.tmx");*/
 		//player body begin
 		player->Init();
 
@@ -1451,52 +1152,9 @@ public:
 		context->game->Resources->getSoundResourceDataByName("ambience_base")->sound->setMode(FMOD_LOOP_NORMAL);
 		context->game->Resources->getSoundResourceDataByName("ambience_base")->sound->setLoopCount(-1);
 
-		if (!Channels->empty())
-		{
-			for (size_t i = 0; i < Channels->size(); i++)
-			{
-				bool res;
-				Channels->at(i)->isPlaying(&res);
-				if (Channels->at(i) == NULL)
-				{
-					context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName("ambience_base")->sound, 0, false, &Channels->at(i));
-
-					break;
-				}
-				else if (res == false)
-				{
-					context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName("ambience_base")->sound, 0, false, &Channels->at(i));
-
-					break;
-				}
-			}
-
-		}
-
 
 		Animation::Animation rhand_anim = Animation::Animation("rhand");
 		rhand_anim.FrameIndexes->push_back(Animation::CellIndex(0, 0));
-
-		/*Decal*rhand = new Decal(sf::Vector2f(60.f, 200.f), 0.05f, true, 20.0f, 123, 53, sf::Sprite(context->game->Resources->getTextureResourceDataByName("zombie_right_hand")->texture), 510, 270);
-		b2PolygonShape shapeH;
-		shapeH.SetAsBox(rhand->GetObjectRectangle().width / 2, rhand->GetObjectRectangle().height / 2);
-
-		b2BodyDef defH;
-		defH.position.Set(rhand->GetObjectPosition().x + rhand->GetObjectRectangle().width / 2, rhand->GetObjectPosition().y + rhand->GetObjectRectangle().height / 2);
-		defH.type = b2BodyType::b2_dynamicBody;
-
-		rhand->body = world.CreateBody(&defH);
-
-		rhand->body->CreateFixture(&shapeH, 0.5f);
-		rhand->body->SetUserData(rhand);
-
-		rhand->Init();
-		rhand->animations->push_back(rhand_anim);
-		rhand->SetAnimation("rhand");
-
-		rhand->applyImpulse(b2Vec2(100, 0));
-
-		StateObjects->push_back(rhand);*/
 
 
 	}
@@ -1514,7 +1172,11 @@ public:
 
 
 				/*context->window->draw(dynamic_cast<SceneActor*>(this->StateObjects->at(i))->sprite);*/
-				this->StateObjects->at(i)->Draw(context->window);
+				if (this->StateObjects->at(i)->area_id == Current_area_id)
+				{
+					this->StateObjects->at(i)->Draw(context->window);
+
+				}
 				if (DEBUG_DRAWCOLLISION)
 				{
 					if (this->StateObjects->at(i)->physBodyInitialized == true)
@@ -1601,6 +1263,7 @@ public:
 
 					}
 				}
+
 
 				/*context->window->draw(projObj->sprite);*/
 
@@ -2345,6 +2008,11 @@ public:
 	virtual void Update(sf::Time dt) override
 	{
 
+		if (_map_is_loaded != true)
+		{
+			if (current_map != "")
+				LoadMap(current_map);
+		}
 		context->game->lowSoundSystem->update();
 
 		if (!player->items->isEmpty() && player->items->isActive)
@@ -2396,7 +2064,13 @@ public:
 		{
 			for (size_t i = 0; i < StateObjects->size(); i++)
 			{
-
+				if (this->StateObjects->at(i)->physBodyInitialized)
+				{
+					if (this->StateObjects->at(i)->area_id != this->Current_area_id)
+					{
+						this->StateObjects->at(i)->body->SetAwake(false);
+					}
+				}
 				StateObjects->at(i)->Update(dt);
 				if (PropPhysics*pp = dynamic_cast<PropPhysics*>(StateObjects->at(i)))
 				{
@@ -2538,6 +2212,7 @@ public:
 					}
 					else
 					{
+						StateObjects->at(i)->body->SetAwake(false);
 						if (pp->StateSoundChannelId != -1)
 						{
 							FMOD_RESULT r = Channels->at(pp->StateSoundChannelId)->stop();

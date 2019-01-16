@@ -65,9 +65,9 @@ public:
 			context->game->DisableState(context->game->GetStateByName("MenuState"));
 			context->game->ActivateState(context->game->GetStateByName("PlayState"));
 
+			context->game->GetStateByName("PlayState")->current_map = "td_free_tv.tmx";
 			dynamic_cast<PlayState*>(context->game->GetStateByName("PlayState"))->current_map = "td_free_tv.tmx";
 			/*PlayState*p = dynamic_cast<PlayState*>(context->game->States->at(context->game->GetStateIdByName("PlayState")));*/
-			context->game->States->at(context->game->GetStateIdByName("PlayState"))->LoadMap("td_free_tv.tmx");
 			int f = 0;
 		};
 		this->map_loading_menu->Components->push_back(blm);
