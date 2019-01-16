@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <tileset firstgid="1" source="../tad_tileset.tsx"/>
+ <object name="tv" type="PropPhysics" gid="9" width="65" height="55" rotation="181.452">
+  <properties>
+   <property name="mass" type="float" value="50"/>
+   <property name="mat_type" type="int" value="12"/>
+   <property name="sounddependsonmass" type="bool" value="true"/>
+  </properties>
+ </object>
+</template>

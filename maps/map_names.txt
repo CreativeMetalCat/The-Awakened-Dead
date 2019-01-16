@@ -1,0 +1,8 @@
+//this is example file
+
+<campaing name="some name">
+	<maps>
+		<map filename="filename"/>
+		<map filename="other filename"/>
+	<maps/>
+<campaing/>

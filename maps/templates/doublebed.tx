@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <tileset firstgid="1" source="../tad_tileset.tsx"/>
+ <object name="doublebed" type="PropStatic" gid="11" width="146.179" height="212.667" rotation="-270.012">
+  <properties>
+   <property name="mass" type="float" value="100"/>
+  </properties>
+ </object>
+</template>

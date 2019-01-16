@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <tileset firstgid="1" source="../tad_tileset.tsx"/>
+ <object name="player1" type="info_player_start" gid="13" width="125" height="100"/>
+</template>

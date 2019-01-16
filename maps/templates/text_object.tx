@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object type="TextObject" width="519" height="128.333">
+  <text fontfamily="Calibri" pixelsize="96" wrap="1" color="#ffffff">Living Room</text>
+ </object>
+</template>

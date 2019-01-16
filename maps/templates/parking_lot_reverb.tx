@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object name="parking_lot_reverb" type="SoundReverbPreset" width="1366.67" height="765.334">
+  <properties>
+   <property name="PresetName" value="ParkingLot"/>
+  </properties>
+ </object>
+</template>

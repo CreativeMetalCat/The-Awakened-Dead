@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object name="custom_reverb" type="SoundReverb" width="704" height="448">
+  <properties>
+   <property name="Decay" type="int" value="0"/>
+   <property name="Densty" type="int" value="0"/>
+   <property name="Diffus" type="int" value="0"/>
+   <property name="E/L-Mix" type="int" value="0"/>
+   <property name="EarlyDly" type="int" value="0"/>
+   <property name="HFDecay" type="int" value="0"/>
+   <property name="HFRef" type="int" value="0"/>
+   <property name="HiCut" type="int" value="0"/>
+   <property name="LateDly" type="int" value="0"/>
+   <property name="LoFreq" type="int" value="0"/>
+   <property name="LoGain" type="int" value="0"/>
+   <property name="WetLvl" type="float" value="0"/>
+  </properties>
+ </object>
+</template>

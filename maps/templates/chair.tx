@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <tileset firstgid="1" source="../tad_tileset.tsx"/>
+ <object name="chair" type="PropPhysics" gid="5" width="65" height="65" rotation="-178.026">
+  <properties>
+   <property name="mass" type="float" value="50"/>
+   <property name="mat_type" type="int" value="3"/>
+   <property name="sounddependsonmass" type="bool" value="false"/>
+  </properties>
+ </object>
+</template>

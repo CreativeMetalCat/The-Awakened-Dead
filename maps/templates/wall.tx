@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<template>
+ <object name="wall" type="solid_object" width="193.667" height="62"/>
+</template>
