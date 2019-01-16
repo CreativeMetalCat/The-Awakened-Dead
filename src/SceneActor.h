@@ -13,20 +13,20 @@ public:
 	void SetSprite(sf::Sprite) { this->sprite = sprite; }
 
 
-	SceneActor(sf::Vector2f position, sf::Sprite sprite) :Object(position)
+	SceneActor(sf::Vector2f position, sf::Sprite sprite, int area_id = 0) :Object(position,area_id)
 	{
 		this->sprite = sprite;
 		sprite.setPosition(position);
 
 	}
 
-	SceneActor(sf::Vector2f position, sf::Sprite sprite, float width, float height) :Object(position, width, height)
+	SceneActor(sf::Vector2f position, sf::Sprite sprite, float width, float height, int area_id = 0) :Object(position, width, height, area_id)
 	{
 		this->sprite = sprite;
 		sprite.setPosition(position);
 
 	}
-	SceneActor(sf::Sprite sprite) :Object()
+	SceneActor(sf::Sprite sprite, int area_id = 0) :Object()
 	{
 		this->sprite = sprite;
 	}

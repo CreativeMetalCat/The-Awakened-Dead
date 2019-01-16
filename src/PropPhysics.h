@@ -23,7 +23,7 @@ public:
 	int  StateSoundChannelId = -1;
 
 	float mass = 1.f;
-	PropPhysics(sf::Vector2f position, sf::Sprite sprite, float width, float height, int MaterialType = MAT_TYPE_GENERIC, bool SoundDependsOnMass = true) :SceneActor(position, sprite, width, height), MaterialType(MaterialType), SoundDependsOnMass(SoundDependsOnMass)
+	PropPhysics(sf::Vector2f position, sf::Sprite sprite, float width, float height, int MaterialType = MAT_TYPE_GENERIC, bool SoundDependsOnMass = true, int  area_id = 0) :SceneActor(position, sprite, width, height, area_id), MaterialType(MaterialType), SoundDependsOnMass(SoundDependsOnMass)
 	{
 		this->sprite = sprite;
 		sprite.setPosition(position);
@@ -35,17 +35,17 @@ public:
 	}
 	PropPhysics() {}
 
-	PropPhysics(sf::Vector2f position, sf::Sprite sprite, float width, float height, float mass = 1.f, int MaterialType = MAT_TYPE_GENERIC, bool SoundDependsOnMass = true) :SceneActor(position, sprite, width, height), mass(mass), MaterialType(MaterialType), SoundDependsOnMass(SoundDependsOnMass)
+	PropPhysics(sf::Vector2f position, sf::Sprite sprite, float width, float height, float mass = 1.f, int MaterialType = MAT_TYPE_GENERIC, bool SoundDependsOnMass = true, int area_id = 0) :SceneActor(position, sprite, width, height, area_id), mass(mass), MaterialType(MaterialType), SoundDependsOnMass(SoundDependsOnMass)
 	{
 		this->sprite = sprite;
 		sprite.setPosition(position);
 
 	}
-	PropPhysics(sf::Sprite sprite, float mass = 1.f, int MaterialType = MAT_TYPE_GENERIC, bool SoundDependsOnMass = true) :SceneActor(sprite), mass(mass), MaterialType(MaterialType), SoundDependsOnMass(SoundDependsOnMass)
+	PropPhysics(sf::Sprite sprite, float mass = 1.f, int MaterialType = MAT_TYPE_GENERIC, bool SoundDependsOnMass = true, int area_id = 0) :SceneActor(sprite, area_id), mass(mass), MaterialType(MaterialType), SoundDependsOnMass(SoundDependsOnMass)
 	{
 		this->sprite = sprite;
 	}
-	PropPhysics(float mass = 1.f, int MaterialType = MAT_TYPE_GENERIC, bool SoundDependsOnMass = true) : mass(mass), MaterialType(MaterialType), SoundDependsOnMass(SoundDependsOnMass) {}
+	PropPhysics(float mass = 1.f, int MaterialType = MAT_TYPE_GENERIC, bool SoundDependsOnMass = true, int area_id = 0) : mass(mass), MaterialType(MaterialType), SoundDependsOnMass(SoundDependsOnMass) {}
 
 	void Init()override
 	{

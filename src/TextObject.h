@@ -19,7 +19,7 @@ public:
 		return Color;
 	}
 	sf::Text textObj;
-	TextObject(sf::Vector2f pos,std::string text, sf::Font&font, sf::Color color, int size, bool useTextSize = true):Object(pos)
+	TextObject(sf::Vector2f pos, std::string text, sf::Font&font, sf::Color color, int size, bool useTextSize = true, int area_id = 0) :Object(pos, area_id)
 	{
 		this->Text = text;
 		this->Color = color;
@@ -28,11 +28,11 @@ public:
 		textObj = sf::Text(text, font, size);
 	}
 
-	TextObject(sf::Vector2f pos, std::string text, sf::Color color, sf::Text textObj, bool useTextSize = true):Object(pos),textObj(textObj)
+	TextObject(sf::Vector2f pos, std::string text, sf::Color color, sf::Text textObj, bool useTextSize = true, int area_id = 0) :Object(pos, area_id), textObj(textObj)
 	{
 		this->Text = text;
 		this->Color = color;
-		this->Size = textObj.getCharacterSize();	
+		this->Size = textObj.getCharacterSize();
 		this->textObj.setString(text);
 		this->textObj.setPosition(pos);
 	}

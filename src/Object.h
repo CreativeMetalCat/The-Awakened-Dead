@@ -28,6 +28,10 @@ protected:
 	//temp value
 	b2Vec2 _velocity;
 public:
+	//it's id that is usually assinged by layer on the map 
+	//needed for the optimization
+	int area_id = 0;
+
 	//is set manually or by some function in children class
 	//unnessesary if alternative already exists
 	bool physBodyInitialized = false;
@@ -145,12 +149,12 @@ public:
 		return nullptr;
 	}
 
-	Object(sf::Vector2f position)
+	Object(sf::Vector2f position, int area_id = 0):area_id(area_id)
 	{
 		this->collision.left = position.x;
 		this->collision.top = position.y;
 	}
-	Object(sf::Vector2f position, float width, float height)
+	Object(sf::Vector2f position, float width, float height, int area_id = 0):area_id(area_id)
 	{
 		this->collision.left = position.x;
 		this->collision.top = position.y;
