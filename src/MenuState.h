@@ -3,6 +3,8 @@
 #include "GUI.h"
 #include "PixelParticleSystem.h"
 #include "SceneActor.h"
+#include "GUI_Button_Load_Map.h"
+#include "PlayState.h"
 
 #ifndef MAX_SOUND_CHANNELS_COUNT
 #define MAX_SOUND_CHANNELS_COUNT 1024
@@ -28,6 +30,9 @@ public:
 	std::vector<FMOD::Channel*>*Channels = new std::vector<FMOD::Channel*>(MAX_SOUND_CHANNELS_COUNT);
 	void Init()override
 	{
+		map_loading_menu->IsVisible = false;
+		map_loading_menu->IsActive = false;
+
 		context->game->lowSoundSystem->createSound("./../sounds/ui/buttonclick.wav", FMOD_3D, 0, &click);
 		context->game->lowSoundSystem->createSound("./../sounds/ui/buttonrollover.wav", FMOD_3D, 0, &hover);
 		context->game->lowSoundSystem->createSound("./../sounds/ui/buttonclickrelease.wav", FMOD_3D, 0, &release);
@@ -35,16 +40,37 @@ public:
 		GUI::Button*Button = new GUI::Button("Play", sf::Color::White, context->game->Resources->getFontResourceDataByName("calibri")->font, 64, sf::Sprite(context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture));
 		sf::IntRect rect = sf::IntRect(Button->GetPosition().x, Button->GetPosition().y, 0, 0);
 
+
 		cursorParticles.texture = new sf::Texture(context->game->Resources->getTextureResourceDataByName("proj")->texture);
 		/*Button->Sprite.setTextureRect(rect);*/
 
 		Button->SetPosition(sf::Vector2<float>(0, 120));
 		Button->Action = [this]()
 		{
-			context->game->ActivateState(context->game->GetStateByName("PlayState"));
-			context->game->DisableState(context->game->GetStateByName("MenuState"));
+			/*context->game->ActivateState(context->game->GetStateByName("PlayState"));
+			context->game->DisableState(context->game->GetStateByName("MenuState"));*/
+			map_loading_menu->IsVisible = true;
+			map_loading_menu->IsActive = true;
+			container->IsActive = false;
 		};
 		this->container->Components->push_back(Button);
+
+		Button->Init();
+
+		GUI::Button_Load_Map*blm = new GUI::Button_Load_Map("Physics Test", sf::Color::White, context->game->Resources->getFontResourceDataByName("Calibri")->font, 64, sf::Sprite());
+
+		blm->SetPosition(sf::Vector2<float>(300, 120));
+		blm->Action = [this]()
+		{
+			context->game->DisableState(context->game->GetStateByName("MenuState"));
+			context->game->ActivateState(context->game->GetStateByName("PlayState"));
+
+			context->game->GetStateByName("PlayState")->current_map = "td_free_tv.tmx";
+			dynamic_cast<PlayState*>(context->game->GetStateByName("PlayState"))->current_map = "td_free_tv.tmx";
+			/*PlayState*p = dynamic_cast<PlayState*>(context->game->States->at(context->game->GetStateIdByName("PlayState")));*/
+			int f = 0;
+		};
+		this->map_loading_menu->Components->push_back(blm);
 
 		Button->Init();
 		GUI::Button*Button2 = new GUI::Button("Quit", sf::Color::White, context->game->Resources->getFontResourceDataByName("calibri")->font, 64, sf::Sprite(context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture));
@@ -120,17 +146,26 @@ public:
 				}*/
 			}
 		}
+		
+		//if (!map_loading_menu->Components->empty()/*&& map_loading_menu->IsVisible*/)
+		{
+			for (size_t i = 0; i < map_loading_menu->Components->size(); i++)
+			{
+				map_loading_menu->Components->at(i)->Draw(context->window);
+			}
+		}
 		context->window->draw(cursorParticles);
 	}
 
 	virtual void HandleEvent(sf::Event& event)override
 	{
-		if (!container->Components->empty())
+		if (event.type == sf::Event::Closed)
 		{
-			if (event.type == sf::Event::Closed)
-			{
-				context->window->close();
-			}
+			context->window->close();
+		}
+		if (!container->Components->empty()&&container->IsActive)
+		{
+			
 			if (event.mouseButton.button == sf::Mouse::Left&&event.type == sf::Event::EventType::MouseButtonPressed)
 			{
 				if (!container->Components->empty())
@@ -169,6 +204,8 @@ public:
 						}
 					}
 				}
+				
+				
 
 				/*cursorParticles.setEmitter(sf::Vector2f(event.mouseButton.x, event.mouseButton.y));*/
 			}
@@ -286,6 +323,114 @@ public:
 
 		}
 
+		if (!map_loading_menu->Components->empty() && map_loading_menu->IsActive)
+		{
+			if (event.type == sf::Event::EventType::MouseMoved)
+			{
+
+				event.mouseMove.x;
+				event.mouseMove.y;
+				cursorParticles.setEmitter(sf::Vector2f(event.mouseMove.x, event.mouseMove.y));
+				if (!map_loading_menu->Components->empty())
+				{
+					for (size_t i = 0; i < map_loading_menu->Components->size(); i++)
+					{
+						if (map_loading_menu->Components->at(i)->isSelectable)
+						{
+							if (map_loading_menu->Components->at(i)->ComponentRectangle.contains(sf::Vector2f(event.mouseMove.x, event.mouseMove.y)))
+							{
+								map_loading_menu->Select(i);
+								seletion_index = i;
+								if (!Channels->empty())
+								{
+									for (size_t i = 0; i < Channels->size(); i++)
+									{
+										bool res;
+										Channels->at(i)->isPlaying(&res);
+										if (Channels->at(i) == NULL)
+										{
+											context->game->lowSoundSystem->playSound(hover, 0, false, &Channels->at(i));
+
+											break;
+										}
+										else if (res == false)
+										{
+											context->game->lowSoundSystem->playSound(hover, 0, false, &Channels->at(i));
+
+											break;
+										}
+									}
+
+								}
+							}
+							else
+							{
+								map_loading_menu->Components->at(i)->UnSelect();
+							}
+						}
+					}
+				}
+
+			}
+			if (event.mouseButton.button == sf::Mouse::Left&&event.type == sf::Event::EventType::MouseButtonPressed)
+			{
+
+				for (size_t i = 0; i < map_loading_menu->Components->size(); i++)
+				{
+					if (map_loading_menu->Components->at(i)->ComponentRectangle.contains(sf::Vector2f(event.mouseMove.x, event.mouseMove.y)))
+					{
+						map_loading_menu->Components->at(seletion_index)->Activate();
+						seletion_index = i;
+						if (!Channels->empty())
+						{
+							for (size_t i = 0; i < Channels->size(); i++)
+							{
+								bool res;
+								Channels->at(i)->isPlaying(&res);
+								if (Channels->at(i) == NULL)
+								{
+									context->game->lowSoundSystem->playSound(click, 0, false, &Channels->at(i));
+
+									break;
+								}
+								else if (res == false)
+								{
+									context->game->lowSoundSystem->playSound(click, 0, false, &Channels->at(i));
+
+									break;
+								}
+							}
+
+						}
+					}
+					else
+					{
+
+					}
+				}
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
+			{
+				for (size_t i = 0; i < map_loading_menu->Components->size(); i++)
+				{
+					map_loading_menu->Components->at(i)->UnSelect();
+				}
+
+				map_loading_menu->SelectNext();
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
+			{
+				for (size_t i = 0; i < map_loading_menu->Components->size(); i++)
+				{
+					map_loading_menu->Components->at(i)->UnSelect();
+				}
+				map_loading_menu->SelectPrevious();
+			}
+			if (sf::Keyboard::isKeyPressed(sf::Keyboard::Enter))
+			{
+				map_loading_menu->Components->at(seletion_index)->Activate();
+			}
+		}
 	}
 
 	virtual void Update(sf::Time dt) override
