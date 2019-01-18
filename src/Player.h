@@ -6,6 +6,7 @@
 #include "Weapon.h"
 #include "Projectile.h"
 
+
 class Player :public SceneActor
 {
 protected:
@@ -59,6 +60,13 @@ protected:
 
 	}
 public:
+	
+	float time_per_footstep = 0.5f;
+
+	float time_footstep_elapsed = 0.f;
+
+	//used in states to controll footstep sounds
+	int footsteps_sound_channel_id = -1;
 
 	float health = 100.f;
 	/*std::vector<Animation::Animation> * animations = new std::vector<Animation::Animation>();

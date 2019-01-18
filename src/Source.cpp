@@ -367,47 +367,6 @@ int main(int argc, char** argv)
 
 	Game game("SFML", sf::VideoMode(SCREENWIDTH, SCREENHEIGHT));
 
-	//if (!solder.loadFromFile("./textures/player_idle.gif"))
-	//{
-	//	return 42;
-	//}
-	//if (!solder_rifle.loadFromFile("./textures/survivor-move_rifle_0.png"))
-	//{
-	//	return 42;
-	//}
-	//sf::Texture Officer1;
-	//if (!Officer1.loadFromFile("./textures/bk_officer/officer_walk_strip.png"))
-	//{
-	//	return 42;
-	//}
-	//
-	//if (!textBoxTexture1.loadFromFile("./textures/textbox1.png"))
-	//{
-	//	return 42;
-	//}
-	//*if (!proj.loadFromFile("C:/Users/catgu/source/repos/sfml/x64/Debug/textures/projectile.png"))
-	//{
-	//	return 42;
-	//}*/
-	//if (!proj.loadFromFile("./textures/projectile.png"))
-	//{
-	//	return 42;
-	//}
-	//textBoxTexture1.setRepeated(true);
-	//
-	//if (!blood1.loadFromFile("./textures/blood/blood_a_0002.png"))
-	//{
-	//	return 42; // Robust error handling!
-	//}
-	//if (!blood_yellow_1.loadFromFile("./textures/blood/blood_yellow_b_0001.png"))
-	//{
-	//	return 42; // Robust error handling!
-	//}
-	//
-	//if (!blood_a_anim.loadFromFile("./textures/blood/blood_a_anim.png"))
-	//{
-	//	return 42; // Robust error handling!
-	//}
 	
 
 	b2Vec2 gravity(0.f, 0.f);
@@ -430,27 +389,7 @@ int main(int argc, char** argv)
 	auto solder = new TextureResource("solder", "./../textures/player_idle.gif", false, false);
 	solder->CreateResourceFromFile();
 
-	/*Animation::Animation animr = Animation::Animation("solder_move_rifle");
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 0));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 1));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 2));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 3));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 4));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 5));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 6));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 7));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 8));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 9));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 10));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 11));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 12));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 13));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 14));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 15));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 16));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 17));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 18));
-	animr.FrameIndexes->push_back(Animation::CellIndex(0, 19));*/
+
 
 	player = new Player(sf::Vector2f(0,0), 150, 100, sf::Sprite(solder->texture));
 	/*player->animations->push_back(animr);*/
@@ -580,6 +519,88 @@ int main(int argc, char** argv)
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_rough_loop2", "./../sounds/physics/metal/metal_box_scrape_rough_loop2.wav"));
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_smooth_loop1", "./../sounds/physics/metal/metal_box_scrape_smooth_loop1.wav"));
 
+
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_CONCRETE_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/concrete" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_DIRT_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/dirt" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_CHAINLINK_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/chainlink" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_DUCT_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/duct" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_GRASS_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/grass" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_GRAVEL_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/gravel" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_LADDER_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/ladder" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_METAL_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/metal" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_METALGRATE_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/metalgrate" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_MUD_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/mud" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_SAND_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/sand" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_SLOSH_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/slosh" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_TILE_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/tile" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_WADE_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/wade" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_WOOD_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/wood" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		std::string name = MAT_SOUND_TYPE_WOODPANEL_NAME;
+		game.Resources->AddSoundResource(new SoundResource(name + std::to_string(i), "./../sounds/player/footsteps/woodpanel" + std::to_string(i) + ".wav"));
+	}
+
 	
 	Item*let = new Item("letter");
 	let->sprite = sf::Sprite(letterT->texture);
@@ -606,7 +627,28 @@ int main(int argc, char** argv)
 
 			XMLElement*imageData = child->ToElement()->FirstChildElement("image");
 			std::string source = imageData->FindAttribute("source")->Value();
+
+			XMLElement*tileProps = child->FirstChildElement("properties");
+
+			if (tileProps != NULL)
+			{
+				int mat_sound_id = 0;
+				for (tinyxml2::XMLElement* Prop = tileProps->FirstChildElement(); Prop != NULL; Prop = Prop->NextSiblingElement())
+				{
+					if (Prop->FindAttribute("name") != NULL)
+					{
+						std::string f = Prop->FindAttribute("name")->Value();
+						if (f == "mat_sound_type")
+						{
+							mat_sound_id = Prop->FindAttribute("value")->IntValue();
+						}
+				
+					}
+				}
+				game.Resources->addTileData(TileData(std::stoi(id), mat_sound_id));
+			}
 			game.Resources->AddTextureResource(new TextureResource(id, "./" + source, false, false));
+			
 		}
 	}
 		
@@ -618,6 +660,7 @@ int main(int argc, char** argv)
 	
 
 	game.Resources->AddFontResource(new FontResource("calibri", "./../fonts/calibri.ttf"));
+	game.Resources->AddFontResource(new FontResource("Calibri", "./../fonts/calibri.ttf"));
 	try
 	{
 
