@@ -108,7 +108,7 @@ public:
 		this->Anim->sprite.setScale(this->Scale);
 		this->Anim->sprite.setPosition(sf::Vector2f(collision.left, collision.top));
 		this->Anim->sprite.setOrigin(sf::Vector2<float>(/*this->Anim->getTextureRect().width*Scale.x/2, this->Anim->getTextureRect().height*Scale.y/2*/0, 0));
-		this->OnCollision = [this](Object*object)
+		this->OnCollision = [this](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 		{
 			if (object->GetObjectRectangle().intersects(this->reactCollision))
 			{

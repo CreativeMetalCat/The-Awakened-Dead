@@ -73,6 +73,79 @@
 
 #pragma endregion
 
+
+#pragma region Footstep_Mat_Types
+
+#define MAT_SOUND_TYPE_CONCRETE 0x0
+
+#define MAT_SOUND_TYPE_CHAINLINK 0x1
+
+#define MAT_SOUND_TYPE_DIRT 0x2
+
+#define MAT_SOUND_TYPE_DUCT 0x3
+
+#define MAT_SOUND_TYPE_GRASS 0x4
+
+#define MAT_SOUND_TYPE_GRAVEL 0x5
+
+#define MAT_SOUND_TYPE_LADDER 0x6
+
+#define MAT_SOUND_TYPE_METAL 0x7
+
+#define MAT_SOUND_TYPE_METALGRATE 0x8
+
+#define MAT_SOUND_TYPE_MUD 0x9
+
+#define MAT_SOUND_TYPE_SAND 0xa
+
+#define MAT_SOUND_TYPE_SLOSH 0xb
+
+#define MAT_SOUND_TYPE_TILE 0xd
+
+#define MAT_SOUND_TYPE_WADE 0xe
+
+#define MAT_SOUND_TYPE_WOOD 0xf
+
+#define MAT_SOUND_TYPE_WOODPANEL 0x10
+
+#pragma endregion
+
+#pragma region Footstep_Mat_Types_Paths
+
+#define MAT_SOUND_TYPE_CONCRETE_NAME "footstep_concrete"
+
+#define MAT_SOUND_TYPE_CHAINLINK_NAME "footstep_chainlink"
+
+#define MAT_SOUND_TYPE_DIRT_NAME "footstep_dirt"
+
+#define MAT_SOUND_TYPE_DUCT_NAME "footstep_duct"
+
+#define MAT_SOUND_TYPE_GRASS_NAME "footstep_grass"
+
+#define MAT_SOUND_TYPE_GRAVEL_NAME "footstep_gravel"
+
+#define MAT_SOUND_TYPE_LADDER_NAME "footstep_ladder"
+
+#define MAT_SOUND_TYPE_METAL_NAME "footstep_metal"
+
+#define MAT_SOUND_TYPE_METALGRATE_NAME "footstep_metalgrate"
+
+#define MAT_SOUND_TYPE_MUD_NAME "footstep_mud"
+
+#define MAT_SOUND_TYPE_SAND_NAME "footstep_sand"
+
+#define MAT_SOUND_TYPE_SLOSH_NAME "footstep_slosh"
+
+#define MAT_SOUND_TYPE_TILE_NAME "footstep_tile"
+
+#define MAT_SOUND_TYPE_WADE_NAME "footstep_wade"
+
+#define MAT_SOUND_TYPE_WOOD_NAME "footstep_wood"
+
+#define MAT_SOUND_TYPE_WOODPANEL_NAME "footstep_woodpanel"
+
+#pragma endregion
+
 //unused
 enum MAT_TYPE
 {

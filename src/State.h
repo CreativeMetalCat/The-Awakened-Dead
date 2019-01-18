@@ -83,7 +83,15 @@ public:
 
 	}
 
+	//Plays sound using one of the channels
 	virtual void PlaySound(std::string name)
+	{
+
+	}
+	//Plays sound using one of the channels and sound from game->resourses->SoundData
+	//@param
+	//channel_id - id of channel that was used for this sound 
+	virtual void PlaySound(std::string name, int &channel_id)
 	{
 
 	}

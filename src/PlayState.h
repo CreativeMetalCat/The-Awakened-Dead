@@ -15,6 +15,11 @@
 #include "SolidObject.h"
 #include "TextObject.h"
 
+#ifndef _RANDOM_
+#include <random>
+#endif // !_RANDOM_
+
+
 #ifndef TINYXML2_INCLUDED
 #include <tinyxml2.h>
 #include <tinyxml2.cpp>
@@ -43,10 +48,24 @@ const int SCREENHEIGHT = 720;
 //state(mode) when player & everything is moves
 class PlayState :public State
 {
+protected:
+	
+
+	//Currently only for this state
+	//min - min of range
+	//max - max of range
+	int m_get_random_number(int min, int max)
+	{
+		std::random_device rd; // obtain a random number from hardware
+		std::mt19937 eng(rd()); // seed the generator
+		std::uniform_int_distribution<> distr(min,max); // define the range
+
+		return distr(eng);
+	}
 
 public:
 	bool _map_is_loaded = false;
-
+	int test = 0;
 	int Current_area_id = 0;
 	GUI::Container*PlayerUI = new GUI::Container();
 
@@ -104,6 +123,8 @@ public:
 		}
 
 	}
+
+	//Plays sound using one of the channels
 	void PlaySound(std::string name)override
 	{
 		for (size_t i = 0; i < Channels->size(); i++)
@@ -123,6 +144,30 @@ public:
 				break;
 			}
 		}
+	}
+
+	//Plays sound using one of the channels and sound from game->resourses->SoundData
+	//@param
+	//channel_id - id of channel that was used for this sound 
+	 void PlaySound(std::string name, int &channel_id) override
+	{
+		 for (size_t i = 0; i < Channels->size(); i++)
+		 {
+			 bool res;
+			 Channels->at(i)->isPlaying(&res);
+			 if (Channels->at(i) == NULL)
+			 {
+				 context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
+				 channel_id = i;
+				 break;
+			 }
+			 else if (res == false)
+			 {
+				 context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
+				 channel_id = i;
+				 break;
+			 }
+		 }
 	}
 
 	//creates physical body for object using given data
@@ -241,6 +286,17 @@ public:
 								gid = tile->FindAttribute("gid")->IntValue();
 								gid--;
 
+								int mat_sound_type_id = 0;
+								try
+								{
+									TileData td = context->game->Resources->getTileDataById(gid);
+									mat_sound_type_id = td.MatSoundtype;
+								}
+								catch (std::runtime_error e)
+								{
+
+								}
+
 								sf::Vector2f pos = sf::Vector2f(64 * cTileIdx, 64 * cTileIdy);
 
 								SceneTile*ta = new SceneTile
@@ -249,7 +305,8 @@ public:
 									sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture),
 									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().x,
 									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().y,
-									layer_area_id
+									layer_area_id,
+									mat_sound_type_id
 								);
 								ta->Init();
 								StateObjects->push_back(ta);
@@ -275,6 +332,18 @@ public:
 								gid = tile->FindAttribute("gid")->IntValue();
 								gid--;
 
+								int mat_sound_type_id = 0;
+								try
+								{
+									TileData td = context->game->Resources->getTileDataById(gid);
+									mat_sound_type_id = td.MatSoundtype;
+								}
+								catch (std::runtime_error e)
+								{
+
+								}
+
+
 								sf::Vector2f pos = sf::Vector2f(64 * cTileIdx, 64 * cTileIdy);
 								SceneTile*ta = new SceneTile
 								(
@@ -282,7 +351,8 @@ public:
 									sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture),
 									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().x,
 									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().y,
-									layer_area_id
+									layer_area_id,
+									mat_sound_type_id
 								);
 								ta->Init();
 								StateObjects->push_back(ta);
@@ -907,7 +977,37 @@ public:
 				}
 				else if (SceneTile*obj = dynamic_cast<SceneTile*>(StateObjects->at(i)))
 				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_staticBody;
 
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					obj->OnCollision = [this, obj](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						if (Player*p = dynamic_cast<Player*>(object))
+						{
+							if (p->footstep_sound_type != obj->mat_sound_type_id)
+							{
+								p->footstep_sound_type = obj->mat_sound_type_id;
+							}
+						}
+					};
 				}
 				else if (dynamic_cast<TextObject*>(StateObjects->at(i)))
 				{
@@ -964,11 +1064,11 @@ public:
 					StateObjects->at(i)->body->CreateFixture(&shapeA, 1.f);
 					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
 					StateObjects->at(i)->Init();
-					StateObjects->at(i)->OnCollision = [this, pp](Object*object)
+					StateObjects->at(i)->OnCollision = [this, pp](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 					{
 						pp->onCollision(object, this->context, "PlayState");
 					};
-					pp->LeftCollision = [this, pp](Object*object)
+					pp->LeftCollision = [this, pp](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 					{
 						pp->leftCollision(object, this->context, "PlayState");
 					};
@@ -1065,16 +1165,10 @@ public:
 
 		npc_zombie*z = new npc_zombie(sf::Vector2f(500, 500), 1.f, 100, 100);
 		z->Init();
-		z->OnCollision = [this, z](Object*object)
+		z->OnCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 		{
 			z->onCollision(object, this->context, "PlayState");
 		};
-
-
-
-
-		projObj = new projectile(sf::Vector2f(0, 0), 100.f, 100.f, 50.0f, 2.0f, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
-
 
 		Animation::SpritesAnimation*zombie_idle = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_idle");
 		for (int i = 0; i < 17; i++)
@@ -1084,6 +1178,12 @@ public:
 		z->spritesAnimations->addAnimation(zombie_idle);
 		z->Init();
 		z->SetAnimation("skeleton_idle");
+
+
+		projObj = new projectile(sf::Vector2f(0, 0), 100.f, 100.f, 50.0f, 2.0f, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
+
+
+		
 
 
 
@@ -1330,171 +1430,6 @@ public:
 		}
 	}
 
-	bool CheckObjectCollision(Object*&object)
-	{
-		if (StateObjects->empty()) { return false; }
-		bool res = false;
-		for (b2ContactEdge* ce = object->body->GetContactList(); ce; ce->next)
-		{
-			b2Contact* c = ce->contact;
-			for (size_t i = 0; i < StateObjects->size(); i++)
-			{
-				if (object != StateObjects->at(i) && c->GetFixtureA() != c->GetFixtureB())
-				{
-					if (std::find(object->CollidingObjects->begin(), object->CollidingObjects->end(), StateObjects->at(i)) == object->CollidingObjects->end())
-					{
-						if (c->GetFixtureA() == StateObjects->at(i)->body->GetFixtureList())
-						{
-							StateObjects->at(i)->OnCollision(object);
-							object->OnCollision(StateObjects->at(i));
-							res = true;
-							break;
-						}
-						else
-						{
-
-						}
-					}
-					else
-					{
-						if (c->GetFixtureA() != StateObjects->at(i)->body->GetFixtureList())
-						{
-							object->LeftCollision(StateObjects->at(i));
-							StateObjects->at(i)->LeftCollision(object);
-						}
-					}
-				}
-			}
-			break;
-		}
-		return res;
-	}
-	bool CheckProjectileCollision(projectile *proj)
-	{
-		/*if (StateObjects->empty()) { return false; }
-		bool res = false;
-		for (size_t i = 0; i < StateObjects->size(); i++)
-		{
-			if (std::find(proj->CollidingObjects->begin(), proj->CollidingObjects->end(), StateObjects->at(i)) == proj->CollidingObjects->end())
-			{
-				for (b2ContactEdge* ce = StateObjects->at(i)->body->GetContactList(); ce; ce->next)
-				{
-					b2Contact* c = ce->contact;
-					if (c->GetFixtureA() == StateObjects->at(i)->body->GetFixtureList())
-					{
-						StateObjects->at(i)->OnCollision(proj);
-						proj->OnCollision(StateObjects->at(i));
-						res = true;
-					}
-					else
-					{
-						proj->LeftCollision(StateObjects->at(i));
-						StateObjects->at(i)->LeftCollision(proj);
-					}
-				}
-			}
-			else
-			{
-				for (b2ContactEdge* ce = StateObjects->at(i)->body->GetContactList(); ce; ce->next)
-				{
-					b2Contact* c = ce->contact;
-					if (c->GetFixtureA() == StateObjects->at(i)->body->GetFixtureList())
-					{
-						res = true;
-					}
-					else
-					{
-						proj->LeftCollision(StateObjects->at(i));
-						StateObjects->at(i)->LeftCollision(proj);
-					}
-				}
-			}
-		}*/
-
-
-		//if (StateObjects->empty()) { return false; }
-		//for (size_t i = 0; i < StateObjects->size(); i++)
-		//{
-		//	if (std::find(proj->CollidingObjects->begin(), proj->CollidingObjects->end(), StateObjects->at(i)) == proj->CollidingObjects->end())
-		//	{
-
-		//		if (proj->GetObjectRectangle().intersects(StateObjects->at(i)->GetObjectRectangle()))
-		//		{
-		//			StateObjects->at(i)->OnCollision(proj);
-		//			proj->OnCollision(StateObjects->at(i));
-		//			/*return true;*/
-		//		}
-		//	}
-		//	else
-		//	{
-		//		if (!proj->GetObjectRectangle().intersects(StateObjects->at(i)->GetObjectRectangle()))
-		//		{
-		//			proj->LeftCollision(StateObjects->at(i));
-		//			StateObjects->at(i)->LeftCollision(proj);
-		//		}
-		//	}
-		//}
-
-		return false;
-	}
-	bool CheckPlayerCollision()
-	{
-		if (StateObjects->empty()) { return false; }
-		bool res = false;
-		for (b2ContactEdge* ce = player->body->GetContactList(); ce; ce->next)
-		{
-			b2Contact* c = ce->contact;
-			for (size_t i = 0; i < StateObjects->size(); i++)
-			{
-				if (std::find(player->CollidingObjects->begin(), player->CollidingObjects->end(), StateObjects->at(i)) == player->CollidingObjects->end())
-				{
-					if (c->GetFixtureA() == StateObjects->at(i)->body->GetFixtureList())
-					{
-						StateObjects->at(i)->OnCollision(player);
-						player->OnCollision(StateObjects->at(i));
-						res = true;
-						break;
-					}
-					else
-					{
-
-					}
-				}
-				else
-				{
-					if (c->GetFixtureA() != StateObjects->at(i)->body->GetFixtureList())
-					{
-						player->LeftCollision(StateObjects->at(i));
-						StateObjects->at(i)->LeftCollision(player);
-					}
-				}
-			}
-			break;
-		}
-
-		/*if (StateObjects->empty()) { return false; }
-		for (size_t i = 0; i < StateObjects->size(); i++)
-		{
-			if (std::find(player->CollidingObjects->begin(), player->CollidingObjects->end(), StateObjects->at(i)) == player->CollidingObjects->end())
-			{
-				if (player->GetObjectRectangle().intersects(StateObjects->at(i)->GetObjectRectangle()))
-				{
-					StateObjects->at(i)->OnCollision(player);
-					player->OnCollision(StateObjects->at(i));
-					return true;
-				}
-
-			}
-			else
-			{
-				StateObjects->at(i)->LeftCollision(player);
-				player->LeftCollision(StateObjects->at(i));
-			}
-		}
-		return false;*/
-	}
-
-
 	virtual void HandleEvent(sf::Event& event) override
 	{
 
@@ -1639,11 +1574,11 @@ public:
 			{
 				proje* bullet = new proje(sf::Vector2f(0, 0), 10.f, 10.f, 50.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
 
-				bullet->OnCollision = [this, blood_a, bullet](Object*object)
+				bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 				{
 					bullet->projectileOnCollision(object, this->context, "PlayState");
 				};
-				bullet->LeftCollision = [this, bullet](Object*object)
+				bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 				{
 					bullet->projectileOnLeftCollision(object, this->context, "PlayState");
 				};
@@ -1658,12 +1593,12 @@ public:
 
 				projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
 
-				bullet->OnCollision = [this, blood_a, bullet](Object*object)
+				bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 				{
 
 					bullet->projectileOnCollision(object, this->context, "PlayState");
 				};
-				bullet->LeftCollision = [this, bullet](Object*object)
+				bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 				{
 					bullet->projectileOnLeftCollision(object, this->context, "PlayState");
 				};
@@ -1731,7 +1666,7 @@ public:
 
 			projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 50.0f, player->currentWeapon->projectileSpeed, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
 
-			bullet->OnCollision = [this, blood_a, bullet](Object*object)
+			bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 			{
 
 				if (dynamic_cast<projectile*>(object)) { return; }
@@ -1773,7 +1708,7 @@ public:
 					this->StateObjects->push_back(blood);
 				}
 			};
-			bullet->LeftCollision = [this, bullet](Object*object)
+			bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 			{
 				if (!bullet->CollidingObjects->empty())
 				{
@@ -2033,6 +1968,215 @@ public:
 		}
 
 		player->Update(dt);
+		if (player->body->GetLinearVelocity().x != 0 || player->body->GetLinearVelocity().y != 0)
+		{
+
+			if (player->footsteps_sound_channel_id >= 0)
+			{
+				bool isPlaying = false;
+				Channels->at(player->footsteps_sound_channel_id)->isPlaying(&isPlaying);
+				if (!isPlaying)
+				{
+					if (player->time_footstep_elapsed >= player->time_per_footstep)
+					{
+						int channel_id = 0;
+						std::string filename="";
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_CONCRETE)
+						{
+							std::string name = MAT_SOUND_TYPE_CONCRETE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_CHAINLINK)
+						{
+							std::string name = MAT_SOUND_TYPE_CHAINLINK_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_DIRT)
+						{
+							std::string name = MAT_SOUND_TYPE_DIRT_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_DUCT)
+						{
+							std::string name = MAT_SOUND_TYPE_DUCT_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_GRASS)
+						{
+							std::string name = MAT_SOUND_TYPE_GRASS_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_GRAVEL)
+						{
+							std::string name = MAT_SOUND_TYPE_GRAVEL_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_LADDER)
+						{
+							std::string name = MAT_SOUND_TYPE_LADDER_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_METAL)
+						{
+							std::string name = MAT_SOUND_TYPE_METAL_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_METALGRATE)
+						{
+							std::string name = MAT_SOUND_TYPE_METALGRATE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_MUD)
+						{
+							std::string name = MAT_SOUND_TYPE_MUD_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_SAND)
+						{
+							std::string name = MAT_SOUND_TYPE_SAND_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_SLOSH)
+						{
+							std::string name = MAT_SOUND_TYPE_SLOSH_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_TILE)
+						{
+							std::string name = MAT_SOUND_TYPE_TILE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_WADE)
+						{
+							std::string name = MAT_SOUND_TYPE_WADE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_WOOD)
+						{
+							std::string name = MAT_SOUND_TYPE_WOOD_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_WOODPANEL)
+						{
+							std::string name = MAT_SOUND_TYPE_WOODPANEL_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						
+
+						
+
+						this->PlaySound(filename, player->footsteps_sound_channel_id);
+						player->time_footstep_elapsed = 0.f;
+					}
+					else
+					{
+						player->time_footstep_elapsed += dt.asSeconds();
+					}
+				}
+				else
+				{
+					if (player->time_footstep_elapsed >= player->time_per_footstep)
+					{
+						int channel_id = 0;
+						std::string filename = "";
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_CONCRETE)
+						{
+							std::string name = MAT_SOUND_TYPE_CONCRETE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_CHAINLINK)
+						{
+							std::string name = MAT_SOUND_TYPE_CHAINLINK_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_DIRT)
+						{
+							std::string name = MAT_SOUND_TYPE_DIRT_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_DUCT)
+						{
+							std::string name = MAT_SOUND_TYPE_DUCT_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_GRASS)
+						{
+							std::string name = MAT_SOUND_TYPE_GRASS_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_GRAVEL)
+						{
+							std::string name = MAT_SOUND_TYPE_GRAVEL_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_LADDER)
+						{
+							std::string name = MAT_SOUND_TYPE_LADDER_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_METAL)
+						{
+							std::string name = MAT_SOUND_TYPE_METAL_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_METALGRATE)
+						{
+							std::string name = MAT_SOUND_TYPE_METALGRATE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_MUD)
+						{
+							std::string name = MAT_SOUND_TYPE_MUD_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_SAND)
+						{
+							std::string name = MAT_SOUND_TYPE_SAND_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_SLOSH)
+						{
+							std::string name = MAT_SOUND_TYPE_SLOSH_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_TILE)
+						{
+							std::string name = MAT_SOUND_TYPE_TILE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_WADE)
+						{
+							std::string name = MAT_SOUND_TYPE_WADE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_WOOD)
+						{
+							std::string name = MAT_SOUND_TYPE_WOOD_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_WOODPANEL)
+						{
+							std::string name = MAT_SOUND_TYPE_WOODPANEL_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						this->PlaySound(filename, player->footsteps_sound_channel_id);
+						player->time_footstep_elapsed = 0.f;
+					}
+					else
+					{
+						player->time_footstep_elapsed += dt.asSeconds();
+					}
+				}
+			}
+			else
+			{
+				int channel_id = 0;
+				std::string filename = "footstep_concrete" + std::to_string(m_get_random_number(1, 4));
+				this->PlaySound(filename, channel_id);
+				player->footsteps_sound_channel_id = channel_id;
+			}
+			
+		}
 		projObj->Update(dt);
 
 		dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("weapon_name"))->text.setString(player->currentWeapon->name);

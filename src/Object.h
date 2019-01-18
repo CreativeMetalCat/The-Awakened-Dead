@@ -69,14 +69,14 @@ public:
 		_velocitySet = false;
 	}
 
-	std::function<void(Object*object)>OnCollision = [this](Object*object)
+	std::function<void(Object*object,b2Fixture *fixtureA,b2Fixture *fixtureB)>OnCollision = [this](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 	{
 		if (this->bodyIsSensor)
 		{
 			/*CollidingObjects->push_back(object);*/
 		}
 	};
-	std::function<void(Object*object)>LeftCollision = [this](Object*object)
+	std::function<void(Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)>LeftCollision = [this](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 	{
 		if (!CollidingObjects->empty())
 		{

@@ -12,6 +12,7 @@ namespace GUI
 
 		sf::Vector2f _originalPos;
 	public:
+		bool IsVisible = true;
 
 		std::string Name = "";
 		bool isSelectable = true;
@@ -63,6 +64,10 @@ namespace GUI
 	class Container
 	{
 	public:
+		//affects all of the object in container only if it's beeing checked
+		bool IsVisible = true;
+		//
+		bool IsActive = true;
 		std::vector<Component*>*Components = new std::vector<Component*>();
 		size_t selectedIndex = 0;
 
@@ -76,6 +81,10 @@ namespace GUI
 
 		void Select(size_t index);
 
+		void SetIsActive(bool flag)
+		{
+
+		}
 	};
 
 	class Label : public Component

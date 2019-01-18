@@ -60,17 +60,17 @@ public:
 		GUI::Button_Load_Map*blm = new GUI::Button_Load_Map("Physics Test", sf::Color::White, context->game->Resources->getFontResourceDataByName("Calibri")->font, 64, sf::Sprite());
 
 		blm->SetPosition(sf::Vector2<float>(300, 120));
-		blm->Action = [this]()
+		blm->map_path = "td_free_tv.tmx";
+		blm->Action = [this,blm]()
 		{
 			context->game->DisableState(context->game->GetStateByName("MenuState"));
 			context->game->ActivateState(context->game->GetStateByName("PlayState"));
 
-			context->game->GetStateByName("PlayState")->current_map = "td_free_tv.tmx";
-			dynamic_cast<PlayState*>(context->game->GetStateByName("PlayState"))->current_map = "td_free_tv.tmx";
-			/*PlayState*p = dynamic_cast<PlayState*>(context->game->States->at(context->game->GetStateIdByName("PlayState")));*/
-			int f = 0;
+			
+			dynamic_cast<PlayState*>(context->game->GetStateByName("PlayState"))->current_map = blm->map_path;
 		};
 		this->map_loading_menu->Components->push_back(blm);
+		
 
 		Button->Init();
 		GUI::Button*Button2 = new GUI::Button("Quit", sf::Color::White, context->game->Resources->getFontResourceDataByName("calibri")->font, 64, sf::Sprite(context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture));
@@ -147,7 +147,7 @@ public:
 			}
 		}
 		
-		//if (!map_loading_menu->Components->empty()/*&& map_loading_menu->IsVisible*/)
+		if (!map_loading_menu->Components->empty()&& map_loading_menu->IsVisible)
 		{
 			for (size_t i = 0; i < map_loading_menu->Components->size(); i++)
 			{
@@ -323,7 +323,7 @@ public:
 
 		}
 
-		if (!map_loading_menu->Components->empty() && map_loading_menu->IsActive)
+		else if (!map_loading_menu->Components->empty() && map_loading_menu->IsActive)
 		{
 			if (event.type == sf::Event::EventType::MouseMoved)
 			{

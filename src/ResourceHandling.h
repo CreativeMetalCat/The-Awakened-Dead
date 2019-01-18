@@ -3,6 +3,7 @@
 #include "SFML/Graphics.hpp"
 #include <iostream>
 #include <vector>
+#include "MaterialTypes.h"
 
 #include <fmod.hpp>
 #include <fmod_errors.h>
@@ -122,6 +123,18 @@ public:
 	}
 };
 
+class TileData
+{
+public:
+	int MatSoundtype = MAT_SOUND_TYPE_CONCRETE;
+	int ResourceId = 0;
+	TileData(int ResourceId = 0, int MatSoundtype = MAT_SOUND_TYPE_CONCRETE)
+	{
+		this->MatSoundtype = MatSoundtype;
+		this->ResourceId = ResourceId;
+	}
+};
+
 class ResourceContainer
 {
 private:
@@ -152,7 +165,35 @@ public:
 	std::vector<FontResource*>*FontData = new std::vector<FontResource*>();
 	std::vector<SoundResource*>*SoundData = new std::vector<SoundResource*>();
 
+	std::vector<TileData>*TileDataContainer = new std::vector<TileData>();
+
 	void addAnimationData(Resource* textureResource) { ResourceData->push_back(textureResource); }
+
+	TileData getTileDataById(int id)
+	{
+		if (!TileDataContainer->empty())
+		{
+			for (size_t i = 0;i < TileDataContainer->size(); i++)
+			{
+				if (TileDataContainer->at(i).ResourceId == id)
+				{
+					return TileDataContainer->at(i);
+
+				}
+			}
+			throw(std::runtime_error("Unable to find resorce.ID: " + id));
+			return NULL;
+		}
+		else
+		{
+			throw(std::runtime_error("Unable to find resorce.ID: " + id));
+			return NULL;
+		}
+	}
+	void addTileData(TileData tileData)
+	{
+		this->TileDataContainer->push_back(tileData);
+	}
 
 	//gets firts resource with this name
 	TextureResource* getTextureResourceDataByName(std::string name)
