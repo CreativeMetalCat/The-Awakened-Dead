@@ -5,6 +5,7 @@
 #include "ItemContainer.h"
 #include "Weapon.h"
 #include "Projectile.h"
+#include "MaterialTypes.h"
 
 
 class Player :public SceneActor
@@ -61,6 +62,8 @@ protected:
 	}
 public:
 	
+	int footstep_sound_type = MAT_SOUND_TYPE_CONCRETE;
+
 	float time_per_footstep = 0.5f;
 
 	float time_footstep_elapsed = 0.f;

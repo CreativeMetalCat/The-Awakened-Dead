@@ -998,7 +998,16 @@ public:
 					StateObjects->at(i)->physBodyInitialized = true;
 					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
 
-					
+					obj->OnCollision = [this, obj](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						if (Player*p = dynamic_cast<Player*>(object))
+						{
+							if (p->footstep_sound_type != obj->mat_sound_type_id)
+							{
+								p->footstep_sound_type = obj->mat_sound_type_id;
+							}
+						}
+					};
 				}
 				else if (dynamic_cast<TextObject*>(StateObjects->at(i)))
 				{
@@ -1971,7 +1980,91 @@ public:
 					if (player->time_footstep_elapsed >= player->time_per_footstep)
 					{
 						int channel_id = 0;
-						std::string filename = "footstep_concrete" + std::to_string(m_get_random_number(1, 4));
+						std::string filename="";
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_CONCRETE)
+						{
+							std::string name = MAT_SOUND_TYPE_CONCRETE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_CHAINLINK)
+						{
+							std::string name = MAT_SOUND_TYPE_CHAINLINK_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_DIRT)
+						{
+							std::string name = MAT_SOUND_TYPE_DIRT_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_DUCT)
+						{
+							std::string name = MAT_SOUND_TYPE_DUCT_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_GRASS)
+						{
+							std::string name = MAT_SOUND_TYPE_GRASS_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_GRAVEL)
+						{
+							std::string name = MAT_SOUND_TYPE_GRAVEL_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_LADDER)
+						{
+							std::string name = MAT_SOUND_TYPE_LADDER_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_METAL)
+						{
+							std::string name = MAT_SOUND_TYPE_METAL_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_METALGRATE)
+						{
+							std::string name = MAT_SOUND_TYPE_METALGRATE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_MUD)
+						{
+							std::string name = MAT_SOUND_TYPE_MUD_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_SAND)
+						{
+							std::string name = MAT_SOUND_TYPE_SAND_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_SLOSH)
+						{
+							std::string name = MAT_SOUND_TYPE_SLOSH_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_TILE)
+						{
+							std::string name = MAT_SOUND_TYPE_TILE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_WADE)
+						{
+							std::string name = MAT_SOUND_TYPE_WADE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_WOOD)
+						{
+							std::string name = MAT_SOUND_TYPE_WOOD_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_WOODPANEL)
+						{
+							std::string name = MAT_SOUND_TYPE_WOODPANEL_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						
+
+						
+
 						this->PlaySound(filename, player->footsteps_sound_channel_id);
 						player->time_footstep_elapsed = 0.f;
 					}
@@ -1985,7 +2078,87 @@ public:
 					if (player->time_footstep_elapsed >= player->time_per_footstep)
 					{
 						int channel_id = 0;
-						std::string filename = "footstep_concrete" + std::to_string(m_get_random_number(1, 4));
+						std::string filename = "";
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_CONCRETE)
+						{
+							std::string name = MAT_SOUND_TYPE_CONCRETE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_CHAINLINK)
+						{
+							std::string name = MAT_SOUND_TYPE_CHAINLINK_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_DIRT)
+						{
+							std::string name = MAT_SOUND_TYPE_DIRT_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_DUCT)
+						{
+							std::string name = MAT_SOUND_TYPE_DUCT_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_GRASS)
+						{
+							std::string name = MAT_SOUND_TYPE_GRASS_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_GRAVEL)
+						{
+							std::string name = MAT_SOUND_TYPE_GRAVEL_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_LADDER)
+						{
+							std::string name = MAT_SOUND_TYPE_LADDER_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_METAL)
+						{
+							std::string name = MAT_SOUND_TYPE_METAL_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_METALGRATE)
+						{
+							std::string name = MAT_SOUND_TYPE_METALGRATE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_MUD)
+						{
+							std::string name = MAT_SOUND_TYPE_MUD_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_SAND)
+						{
+							std::string name = MAT_SOUND_TYPE_SAND_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_SLOSH)
+						{
+							std::string name = MAT_SOUND_TYPE_SLOSH_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_TILE)
+						{
+							std::string name = MAT_SOUND_TYPE_TILE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_WADE)
+						{
+							std::string name = MAT_SOUND_TYPE_WADE_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_WOOD)
+						{
+							std::string name = MAT_SOUND_TYPE_WOOD_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
+						if (player->footstep_sound_type == MAT_SOUND_TYPE_WOODPANEL)
+						{
+							std::string name = MAT_SOUND_TYPE_WOODPANEL_NAME;
+							filename = name + std::to_string(m_get_random_number(1, 4));
+						}
 						this->PlaySound(filename, player->footsteps_sound_channel_id);
 						player->time_footstep_elapsed = 0.f;
 					}
