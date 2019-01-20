@@ -14,6 +14,7 @@
 #include "TestProjectile.h"
 #include "SolidObject.h"
 #include "TextObject.h"
+#include "SoundSourceObject.h"
 
 #ifndef _RANDOM_
 #include <random>
@@ -38,7 +39,7 @@
 #define MAX_SOUND_CHANNELS_COUNT 1024
 #endif // !MAX_SOUND_CHANNELS_COUNT
 
-bool DEBUG_DRAWCOLLISION = false;
+bool DEBUG_DRAWCOLLISION = true;
 
 bool DEBUG_DRAWREVERB = false;
 
@@ -157,13 +158,23 @@ public:
 			 Channels->at(i)->isPlaying(&res);
 			 if (Channels->at(i) == NULL)
 			 {
-				 context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
+				 FMOD_RESULT r;
+				 r = context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
+				 if (r != FMOD_OK)
+				 {
+					 throw(std::runtime_error(FMOD_ErrorString(r)));
+				 }
 				 channel_id = i;
 				 break;
 			 }
 			 else if (res == false)
 			 {
-				 context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
+				 FMOD_RESULT r;
+				 r = context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
+				 if (r != FMOD_OK)
+				 {
+					 throw(std::runtime_error(FMOD_ErrorString(r)));
+				 }
 				 channel_id = i;
 				 break;
 			 }
@@ -411,6 +422,85 @@ public:
 							float width = obj->FindAttribute("width")->FloatValue();
 							float height = obj->FindAttribute("height")->FloatValue();
 							this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height,layer_area_id));
+						}
+						if (type == "SoundSource")
+						{
+							float posX = obj->FindAttribute("x")->FloatValue();
+							float posY = obj->FindAttribute("y")->FloatValue();
+
+							int min = 100;
+							int max = 1000;
+
+							std::string sound_filename = "";
+							std::string sound_name = "";
+
+							bool is_looped = false;
+
+							XMLElement*objProps = obj->FirstChildElement("properties");
+
+							if (objProps != NULL)
+							{
+								for (tinyxml2::XMLElement* Prop = objProps->FirstChildElement(); Prop != NULL; Prop = Prop->NextSiblingElement())
+								{
+									if (Prop->FindAttribute("name") != NULL)
+									{
+										std::string f = Prop->FindAttribute("name")->Value();
+										if (f == "MaxDistance")
+										{
+											max = Prop->FindAttribute("value")->IntValue();
+										}
+										if (f == "MinDistance")
+										{
+											min = Prop->FindAttribute("value")->IntValue();
+										}
+										if (f == "SoundFile")
+										{
+											sound_filename = Prop->FindAttribute("value")->Value();
+										}
+										if (f == "SoundName")
+										{
+											sound_name = Prop->FindAttribute("value")->Value();
+										}
+										if (f == "Looped")
+										{
+											is_looped = Prop->FindAttribute("value")->BoolValue();
+										}
+										
+									}
+								}
+							}
+
+							if (sound_name != "")
+							{
+								try
+								{
+									context->game->Resources->getSoundResourceDataByName(sound_name);
+								}
+								catch (std::runtime_error e)
+								{
+									if (sound_filename != "")
+									{
+
+										SoundResource* sr = new SoundResource(sound_name, "./" + sound_filename);
+
+										
+
+										FMOD_RESULT res;
+										res = context->game->lowSoundSystem->createSound(sr->filename.c_str(), FMOD_2D, 0, &sr->sound);
+										if (res != FMOD_OK)
+										{
+											std::cout << "Error creating sound. Name: " << sr->name.c_str() << "Filename: " << sr->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
+										}
+										else
+										{
+											context->game->Resources->AddSoundResource(sr);
+										}
+									}
+								}
+								
+							}
+							
+							this->StateObjects->push_back(new SoundSourceObject(sf::Vector2f(posX,posY),sound_name, is_looped,max,min));
 						}
 						if (type == "TextObject")
 						{
@@ -916,31 +1006,31 @@ public:
 									{
 										for (tinyxml2::XMLElement* Prop = objProps->FirstChildElement(); Prop != NULL; Prop = Prop->NextSiblingElement())
 										{
-											if (Prop->FindAttribute("name") != NULL)
+										if (Prop->FindAttribute("name") != NULL)
+										{
+											std::string f = Prop->FindAttribute("name")->Value();
+											if (f == "Red")
 											{
-												std::string f = Prop->FindAttribute("name")->Value();
-												if (f == "Red")
-												{
-													r = Prop->FindAttribute("value")->IntValue();
-												}
-												if (f == "Green")
-												{
-													g = Prop->FindAttribute("value")->IntValue();
-												}
-												if (f == "Blue")
-												{
-													b = Prop->FindAttribute("value")->IntValue();
-												}
-												if (f == "Alpha")
-												{
-													a = Prop->FindAttribute("value")->IntValue();
-												}
+												r = Prop->FindAttribute("value")->IntValue();
 											}
+											if (f == "Green")
+											{
+												g = Prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "Blue")
+											{
+												b = Prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "Alpha")
+											{
+												a = Prop->FindAttribute("value")->IntValue();
+											}
+										}
 										}
 									}
 
 									color = sf::Color(r, g, b, a);
-									this->StateObjects->push_back(new TextObject(sf::Vector2f(posX, posY), text, color, sf::Text(text, context->game->Resources->getFontResourceDataByName(fontName)->font, pixelSize),true,layer_area_id));
+									this->StateObjects->push_back(new TextObject(sf::Vector2f(posX, posY), text, color, sf::Text(text, context->game->Resources->getFontResourceDataByName(fontName)->font, pixelSize), true, layer_area_id));
 								}
 							}
 						}
@@ -1013,6 +1103,43 @@ public:
 				{
 
 				}
+
+				else if (SoundSourceObject*sso = dynamic_cast<SoundSourceObject*>(StateObjects->at(i)))
+				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_staticBody;
+
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(sso->max_distance , sso->max_distance );
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					StateObjects->at(i)->OnCollision = [this,sso](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						sso->onCollision(object, fixtureA, fixtureB);
+					};
+
+					StateObjects->at(i)->LeftCollision = [this,sso](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						sso->leftCollision(object,fixtureA,fixtureB);
+					};
+
+				}
+
+
 				else if (npc_zombie*z = dynamic_cast<npc_zombie*>(StateObjects->at(i)))
 				{
 					b2BodyDef def;
@@ -1279,58 +1406,61 @@ public:
 				}
 				if (DEBUG_DRAWCOLLISION)
 				{
-					if (this->StateObjects->at(i)->physBodyInitialized == true)
+					if (!dynamic_cast<SceneTile*>(StateObjects->at(i)))
 					{
-
-						if (this->StateObjects->at(i)->body->GetFixtureList() != NULL)
+						if (this->StateObjects->at(i)->physBodyInitialized == true)
 						{
 
-
-
-							for (b2Fixture*fix = this->StateObjects->at(i)->body->GetFixtureList(); fix != NULL; fix = fix->GetNext())
+							if (this->StateObjects->at(i)->body->GetFixtureList() != NULL)
 							{
-								if (fix->GetType() == b2Shape::Type::e_circle)
+
+
+
+								for (b2Fixture*fix = this->StateObjects->at(i)->body->GetFixtureList(); fix != NULL; fix = fix->GetNext())
 								{
-									b2CircleShape*coll = dynamic_cast<b2CircleShape*>(fix->GetShape());
+									if (fix->GetType() == b2Shape::Type::e_circle)
+									{
+										b2CircleShape*coll = dynamic_cast<b2CircleShape*>(fix->GetShape());
+										sf::CircleShape cs = sf::CircleShape(coll->m_radius);
+										cs.setPosition(sf::Vector2f(this->StateObjects->at(i)->body->GetPosition().x, this->StateObjects->at(i)->body->GetPosition().y));
+										context->window->draw(cs);
+									}
+									if (fix->GetType() == b2Shape::Type::e_polygon)
+									{
+										b2PolygonShape*coll = dynamic_cast<b2PolygonShape*>(fix->GetShape());
+
+										sf::VertexArray va = sf::VertexArray(sf::PrimitiveType::LineStrip);
+
+										for (int ind = 0; ind < coll->m_count; ind++)
+										{
+											va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[ind].x + this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[ind].y + this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
+										}
+										va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[0].x + this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[0].y + this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
+										context->window->draw(va);
+									}
+								}
+								/*if (this->StateObjects->at(i)->body->GetFixtureList()->GetType() == b2Shape::Type::e_circle)
+								{
+									b2CircleShape*coll = dynamic_cast<b2CircleShape*>(this->StateObjects->at(i)->body->GetFixtureList()->GetShape());
 									sf::CircleShape cs = sf::CircleShape(coll->m_radius);
 									cs.setPosition(sf::Vector2f(this->StateObjects->at(i)->body->GetPosition().x, this->StateObjects->at(i)->body->GetPosition().y));
 									context->window->draw(cs);
 								}
-								if (fix->GetType() == b2Shape::Type::e_polygon)
+								if (this->StateObjects->at(i)->body->GetFixtureList()->GetType() == b2Shape::Type::e_polygon)
 								{
-									b2PolygonShape*coll = dynamic_cast<b2PolygonShape*>(fix->GetShape());
+									b2PolygonShape*coll = dynamic_cast<b2PolygonShape*>(this->StateObjects->at(i)->body->GetFixtureList()->GetShape());
 
 									sf::VertexArray va = sf::VertexArray(sf::PrimitiveType::LineStrip);
 
 									for (int ind = 0; ind < coll->m_count; ind++)
 									{
-										va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[ind].x + this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[ind].y + this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
+											va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[ind].x+ this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[ind].y +this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
 									}
-									va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[0].x + this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[0].y + this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
 									context->window->draw(va);
-								}
+								}*/
 							}
-							/*if (this->StateObjects->at(i)->body->GetFixtureList()->GetType() == b2Shape::Type::e_circle)
-							{
-								b2CircleShape*coll = dynamic_cast<b2CircleShape*>(this->StateObjects->at(i)->body->GetFixtureList()->GetShape());
-								sf::CircleShape cs = sf::CircleShape(coll->m_radius);
-								cs.setPosition(sf::Vector2f(this->StateObjects->at(i)->body->GetPosition().x, this->StateObjects->at(i)->body->GetPosition().y));
-								context->window->draw(cs);
-							}
-							if (this->StateObjects->at(i)->body->GetFixtureList()->GetType() == b2Shape::Type::e_polygon)
-							{
-								b2PolygonShape*coll = dynamic_cast<b2PolygonShape*>(this->StateObjects->at(i)->body->GetFixtureList()->GetShape());
 
-								sf::VertexArray va = sf::VertexArray(sf::PrimitiveType::LineStrip);
-
-								for (int ind = 0; ind < coll->m_count; ind++)
-								{
-										va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[ind].x+ this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[ind].y +this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
-								}
-								context->window->draw(va);
-							}*/
 						}
-
 					}
 				}
 				if (DEBUG_DRAWREVERB)
@@ -2375,6 +2505,55 @@ public:
 						{
 							StateObjects->erase(std::find(StateObjects->begin(), StateObjects->end(), StateObjects->at(i)));
 						}
+					}
+				}
+
+				if (SoundSourceObject*sso = dynamic_cast<SoundSourceObject*>(StateObjects->at(i)))
+				{
+					if (sso->sound_is_active)
+					{
+						if (sso->sound_channel_id == -1)
+						{
+							int ch_id = 0;
+							this->PlaySound(sso->sound_name, ch_id);
+							sso->sound_channel_id = ch_id;
+						}
+						else
+						{
+							bool isPlaying = false;
+							Channels->at(sso->sound_channel_id)->isPlaying(&isPlaying);
+							if (!isPlaying)
+							{
+								if (sso->sound_is_looped)
+								{
+									int ch_id = 0;
+									this->PlaySound(sso->sound_name, ch_id);
+									sso->sound_channel_id = ch_id;
+								}
+							}
+							else
+							{
+								FMOD_VECTOR pos;
+								pos.x = sso->GetObjectPosition().x;
+								pos.y = sso->GetObjectPosition().y;
+								pos.z = 0;
+								Channels->at(sso->sound_channel_id)->set3DAttributes(&pos, 0);
+							}
+						}
+					}
+					else
+					{
+						if (sso->sound_channel_id != -1)
+						{
+							bool isPlaying = false;
+							Channels->at(sso->sound_channel_id)->isPlaying(&isPlaying);
+							if (isPlaying)
+							{
+								Channels->at(sso->sound_channel_id)->stop();
+								sso->sound_channel_id = -1;
+							}
+						}
+						
 					}
 				}
 			}
