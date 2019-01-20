@@ -45,6 +45,10 @@ public:
 		{
 			return;
 		}
+		if (dynamic_cast<SceneTile*>(object))
+		{
+			return;
+		}
 		this->CollidingObjects->push_back(object);
 
 

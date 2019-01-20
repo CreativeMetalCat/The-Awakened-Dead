@@ -6,6 +6,7 @@
 #include "State.h"
 #include "Animation.h"
 #include "Decal.h"
+#include "SceneTile.h"
 #include <iostream>
 class projectile :public SceneActor
 {
@@ -67,6 +68,10 @@ public:
 		blood_a.FrameIndexes->push_back(Animation::CellIndex(0, 6));
 		blood_a.FrameIndexes->push_back(Animation::CellIndex(0, 7));
 
+		if (dynamic_cast<SceneTile*>(object))
+		{
+			return;
+		}
 		if (dynamic_cast<projectile*>(object)) { return; }
 		/*if (dynamic_cast<Player*>(object)) { return; }*/
 		this->CollidingObjects->push_back(object);
