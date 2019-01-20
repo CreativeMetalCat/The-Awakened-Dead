@@ -15,6 +15,7 @@
 #include "SolidObject.h"
 #include "TextObject.h"
 #include "SoundSourceObject.h"
+#include "trigger_change_area_id.h"
 
 #ifndef _RANDOM_
 #include <random>
@@ -423,6 +424,33 @@ public:
 							float height = obj->FindAttribute("height")->FloatValue();
 							this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height,layer_area_id));
 						}
+
+						if (type == "trigger_change_area")
+						{
+							float posX = obj->FindAttribute("x")->FloatValue();
+							float posY = obj->FindAttribute("y")->FloatValue();
+							float width = obj->FindAttribute("width")->FloatValue();
+							float height = obj->FindAttribute("height")->FloatValue();
+
+							int area_to_change_to = 0;
+							XMLElement*objProps = obj->FirstChildElement("properties");
+
+							if (objProps != NULL)
+							{
+								for (tinyxml2::XMLElement* Prop = objProps->FirstChildElement(); Prop != NULL; Prop = Prop->NextSiblingElement())
+								{
+									if (Prop->FindAttribute("name") != NULL)
+									{
+										std::string f = Prop->FindAttribute("name")->Value();
+										if (f == "area_to_change_to")
+										{
+											area_to_change_to = Prop->FindAttribute("value")->IntValue();
+										}
+									}
+								}
+							}
+							this->StateObjects->push_back(new trigger_change_area_id(sf::Vector2f(posX,posY),width,height,area_to_change_to,layer_area_id));
+						}
 						if (type == "SoundSource")
 						{
 							float posX = obj->FindAttribute("x")->FloatValue();
@@ -500,7 +528,7 @@ public:
 								
 							}
 							
-							this->StateObjects->push_back(new SoundSourceObject(sf::Vector2f(posX,posY),sound_name, is_looped,max,min));
+							this->StateObjects->push_back(new SoundSourceObject(sf::Vector2f(posX,posY),sound_name, is_looped,max,min,layer_area_id));
 						}
 						if (type == "TextObject")
 						{
@@ -1138,7 +1166,39 @@ public:
 					};
 
 				}
+				else if (trigger_change_area_id* tcai = dynamic_cast<trigger_change_area_id*>(StateObjects->at(i)))
+				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_staticBody;
 
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					StateObjects->at(i)->OnCollision = [this, tcai](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						tcai->onCollision(object, fixtureA, fixtureB);
+					};
+
+					StateObjects->at(i)->LeftCollision = [this, tcai](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						tcai->leftCollision(object, fixtureA, fixtureB);
+					};
+				}
 
 				else if (npc_zombie*z = dynamic_cast<npc_zombie*>(StateObjects->at(i)))
 				{
@@ -2334,6 +2394,7 @@ public:
 		}*/
 		/*dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->Update(dt);
 		dynamic_cast<npc_test_turret*>(StateObjects->at(2))->Update(dt);*/
+		this->Current_area_id = player->area_id;
 		if (!StateObjects->empty())
 		{
 			for (size_t i = 0; i < StateObjects->size(); i++)
@@ -2342,13 +2403,16 @@ public:
 				{
 					if (this->StateObjects->at(i)->area_id != this->Current_area_id)
 					{
-						this->StateObjects->at(i)->body->SetAwake(false);
+						this->StateObjects->at(i)->body->SetActive(false);
+					}
+					else
+					{
+						this->StateObjects->at(i)->body->SetActive(true);
 					}
 				}
 				StateObjects->at(i)->Update(dt);
 				if (PropPhysics*pp = dynamic_cast<PropPhysics*>(StateObjects->at(i)))
 				{
-
 					if (StateObjects->at(i)->body->GetLinearVelocity().x != 0 || StateObjects->at(i)->body->GetLinearVelocity().y != 0)
 					{
 						if (pp->StateSoundChannelId == -1)

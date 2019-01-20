@@ -148,7 +148,7 @@ public:
 	void Update(sf::Time dt)override
 	{
 
-
+		body->SetTransform(body->GetPosition(), RotationAngle);
 		if (!weapons->empty())
 		{
 			currentWeapon = weapons->at(weapon_id);

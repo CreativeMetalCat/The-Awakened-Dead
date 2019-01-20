@@ -34,7 +34,7 @@ public:
 
 	int min_distance = 100;
 
-	SoundSourceObject(sf::Vector2f pos, std::string sound_name, bool sound_is_looped = false,int max_distance = 1000,int min_distance = 100) :Object(pos),
+	SoundSourceObject(sf::Vector2f pos, std::string sound_name, bool sound_is_looped = false,int max_distance = 1000,int min_distance = 100, int area_id = 0) :Object(pos, area_id),
 		sound_name(sound_name),
 		max_distance(max_distance),
 		min_distance(min_distance),
@@ -43,7 +43,7 @@ public:
 
 	}
 
-	SoundSourceObject(sf::Vector2f pos, FMOD::Sound*sound, bool sound_is_looped = false,int max_distance = 1000, int min_distance = 100) :Object(pos),
+	SoundSourceObject(sf::Vector2f pos, FMOD::Sound*sound, bool sound_is_looped = false,int max_distance = 1000, int min_distance = 100, int area_id = 0) :Object(pos, area_id),
 		sound(sound),
 		max_distance(max_distance),
 		min_distance(min_distance),
