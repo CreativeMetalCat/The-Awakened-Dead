@@ -40,6 +40,7 @@
 #define MAX_SOUND_CHANNELS_COUNT 1024
 #endif // !MAX_SOUND_CHANNELS_COUNT
 
+
 bool DEBUG_DRAWCOLLISION = true;
 
 bool DEBUG_DRAWREVERB = false;
@@ -1773,7 +1774,9 @@ public:
 					bullet->projectileOnLeftCollision(object, this->context, "PlayState");
 				};
 
-				bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
+				//bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
+
+				bullet->Launch(mousePos, sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
 				player->Projectiles->push_back(bullet);
 				player->currentWeapon->ammoInTheClip -= 1;
 

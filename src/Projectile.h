@@ -23,7 +23,7 @@ protected:
 public:
 	sf::Vector2<float>Origin;
 	float MaxDistance = 1000.0f;
-	float Speed = 10.0f;
+	float Speed = 500.0f;
 	sf::Vector2<float>Destination;
 
 	projectile(sf::Vector2f position, float Height, float Width, float maxDistance, float Speed, sf::Sprite sprite) :SceneActor(position, sprite), MaxDistance(maxDistance), Speed(Speed)
@@ -135,17 +135,23 @@ public:
 	}
 	void Launch(sf::Vector2<float> destination, sf::Vector2<float> origin, b2World&world, b2Filter filter)
 	{
+		difference = destination - origin;
+
+
 		IsDone = false;
 		this->SetObjectPosition(origin);
 
 		Origin = origin;
-		difference = destination - origin;
-		if (IsInitialized) { world.DestroyBody(this->body); }
+		IsDone = false;
+		this->SetObjectPosition(origin);
+		this->Init();
 
+		if (IsInitialized) { world.DestroyBody(this->body); }
 		b2BodyDef def;
-		def.position.Set(origin.x + this->GetObjectRectangle().width / 2, origin.y + this->GetObjectRectangle().height / 2);
+		def.position.Set((origin.x + this->GetObjectRectangle().width / 2), (origin.y + this->GetObjectRectangle().height / 2));
 		def.type = b2BodyType::b2_dynamicBody;
 		this->body = world.CreateBody(&def);
+		def.bullet = false;
 
 		b2PolygonShape shape;
 		shape.SetAsBox(this->GetObjectRectangle().width / 2, this->GetObjectRectangle().height / 2);
@@ -180,6 +186,8 @@ public:
 	//angle is in rads
 	void Launch(float angle, sf::Vector2<float>origin, b2World&world, b2Filter filter)
 	{
+
+
 		Origin = origin;
 		IsDone = false;
 		this->SetObjectPosition(origin);
@@ -187,10 +195,10 @@ public:
 
 		if (IsInitialized) { world.DestroyBody(this->body); }
 		b2BodyDef def;
-		def.position.Set(origin.x + this->GetObjectRectangle().width / 2, origin.y + this->GetObjectRectangle().height / 2);
+		def.position.Set((origin.x + this->GetObjectRectangle().width / 2), (origin.y + this->GetObjectRectangle().height / 2));
 		def.type = b2BodyType::b2_dynamicBody;
 		this->body = world.CreateBody(&def);
-		def.bullet = true;
+		def.bullet = false;
 
 		b2PolygonShape shape;
 		shape.SetAsBox(this->GetObjectRectangle().width / 2, this->GetObjectRectangle().height / 2);
@@ -217,8 +225,12 @@ public:
 		float vx = Speed * std::cos(angle);
 		float vy = Speed * std::sin(angle);
 		std::cout << angle << std::endl;
-		body->SetLinearVelocity((b2Vec2(vx * 500, vy * 500)));
-		Velocity = (b2Vec2(vx * 100, vy * 100));
+		/*body->ApplyLinearImpulseToCenter(b2Vec2(vx * 100, vy * 100), true);*/
+		this->applyImpulse(b2Vec2(vx * 1, vy *1 ));
+		physBodyInitialized = true;
+
+		//body->SetLinearVelocity((b2Vec2(vx * 500, vy * 500)));
+		//Velocity = (b2Vec2(vx * 100, vy * 100));
 		IsInitialized = true;
 	}
 
@@ -226,13 +238,33 @@ public:
 	{
 		if (IsInitialized)
 		{
+			
+			if (body != nullptr && physBodyInitialized)
+			{
+				if (!_impulseApplied)
+				{
+					int dt_asmill = dt.asMilliseconds();
+					b2Vec2 imp = b2Vec2(_impulse.x*dt.asMilliseconds(), _impulse.y*dt.asMilliseconds());
+					body->ApplyLinearImpulse(imp, body->GetPosition(), true);
+					_impulseApplied = true;
+				}
+			}
 
 			/*		if (IsDone==false)
 					{*/
-			body->SetLinearVelocity(Velocity);
+
+			/*body->SetLinearVelocity(Velocity);*/
+
 			/*this->Move(Speed*difference*(20.0f / dt.asMicroseconds()));*/
-			this->sprite.setPosition(sf::Vector2f(body->GetPosition().x, body->GetPosition().y));
+
+			/*this->sprite.setPosition(sf::Vector2f(std::round(body->GetPosition().x), std::round(body->GetPosition().y)));*/
+
+			
+			this->sprite.move(Speed*difference*(20.0f / dt.asMicroseconds()));
+			/*this->sprite.setPosition(sf::Vector2f(body->GetLinearVelocity().x*1.f/dt.asMicroseconds()*1+this->sprite.getPosition().x, body->GetLinearVelocity().y*1.f/dt.asMicroseconds()*1+ this->sprite.getPosition().y));*/
 			travelledDistance += Speed * (20.0f / dt.asMilliseconds());
+
+
 			/*this->Move(Speed*difference*(1.0f / dt.asMilliseconds()));
 			travelledDistance += Speed * (1.0f / dt.asMilliseconds());*/
 
