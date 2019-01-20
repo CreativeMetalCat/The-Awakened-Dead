@@ -136,7 +136,7 @@ public:
 	void Launch(sf::Vector2<float> destination, sf::Vector2<float> origin, b2World&world, b2Filter filter)
 	{
 		difference = destination - origin;
-
+		
 
 		IsDone = false;
 		this->SetObjectPosition(origin);
@@ -186,7 +186,8 @@ public:
 	//angle is in rads
 	void Launch(float angle, sf::Vector2<float>origin, b2World&world, b2Filter filter)
 	{
-
+		//temp action
+		RotationAngle = angle;
 
 		Origin = origin;
 		IsDone = false;
@@ -230,7 +231,7 @@ public:
 		physBodyInitialized = true;
 
 		//body->SetLinearVelocity((b2Vec2(vx * 500, vy * 500)));
-		//Velocity = (b2Vec2(vx * 100, vy * 100));
+		Velocity = (b2Vec2(vx*100, vy*100));
 		IsInitialized = true;
 	}
 
@@ -249,7 +250,7 @@ public:
 					_impulseApplied = true;
 				}
 			}
-
+			
 			/*		if (IsDone==false)
 					{*/
 
@@ -260,7 +261,8 @@ public:
 			/*this->sprite.setPosition(sf::Vector2f(std::round(body->GetPosition().x), std::round(body->GetPosition().y)));*/
 
 			
-			this->sprite.move(Speed*difference*(20.0f / dt.asMicroseconds()));
+			this->sprite.move(Speed*sf::Vector2f(Velocity.x,Velocity.y)*(20.0f / dt.asMicroseconds()));
+			this->body->SetTransform(b2Vec2(sprite.getPosition().x, sprite.getPosition().y), RotationAngle);
 			/*this->sprite.setPosition(sf::Vector2f(body->GetLinearVelocity().x*1.f/dt.asMicroseconds()*1+this->sprite.getPosition().x, body->GetLinearVelocity().y*1.f/dt.asMicroseconds()*1+ this->sprite.getPosition().y));*/
 			travelledDistance += Speed * (20.0f / dt.asMilliseconds());
 
