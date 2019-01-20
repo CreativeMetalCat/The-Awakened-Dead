@@ -40,6 +40,7 @@
 #define MAX_SOUND_CHANNELS_COUNT 1024
 #endif // !MAX_SOUND_CHANNELS_COUNT
 
+
 bool DEBUG_DRAWCOLLISION = true;
 
 bool DEBUG_DRAWREVERB = false;
@@ -1774,6 +1775,16 @@ public:
 				};
 
 				bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
+
+				/*sf::Vector2f vec( player->GetObjectPosition().x,player->GetObjectPosition().y);
+				float angle = -(atan2(diff.y, diff.x))*(180 / M_PI);
+				vec.x = (vec.x * cos(angle) - vec.y * sin(angle));
+				vec.y = (vec.x * sin(angle) + vec.y * cos(angle));
+
+				int lenght = sqrt(mousePos.x*mousePos.x + mousePos.y*mousePos.y);
+
+
+				bullet->Launch(mousePos, sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);*/
 				player->Projectiles->push_back(bullet);
 				player->currentWeapon->ammoInTheClip -= 1;
 
