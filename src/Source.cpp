@@ -403,17 +403,22 @@ int main(int argc, char** argv)
 	TextureResource *letterT = new TextureResource("letter", "./../textures/Letter.png", false, false);
 	letterT->CreateResourceFromFile();
 
-	Weapon*w=new Weapon("rifle",1.f,1.f);
+	Weapon*w=new Weapon("rifle",1.f,20.f);
 	w->weaponType = WEAPON_TYPE_TAD_RIFLE;
-	w->ammoPerClip = 3;
+	w->ammoPerClip = 40;
 	w->ammoInTheClip = w->ammoPerClip;
+	w->inaccuracy = 1.f;
+	w->projectile_texture_name = "proj";
+	w->shoot_sound_name = "rifle_single1";
 	w->sprite = sf::Sprite(letterT->texture);
 	
 
-	Weapon*w1 = new Weapon("pistol",0.00001f, 1.f);
+	Weapon*w1 = new Weapon("pistol",1.f, 15.f);
 	w1->weaponType = WEAPON_TYPE_TAD_PISTOL;
-	w1->ammoPerClip = 4;
+	w1->ammoPerClip = 17;
 	w1->ammoInTheClip = w1->ammoPerClip;
+	w1->projectile_texture_name = "proj";
+	w1->shoot_sound_name = "pistol_fire2";
 	w1->sprite = sf::Sprite(letterT->texture);
 	
 
@@ -500,7 +505,8 @@ int main(int argc, char** argv)
 	game.Resources->AddTextureResource(new TextureResource("letter", "./../textures/Letter.png", false, false));
 
 	game.Resources->AddSoundResource(new SoundResource("ambience_base", "./../sounds/ambience_base.wav"));
-	game.Resources->AddSoundResource(new SoundResource("pistol_fire2", "./../sounds//pistol_fire2.wav"));
+	game.Resources->AddSoundResource(new SoundResource("pistol_fire2", "./../sounds/weapons/pistol/pistol_fire2.wav"));
+	game.Resources->AddSoundResource(new SoundResource("rifle_single1", "./../sounds/weapons/m4/single1.wav"));
 	game.Resources->AddSoundResource(new SoundResource("fire1", "./../sounds/fire1.wav"));
 
 	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_PLASTIC_BOX_LIGHT_NAME, "./../sounds/physics/plastic/plastic_box_scrape_smooth_loop1.wav"));

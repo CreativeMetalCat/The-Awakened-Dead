@@ -16,12 +16,19 @@
 #define WEAPON_TYPE_TAD_FLASHLIGHT 0Xe
 
 #define WEAPON_TYPE_TAD_GRENADE 0xf
-
 #pragma endregion
 
 //base class for weapons
 class Weapon :public Item
 {
+private:
+	//deprecated
+	void fire(State*&state)
+	{
+
+	}
+
+
 protected:
 
 public:
@@ -30,6 +37,21 @@ public:
 
 	size_t ammoPerClip = 0;
 	size_t maxClips = 2;
+
+	//amount of bullets that are shot
+	int bullets_per_shot = 1;
+
+	//texture that will be loaded from game's resources
+	std::string projectile_texture_name = "";
+
+	//sound that will be loaded from game's resources
+	std::string shoot_sound_name = "";
+
+	//value from 0 to 100
+	int inaccuracy = 0.f;
+
+	//in seconds
+	float reload_time = 1.f;
 
 	int ammoInTheClip = ammoPerClip;
 	int  clips = maxClips;
@@ -40,10 +62,7 @@ public:
 	std::vector<Animation::Animation> * animations = new std::vector<Animation::Animation>();
 	Animation::SpriteSheetAnimation* Anim;
 
-	void fire(State&state)
-	{
-
-	}
+	
 	std::function<void(Object*object)>projectileOnCollision = [this](Object*object)
 	{
 		Projectile->CollidingObjects->push_back(object);
