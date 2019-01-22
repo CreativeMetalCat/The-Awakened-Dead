@@ -27,6 +27,8 @@ protected:
 
 	}
 public:
+
+	int reload_sound_channel_id = -1;
 	//temp value to keep track of reloading
 	float _time_in_reload = 0.f;
 
@@ -122,23 +124,39 @@ public:
 		if (!weapons->empty())
 		{
 			currentWeapon = weapons->at(weapon_id);
-			if (currentWeapon->weaponType == WEAPON_TYPE_TAD_RIFLE)
+			if (this->is_reloading==true)
 			{
-				/*if (body->GetLinearVelocity().x > 0 || body->GetLinearVelocity().y > 0)
-				{*/
-				SetAnimation("solder_rifle_move");
-				//}
+				SetAnimation("solder_rifle_reload");
 			}
-			if (currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
+			else
 			{
-				Scale.x = GetObjectRectangle().width / sprite.getTexture()->getSize().x;
-				Scale.y = GetObjectRectangle().height / sprite.getTexture()->getSize().y;
-
-				if (body->GetLinearVelocity().x != 0 || body->GetLinearVelocity().y != 0)
+				if (currentWeapon->weaponType == WEAPON_TYPE_TAD_RIFLE)
 				{
-					SetAnimation("solder_pistol_move");
+					/*if (body->GetLinearVelocity().x > 0 || body->GetLinearVelocity().y > 0)
+					{*/
+					if (this->is_reloading)
+					{
+						SetAnimation("solder_rifle_reload");
+					}
+					else
+					{
+						SetAnimation("solder_rifle_move");
+					}
+
+					//}
+				}
+				if (currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
+				{
+					Scale.x = GetObjectRectangle().width / sprite.getTexture()->getSize().x;
+					Scale.y = GetObjectRectangle().height / sprite.getTexture()->getSize().y;
+
+					if (body->GetLinearVelocity().x != 0 || body->GetLinearVelocity().y != 0)
+					{
+						SetAnimation("solder_pistol_move");
+					}
 				}
 			}
+			
 			UpdateSprites();
 		}
 		else

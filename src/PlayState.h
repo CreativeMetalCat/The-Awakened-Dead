@@ -1345,6 +1345,14 @@ public:
 			rifle_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_rifle_move_" + std::to_string(i))->texture));
 		}
 		player->spritesAnimations->addAnimation(rifle_move);
+
+		Animation::SpritesAnimation*rifle_reload = new  Animation::SpritesAnimation(true, 0.05f, "solder_rifle_reload");
+		for (int i = 0; i < 20; i++)
+		{
+			rifle_reload->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_rifle_reload_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(rifle_reload);
+
 		Animation::SpritesAnimation*pistol_move = new  Animation::SpritesAnimation(true, 0.2f, "solder_pistol_move");
 		for (int i = 0; i < 20; i++)
 		{
@@ -1753,10 +1761,17 @@ public:
 
 			//hidden for debug perposes
 
-			if (player->currentWeapon->ammoInTheClip <= 0)
+			if (player->currentWeapon->ammoInTheClip <= 0 && player->currentWeapon->clips > 0)
 			{
 				player->is_reloading = true;
-				if (player->_time_in_reload >= player->currentWeapon->reload_time)
+				if (player->reload_sound_channel_id == -1)
+				{
+					this->PlaySound("rifle_reload", player->reload_sound_channel_id);
+				}
+
+				//moved to Update(sf::dt...)
+
+				/*if (player->_time_in_reload >= player->currentWeapon->reload_time)
 				{
 					if (player->currentWeapon->clips > 0)
 					{
@@ -1768,7 +1783,7 @@ public:
 						return;
 					}
 					player->is_reloading = false;
-				}
+				}*/
 			}
 
 
@@ -2306,7 +2321,32 @@ public:
 			}
 			
 		}
-		if (player->is_reloading) { player->_time_in_reload += dt.asSeconds(); }
+	
+		if (player->is_reloading)
+		{
+			
+			if (player->_time_in_reload >= player->currentWeapon->reload_time)
+			{
+				if (player->currentWeapon->clips > 0)
+				{
+					player->currentWeapon->clips -= 1;
+					player->currentWeapon->ammoInTheClip = player->currentWeapon->ammoPerClip;
+				}			
+				player->is_reloading = false;
+			}
+			else
+			{
+				player->_time_in_reload += dt.asSeconds();
+			}
+		}
+		else
+		{
+			if (player->reload_sound_channel_id != -1)
+			{
+				Channels->at(player->reload_sound_channel_id)->stop();
+				player->reload_sound_channel_id = -1;
+			}
+		}
 		projObj->Update(dt);
 
 		dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("weapon_name"))->text.setString(player->currentWeapon->name);

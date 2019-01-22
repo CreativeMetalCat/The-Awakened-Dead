@@ -54,7 +54,7 @@ public:
 	int inaccuracy = 0.f;
 
 	//in seconds
-	float reload_time = 2.f;
+	float reload_time = 1.f;
 
 	int ammoInTheClip = ammoPerClip;
 	int  clips = maxClips;
