@@ -410,6 +410,7 @@ int main(int argc, char** argv)
 	w->inaccuracy = 1.f;
 	w->projectile_texture_name = "proj";
 	w->shoot_sound_name = "rifle_single1";
+	w->empty_clip_sound = "rifle_empty";
 	w->sprite = sf::Sprite(letterT->texture);
 	
 
@@ -419,12 +420,25 @@ int main(int argc, char** argv)
 	w1->ammoInTheClip = w1->ammoPerClip;
 	w1->projectile_texture_name = "proj";
 	w1->shoot_sound_name = "pistol_fire2";
+	w1->empty_clip_sound = "pistol_empty";
 	w1->sprite = sf::Sprite(letterT->texture);
+
+	Weapon*w2 = new Weapon("shotgun", 1.f, 20.f);
+	w2->weaponType = WEAPON_TYPE_TAD_SHOTGUN;
+	w2->ammoPerClip = 8;
+	w2->ammoInTheClip = w2->ammoPerClip;
+	w2->inaccuracy = 1.f;
+	w2->bullets_per_shot = 4;
+	w2->projectile_texture_name = "proj";
+	w2->shoot_sound_name = "shotgun_fire6";
+	w2->empty_clip_sound = "shotgun_empty";
+	w2->sprite = sf::Sprite(letterT->texture);
 	
 
 
 	player->weapons->push_back(w);
 	player->weapons->push_back(w1);
+	player->weapons->push_back(w2);
 	
 	ps.player = player;
 
@@ -507,6 +521,12 @@ int main(int argc, char** argv)
 	game.Resources->AddSoundResource(new SoundResource("ambience_base", "./../sounds/ambience_base.wav"));
 	game.Resources->AddSoundResource(new SoundResource("pistol_fire2", "./../sounds/weapons/pistol/pistol_fire2.wav"));
 	game.Resources->AddSoundResource(new SoundResource("rifle_single1", "./../sounds/weapons/m4/single1.wav"));
+	game.Resources->AddSoundResource(new SoundResource("shotgun_fire6", "./../sounds/weapons/shotgun/shotgun_fire6.wav"));
+
+	game.Resources->AddSoundResource(new SoundResource("pistol_empty", "./../sounds/weapons/pistol/pistol_empty.wav"));
+	game.Resources->AddSoundResource(new SoundResource("rifle_empty", "./../sounds/weapons/mp5/empty.wav"));
+	game.Resources->AddSoundResource(new SoundResource("shotgun_empty", "./../sounds/weapons/shotgun/empty.wav"));
+
 	game.Resources->AddSoundResource(new SoundResource("fire1", "./../sounds/fire1.wav"));
 
 	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_PLASTIC_BOX_LIGHT_NAME, "./../sounds/physics/plastic/plastic_box_scrape_smooth_loop1.wav"));

@@ -36,7 +36,7 @@ public:
 	projectile*Projectile;
 
 	size_t ammoPerClip = 0;
-	size_t maxClips = 2;
+	size_t maxClips = 1;
 
 	//amount of bullets that are shot
 	int bullets_per_shot = 1;
@@ -47,11 +47,14 @@ public:
 	//sound that will be loaded from game's resources
 	std::string shoot_sound_name = "";
 
+	//sound that will be loaded from game's resources and played when out of ammo
+	std::string empty_clip_sound = "";
+
 	//value from 0 to 100
 	int inaccuracy = 0.f;
 
 	//in seconds
-	float reload_time = 1.f;
+	float reload_time = 2.f;
 
 	int ammoInTheClip = ammoPerClip;
 	int  clips = maxClips;

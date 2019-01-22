@@ -19,40 +19,6 @@ protected:
 
 	void UpdateSprites()
 	{
-		if (currentAnimation != NULL)
-		{
-			/*if (currentAnimation->CurrentSprite.getTexture() != NULL)
-			{
-				Scale.x = collision.width / currentAnimation->CurrentSprite.getTexture()->getSize().x;
-				Scale.y = collision.height / currentAnimation->CurrentSprite.getTexture()->getSize().y;
-			}
-			else
-			{
-				Scale.x = collision.width / sprite.getTexture()->getSize().x;
-				Scale.y = collision.height / sprite.getTexture()->getSize().y;
-			}
-			for (size_t i = 0; i < currentAnimation->Sprites->size();i++)
-			{
-				currentAnimation->Sprites->at(i).setRotation(RotationAngle);
-				currentAnimation->Sprites->at(i).setScale(Scale);
-				currentAnimation->Sprites->at(i).setOrigin(sf::Vector2f(currentAnimation->Sprites->at(i).getTextureRect().width / 2, currentAnimation->Sprites->at(i).getTextureRect().height / 2));
-			}*/
-
-
-			/*currentAnimation->CurrentSprite.setRotation(RotationAngle);*/
-			/*if (currentAnimation->GetCurrentFrameIndex() < currentAnimation->Sprites->size())
-			{
-				currentAnimation->Sprites->at(currentAnimation->GetCurrentFrameIndex()).setRotation(RotationAngle);
-			}*/
-
-			/*currentAnimation->CurrentSprite.setScale(Scale);
-			currentAnimation->CurrentSprite.setOrigin(sf::Vector2f(collision.width / 2, collision.height / 2));*/
-		}
-		else
-		{
-			/*Scale.x = collision.width / sprite.getTexture()->getSize().x;
-			Scale.y = collision.height / sprite.getTexture()->getSize().y;*/
-		}
 
 		sprite.setRotation(RotationAngle);
 		sprite.setScale(Scale);
@@ -61,7 +27,11 @@ protected:
 
 	}
 public:
-	
+	//temp value to keep track of reloading
+	float _time_in_reload = 0.f;
+
+	bool is_reloading = false;
+
 	int footstep_sound_type = MAT_SOUND_TYPE_CONCRETE;
 
 	float time_per_footstep = 0.5f;
@@ -183,26 +153,6 @@ public:
 			currentAnimation->CurrentSprite.setRotation(RotationAngle);
 		}
 
-		/*if (!animations->empty())
-		{
-			Anim->Time += dt.asSeconds();
-			if (Anim->Time >= Anim->FrameDuration)
-			{
-				Anim->SetFrame(animations->at(animIndex).FrameIndexes->at(animations->at(animIndex).CurrentFrameIndex).ColumnIndex, animations->at(animIndex).FrameIndexes->at(animations->at(animIndex).CurrentFrameIndex).StripIndex);
-				Anim->Time = 0;
-				animations->at(animIndex).CurrentFrameIndex++;
-				if (animations->at(animIndex).CurrentFrameIndex > animations->at(animIndex).FrameIndexes->size() - 1)
-				{
-					animations->at(animIndex).CurrentFrameIndex = 0;
-				}
-			}
-		}*/
-
-
-
-		/*this->Move(sf::Vector2f(Velocity.x*(dt.asMilliseconds()), Velocity.y*(dt.asMilliseconds())));*/
-		/*this->Anim->sprite.setPosition(sf::Vector2f(body->GetPosition().x, body->GetPosition().y));*/
-
 		this->collision.left = body->GetPosition().x + this->collision.width / 2;
 		this->collision.top = body->GetPosition().y + this->collision.height / 2;
 
@@ -211,6 +161,10 @@ public:
 			for (size_t i = 0; i < Projectiles->size(); i++)
 			{
 				Projectiles->at(i)->Update(dt);
+				if (Projectiles->at(i)->getIsDone())
+				{
+					Projectiles->erase(std::find(Projectiles->begin(), Projectiles->end(), Projectiles->at(i)));
+				}
 			}
 		}
 

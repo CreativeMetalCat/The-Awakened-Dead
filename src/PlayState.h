@@ -1751,49 +1751,92 @@ public:
 			diff.x = mousePos.x - player->GetObjectPosition().x;
 			diff.y = mousePos.y - player->GetObjectPosition().y;
 
+			//hidden for debug perposes
+
 			if (player->currentWeapon->ammoInTheClip <= 0)
 			{
-				if (player->currentWeapon->clips > 0)
+				player->is_reloading = true;
+				if (player->_time_in_reload >= player->currentWeapon->reload_time)
 				{
-					player->currentWeapon->clips -= 1;
-					player->currentWeapon->ammoInTheClip = player->currentWeapon->ammoPerClip;
-				}
-				else
-				{
-					return;
+					if (player->currentWeapon->clips > 0)
+					{
+						player->currentWeapon->clips -= 1;
+						player->currentWeapon->ammoInTheClip = player->currentWeapon->ammoPerClip;
+					}
+					else
+					{
+						return;
+					}
+					player->is_reloading = false;
 				}
 			}
+
 
 			if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_KNIFE)
 			{
 
 			}
-			else
+			if (!player->is_reloading)
 			{
-				for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
+				if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
 				{
-					if (player->currentWeapon->ammoInTheClip <= 0) { break; }
-
-					projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
-
-					bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
 					{
+						if (player->currentWeapon->ammoInTheClip <= 0)
+						{
+							this->PlaySound(player->currentWeapon->empty_clip_sound);
+							break;
+						}
 
-						bullet->projectileOnCollision(object, this->context, "PlayState");
-					};
-					bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+						projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
+
+						bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+						{
+
+							bullet->projectileOnCollision(object, this->context, "PlayState");
+						};
+						bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+						{
+							bullet->projectileOnLeftCollision(object, this->context, "PlayState");
+						};
+
+						bullet->Launch(static_cast<float>((atan2(diff.y, diff.x) + i/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
+						player->Projectiles->push_back(bullet);
+						player->currentWeapon->ammoInTheClip -= 1;
+						PlaySound(player->currentWeapon->shoot_sound_name);
+
+					}
+				}
+				else
+				{
+					for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
 					{
-						bullet->projectileOnLeftCollision(object, this->context, "PlayState");
-					};
+						if (player->currentWeapon->ammoInTheClip <= 0)
+						{
+							this->PlaySound(player->currentWeapon->empty_clip_sound);
+							break;
+						}
 
-					bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
-					player->Projectiles->push_back(bullet);
-					player->currentWeapon->ammoInTheClip -= 1;
-					PlaySound(player->currentWeapon->shoot_sound_name);
+						projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
 
+						bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+						{
+
+							bullet->projectileOnCollision(object, this->context, "PlayState");
+						};
+						bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+						{
+							bullet->projectileOnLeftCollision(object, this->context, "PlayState");
+						};
+
+						bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
+						player->Projectiles->push_back(bullet);
+						player->currentWeapon->ammoInTheClip -= 1;
+						PlaySound(player->currentWeapon->shoot_sound_name);
+
+					}
 				}
 			}
-			
 		}
 		if (event.mouseButton.button == sf::Mouse::Right&&event.type == sf::Event::EventType::MouseButtonPressed)
 		{
@@ -2027,6 +2070,7 @@ public:
 	virtual void Update(sf::Time dt) override
 	{
 
+		
 		if (_map_is_loaded != true)
 		{
 			if (current_map != "")
@@ -2052,6 +2096,7 @@ public:
 		}
 
 		player->Update(dt);
+		
 		if (player->body->GetLinearVelocity().x != 0 || player->body->GetLinearVelocity().y != 0)
 		{
 
@@ -2261,6 +2306,7 @@ public:
 			}
 			
 		}
+		if (player->is_reloading) { player->_time_in_reload += dt.asSeconds(); }
 		projObj->Update(dt);
 
 		dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("weapon_name"))->text.setString(player->currentWeapon->name);

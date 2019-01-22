@@ -21,6 +21,9 @@ protected:
 	b2Vec2 Velocity;
 
 public:
+	//get if object should be deleted
+	bool getIsDone()const { return IsDone; }
+
 	sf::Vector2<float>Origin;
 	float MaxDistance = 1000.0f;
 	float Speed = 500.0f;
@@ -213,16 +216,6 @@ public:
 		body->CreateFixture(&TriggerFixture);
 		body->SetUserData(this);
 
-
-
-		/*sf::Vector2f diff;
-		diff.x = event.mouseMove.x - player->GetObjectPosition().x;
-		diff.y = event.mouseMove.y - player->GetObjectPosition().y;*/
-
-
-
-
-
 		float vx = Speed * std::cos(angle);
 		float vy = Speed * std::sin(angle);
 		std::cout << angle << std::endl;
@@ -237,6 +230,7 @@ public:
 
 	void Update(sf::Time dt) override
 	{
+		if (IsDone) { cleanUpObject(); }
 		if (IsInitialized)
 		{
 			
@@ -250,36 +244,23 @@ public:
 					_impulseApplied = true;
 				}
 			}
-			
-			/*		if (IsDone==false)
-					{*/
-
-			/*body->SetLinearVelocity(Velocity);*/
-
-			/*this->Move(Speed*difference*(20.0f / dt.asMicroseconds()));*/
-
-			/*this->sprite.setPosition(sf::Vector2f(std::round(body->GetPosition().x), std::round(body->GetPosition().y)));*/
-
-			
 			this->sprite.move(Speed*sf::Vector2f(Velocity.x,Velocity.y)*(20.0f / dt.asMicroseconds()));
 			this->body->SetTransform(b2Vec2(sprite.getPosition().x, sprite.getPosition().y), RotationAngle);
-			/*this->sprite.setPosition(sf::Vector2f(body->GetLinearVelocity().x*1.f/dt.asMicroseconds()*1+this->sprite.getPosition().x, body->GetLinearVelocity().y*1.f/dt.asMicroseconds()*1+ this->sprite.getPosition().y));*/
+			
 			travelledDistance += Speed * (20.0f / dt.asMilliseconds());
-
-
-			/*this->Move(Speed*difference*(1.0f / dt.asMilliseconds()));
-			travelledDistance += Speed * (1.0f / dt.asMilliseconds());*/
-
-			/*if (MaxDistance < 0.f) { MaxDistance = 500.f; }
-			if (travelledDistance > MaxDistance)
+			if (travelledDistance >= MaxDistance)
 			{
-				IsDone = true;
-				travelledDistance = 0;
-				body->SetLinearVelocity(b2Vec2(0,0));
-			}*/
-			//}
+				this->IsDone = true;
+			}
 		}
 	}
+
+	void cleanUpObject()
+	{
+		this->body->GetWorld()->Step(0, 0, 0);
+		this->body->GetWorld()->DestroyBody(this->body);	
+	}
+
 	void  SetObjectPosition(sf::Vector2f pos) override
 	{
 		collision.left = pos.x;
