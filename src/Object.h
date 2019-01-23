@@ -1,10 +1,13 @@
 #pragma once
+
+
 #include "SFML/Graphics.hpp"
 #include <Box2D.h>
 #include <functional>
 
 #define M_PI           3.14159265358979323846  /* pi */
 
+struct Context;
 //Base Class for EVERY object in scene. Drawable & not
 class Object
 {
@@ -49,6 +52,12 @@ public:
 	//physical body
 	b2Body*body;
 
+	//called when projectile or any other object damages this
+	virtual void onDamage(float damage, Object*object, Context*&context, std::string stateName)
+	{
+
+	}
+
 	virtual void applyImpulse(b2Vec2 impulse);
 
 	virtual void applyImpulse(sf::Vector2f impulse)
@@ -73,7 +82,7 @@ public:
 	{
 		if (this->bodyIsSensor)
 		{
-			/*CollidingObjects->push_back(object);*/
+			CollidingObjects->push_back(object);
 		}
 	};
 	std::function<void(Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)>LeftCollision = [this](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)

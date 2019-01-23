@@ -1,14 +1,9 @@
 #pragma once
-#include "State.h"
 
-#include "MovingPawn.h"
-#include "Decal.h"
+#include "npc_zombie_base.h"
 
 
-#include "Player.h"
-#include "Animation.h"
-
-class npc_zombie :public MovingPawn
+class npc_zombie :public npc_zombie_base
 {
 protected:
 	//index of current animation
@@ -34,7 +29,7 @@ public:
 	Animation::SpritesAnimation*currentAnimation = nullptr;
 	Animation::SpritesAnimationsContainer*spritesAnimations = new Animation::SpritesAnimationsContainer();
 
-	virtual void onDamage(float damage, Object*object, Context*&context, std::string stateName)
+	virtual void onDamage(float damage, Object*object, Context*&context, std::string stateName)override
 	{
 		if (!IsDead)
 		{
@@ -97,12 +92,13 @@ public:
 			}
 		}
 	}
-	virtual void leftCollision(Object*&object, Context*&context, std::string stateName)
+
+	virtual void leftCollision(Object*&object, Context*&context, std::string stateName) override
 	{
 
 	}
 
-	virtual void onCollision(Object*&object, Context*&context, std::string stateName)
+	virtual void onCollision(Object*&object, Context*&context, std::string stateName) override
 	{
 		if (dynamic_cast<Player*>(object))
 		{
@@ -113,9 +109,10 @@ public:
 
 			this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
 		}
+		
 	}
 
-	npc_zombie(sf::Vector2f position, float speed, float width, float height) :MovingPawn(speed, position, width, height)
+	npc_zombie(sf::Vector2f position, float speed, float width, float height) :npc_zombie_base(position,speed, width, height)
 	{
 		collision.width = width;
 		collision.height = height;
