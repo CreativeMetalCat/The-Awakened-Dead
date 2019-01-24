@@ -47,6 +47,9 @@ public:
 	//sound that will be loaded from game's resources
 	std::string shoot_sound_name = "";
 
+	//sound that will be loaded from game's resources while reloading
+	std::string reload_sound_name = "";
+
 	//sound that will be loaded from game's resources and played when out of ammo
 	std::string empty_clip_sound = "";
 
