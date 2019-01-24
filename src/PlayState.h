@@ -1075,6 +1075,24 @@ public:
 		b2Filter filter;
 		filter.categoryBits = 0x1;
 
+		npc_zombie*z = new npc_zombie(sf::Vector2f(500, 500), 1.f, 100, 100);
+		z->Init();
+		z->OnCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+		{
+			z->onCollision(object, this->context, "PlayState");
+		};
+
+		Animation::SpritesAnimation*zombie_idle = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_idle");
+		for (int i = 0; i < 17; i++)
+		{
+			zombie_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-idle_" + std::to_string(i))->texture));
+		}
+		z->spritesAnimations->addAnimation(zombie_idle);
+		z->Init();
+		z->SetAnimation("skeleton_idle");
+		this->StateObjects->push_back(z);
+
+
 		if (!StateObjects->empty())
 		{
 			for (size_t i = 0; i < StateObjects->size(); i++)
@@ -1376,6 +1394,7 @@ public:
 		z->spritesAnimations->addAnimation(zombie_idle);
 		z->Init();
 		z->SetAnimation("skeleton_idle");
+		this->StateObjects->push_back(z);
 
 
 		projObj = new projectile(sf::Vector2f(0, 0), 100.f, 100.f, 50.0f, 2.0f, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
@@ -1386,7 +1405,7 @@ public:
 
 
 
-		this->StateObjects->push_back(z);
+
 
 
 
@@ -1759,31 +1778,15 @@ public:
 			diff.x = mousePos.x - player->GetObjectPosition().x;
 			diff.y = mousePos.y - player->GetObjectPosition().y;
 
-			//hidden for debug perposes
+			
 
 			if (player->currentWeapon->ammoInTheClip <= 0 && player->currentWeapon->clips > 0)
 			{
 				player->is_reloading = true;
 				if (player->reload_sound_channel_id == -1)
 				{
-					this->PlaySound("rifle_reload", player->reload_sound_channel_id);
+					this->PlaySound(player->currentWeapon->reload_sound_name, player->reload_sound_channel_id);
 				}
-
-				//moved to Update(sf::dt...)
-
-				/*if (player->_time_in_reload >= player->currentWeapon->reload_time)
-				{
-					if (player->currentWeapon->clips > 0)
-					{
-						player->currentWeapon->clips -= 1;
-						player->currentWeapon->ammoInTheClip = player->currentWeapon->ammoPerClip;
-					}
-					else
-					{
-						return;
-					}
-					player->is_reloading = false;
-				}*/
 			}
 
 
@@ -2333,6 +2336,7 @@ public:
 					player->currentWeapon->ammoInTheClip = player->currentWeapon->ammoPerClip;
 				}			
 				player->is_reloading = false;
+				player->_time_in_reload = 0.f;
 			}
 			else
 			{
