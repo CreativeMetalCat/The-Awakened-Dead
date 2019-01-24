@@ -506,6 +506,21 @@ int main(int argc, char** argv)
 		game.Resources->AddTextureResource(new TextureResource("solder_pistol_move_" + std::to_string(i), "./../textures/Top_Down_Survivor/handgun/move/survivor-move_handgun_" + std::to_string(i) + ".png", false, false));
 	}
 
+	for (int i = 0; i < 15; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_pistol_reload_" + std::to_string(i), "./../textures/Top_Down_Survivor/handgun/reload/survivor-reload_handgun_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i < 20; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_shotgun_reload_" + std::to_string(i), "./../textures/Top_Down_Survivor/shotgun/reload/survivor-reload_shotgun_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i < 20; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_shotgun_move_" + std::to_string(i), "./../textures/Top_Down_Survivor/shotgun/move/survivor-move_shotgun_" + std::to_string(i) + ".png", false, false));
+	}
+
 	for (int i = 0; i < 17; i++)
 	{
 		game.Resources->AddTextureResource(new TextureResource("skeleton-idle_" + std::to_string(i), "./../textures/zombie/idle/skeleton-idle_" + std::to_string(i) + ".png", false, false));

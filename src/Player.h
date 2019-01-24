@@ -14,9 +14,6 @@ protected:
 
 	size_t animIndex = 0;
 
-	/*TextureResource* solder_rifle = new TextureResource("solder_rifle", "./textures/survivor_move_rifle_anim.png", false, false);
-	TextureResource* solder_pistol = new TextureResource("solder", "./textures/player_idle.gif", false, false);*/
-
 	void UpdateSprites()
 	{
 
@@ -44,8 +41,6 @@ public:
 	int footsteps_sound_channel_id = -1;
 
 	float health = 100.f;
-	/*std::vector<Animation::Animation> * animations = new std::vector<Animation::Animation>();
-	Animation::SpriteSheetAnimation* Anim;*/
 
 	Animation::SpritesAnimation*currentAnimation = nullptr;
 	Animation::SpritesAnimationsContainer*spritesAnimations = new Animation::SpritesAnimationsContainer();
@@ -124,12 +119,6 @@ public:
 		if (!weapons->empty())
 		{
 			currentWeapon = weapons->at(weapon_id);
-			if (this->is_reloading==true)
-			{
-				SetAnimation("solder_rifle_reload");
-			}
-			else
-			{
 				if (currentWeapon->weaponType == WEAPON_TYPE_TAD_RIFLE)
 				{
 					/*if (body->GetLinearVelocity().x > 0 || body->GetLinearVelocity().y > 0)
@@ -145,17 +134,38 @@ public:
 
 					//}
 				}
+				if (currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
+				{
+
+					if (this->is_reloading)
+					{
+						SetAnimation("solder_shotgun_reload");
+					}
+					else
+					{
+						SetAnimation("solder_rifle_move");
+					}
+				}
 				if (currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
 				{
 					Scale.x = GetObjectRectangle().width / sprite.getTexture()->getSize().x;
 					Scale.y = GetObjectRectangle().height / sprite.getTexture()->getSize().y;
 
-					if (body->GetLinearVelocity().x != 0 || body->GetLinearVelocity().y != 0)
+					if (this->is_reloading)
+					{
+						SetAnimation("solder_pistol_reload");
+					}
+					else
 					{
 						SetAnimation("solder_pistol_move");
 					}
+
+					//if (body->GetLinearVelocity().x != 0 || body->GetLinearVelocity().y != 0)
+					//{
+					//	SetAnimation("solder_pistol_move");
+					//}
 				}
-			}
+			
 			
 			UpdateSprites();
 		}

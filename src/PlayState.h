@@ -1371,6 +1371,22 @@ public:
 		}
 		player->spritesAnimations->addAnimation(rifle_reload);
 
+		Animation::SpritesAnimation*pistol_reload = new  Animation::SpritesAnimation(true, 0.06f, "solder_pistol_reload");
+		for (int i = 0; i < 15; i++)
+		{
+			pistol_reload->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_pistol_reload_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(pistol_reload);
+
+		//
+		Animation::SpritesAnimation*shotgun_reload = new  Animation::SpritesAnimation(true, 0.05f, "solder_shotgun_reload");
+		for (int i = 0; i < 20; i++)
+		{
+			shotgun_reload->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_shotgun_reload_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(shotgun_reload);
+
+
 		Animation::SpritesAnimation*pistol_move = new  Animation::SpritesAnimation(true, 0.2f, "solder_pistol_move");
 		for (int i = 0; i < 20; i++)
 		{
