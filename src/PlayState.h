@@ -1437,6 +1437,16 @@ public:
 		l2->Init();
 		this->PlayerUI->Components->push_back(l2);
 
+		GUI::Label*l_ammo = new GUI::Label("ammo_in_clip", "9999", sf::Color::Red, context->game->Resources->getFontResourceDataByName("calibri")->font, 80, context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture);
+		l_ammo->SetPosition(sf::Vector2f(SCREENWIDTH-400, SCREENHEIGHT - 200));
+		l_ammo->Init();
+		this->PlayerUI->Components->push_back(l_ammo);
+
+		GUI::Label*l_clips = new GUI::Label("clips", "9999", sf::Color::Red, context->game->Resources->getFontResourceDataByName("calibri")->font, 80, context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture);
+		l_clips->SetPosition(sf::Vector2f(SCREENWIDTH - 220, SCREENHEIGHT - 200));
+		l_clips->Init();
+		this->PlayerUI->Components->push_back(l_clips);
+
 
 		cursorParticles.Stop();
 		projObj->Init();
@@ -2372,6 +2382,12 @@ public:
 		dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("weapon_name"))->text.setString(player->currentWeapon->name);
 		dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("health"))->text.setString(std::to_string(static_cast<int>(player->health)));
 
+		if (player->currentWeapon != NULL)
+		{
+			dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("ammo_in_clip"))->text.setString(std::to_string(player->currentWeapon->ammoInTheClip));
+			dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("clips"))->text.setString(std::to_string(player->currentWeapon->clips));
+		}
+		
 		if (!PlayerUI->Components->empty())
 		{
 			for (size_t i = 0; i < PlayerUI->Components->size(); i++)
