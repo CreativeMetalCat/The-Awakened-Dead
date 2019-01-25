@@ -6,7 +6,7 @@
 #include "Weapon.h"
 #include "Projectile.h"
 #include "MaterialTypes.h"
-
+#include "ammo_data.h"
 
 class Player :public SceneActor
 {
@@ -24,17 +24,27 @@ protected:
 
 	}
 public:
+	//way of keeping track of amount of ammo player has
+	//this way player can have ammo for weapons that he currently doesn't have
+	std::vector<ammo_data>*ammoData = new std::vector<ammo_data>();
 
+	//temp value to use channel from state that player is currently in
 	int reload_sound_channel_id = -1;
+
 	//temp value to keep track of reloading
 	float _time_in_reload = 0.f;
 
+	//player can not shoot while reloading 
+	//also used to set proper animation
 	bool is_reloading = false;
 
+	//sound type of surface that player is stepping on
 	int footstep_sound_type = MAT_SOUND_TYPE_CONCRETE;
 
+	//time before next footstep sound will play(they override each other)
 	float time_per_footstep = 0.5f;
 
+	//temp value used by state
 	float time_footstep_elapsed = 0.f;
 
 	//used in states to controll footstep sounds
@@ -55,6 +65,7 @@ public:
 
 	std::vector<Weapon*>*weapons = new std::vector<Weapon*>();
 
+	//not used
 	ItemContainer*items = new ItemContainer(3, 1, 3);
 
 	float MaxSpeed = 1.f;
@@ -127,66 +138,78 @@ public:
 		if (!weapons->empty())
 		{
 			currentWeapon = weapons->at(weapon_id);
-				if (currentWeapon->weaponType == WEAPON_TYPE_TAD_RIFLE)
+			if (!ammoData->empty())
+			{
+				//temp way of searching
+				for (size_t i = 0; i < ammoData->size(); i++)
 				{
-					/*if (body->GetLinearVelocity().x > 0 || body->GetLinearVelocity().y > 0)
-					{*/
-					if (this->is_reloading)
+					if (ammoData->at(i).weapon_type == currentWeapon->weaponType)
 					{
-						SetAnimation("solder_rifle_reload");
-					}
-					else if (is_shooting)
-					{
-						SetAnimation("solder_rifle_shoot");
-					}
-					else
-					{
-						SetAnimation("solder_rifle_move");
-					}
-
-					//}
-				}
-				if (currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
-				{
-
-					if (this->is_reloading)
-					{
-						SetAnimation("solder_shotgun_reload");
-					}
-					else if (is_shooting)
-					{
-						SetAnimation("solder_pistol_shoot");
-					}
-					else
-					{
-						SetAnimation("solder_shotgun_move");
+						currentWeapon->clips = ammoData->at(i).clip_amount;
 					}
 				}
-				if (currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
+			}
+
+			if (currentWeapon->weaponType == WEAPON_TYPE_TAD_RIFLE)
+			{
+				/*if (body->GetLinearVelocity().x > 0 || body->GetLinearVelocity().y > 0)
+				{*/
+				if (this->is_reloading)
 				{
-					Scale.x = GetObjectRectangle().width / sprite.getTexture()->getSize().x;
-					Scale.y = GetObjectRectangle().height / sprite.getTexture()->getSize().y;
-
-					if (this->is_reloading)
-					{
-						SetAnimation("solder_pistol_reload");
-					}
-					else if (is_shooting)
-					{
-						SetAnimation("solder_pistol_shoot");
-					}
-					else
-					{
-						SetAnimation("solder_pistol_move");
-					}
-
-					//if (body->GetLinearVelocity().x != 0 || body->GetLinearVelocity().y != 0)
-					//{
-					//	SetAnimation("solder_pistol_move");
-					//}
+					SetAnimation("solder_rifle_reload");
 				}
-			
-			
+				else if (is_shooting)
+				{
+					SetAnimation("solder_rifle_shoot");
+				}
+				else
+				{
+					SetAnimation("solder_rifle_move");
+				}
+
+				//}
+			}
+			if (currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
+			{
+
+				if (this->is_reloading)
+				{
+					SetAnimation("solder_shotgun_reload");
+				}
+				else if (is_shooting)
+				{
+					SetAnimation("solder_pistol_shoot");
+				}
+				else
+				{
+					SetAnimation("solder_shotgun_move");
+				}
+			}
+			if (currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
+			{
+				Scale.x = GetObjectRectangle().width / sprite.getTexture()->getSize().x;
+				Scale.y = GetObjectRectangle().height / sprite.getTexture()->getSize().y;
+
+				if (this->is_reloading)
+				{
+					SetAnimation("solder_pistol_reload");
+				}
+				else if (is_shooting)
+				{
+					SetAnimation("solder_pistol_shoot");
+				}
+				else
+				{
+					SetAnimation("solder_pistol_move");
+				}
+
+				//if (body->GetLinearVelocity().x != 0 || body->GetLinearVelocity().y != 0)
+				//{
+				//	SetAnimation("solder_pistol_move");
+				//}
+			}
+
+
 			UpdateSprites();
 		}
 		else
@@ -304,6 +327,49 @@ public:
 		sprite.setOrigin(sf::Vector2f(collision.width / 2, collision.height / 2));
 	}
 
+	//adds ammo 
+	//if already have ammo for this type of weapon it will add to that
+	//it only will add for the firts of this type to escape copying same object
+	//if not it will create new entry for this type of ammo
+	void AddAmmo(ammo_data data)
+	{
+		if (!ammoData->empty())
+		{
+			for (size_t i = 0; i < ammoData->size(); i++)
+			{
+				if (ammoData->at(i).weapon_type == data.weapon_type) 
+				{
+					//it only will add for the firts of this type to escape copying same object
+					ammoData->at(i).clip_amount += data.clip_amount;
+					return;
+				}
+			}
+			//create new entry
+			ammoData->push_back(data);
+			return;
+		}
+		//create new entry
+		ammoData->push_back(data);
+	}
 
-
+	//returns NULL on failure
+	ammo_data FindAmmoDataByWeaponType(int weapon_type)
+	{
+		if (!ammoData->empty())
+		{
+			for (size_t i = 0; i < ammoData->size(); i++)
+			{
+				if (ammoData->at(i).weapon_type == weapon_type)
+				{
+					
+					return ammoData->at(i);
+				}
+			}
+			return NULL;
+		}
+		else
+		{
+			return NULL;
+		}
+	}
 };

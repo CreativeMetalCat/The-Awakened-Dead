@@ -1454,7 +1454,10 @@ public:
 		
 
 
-
+		player->AddAmmo({ WEAPON_TYPE_TAD_PISTOL,5});
+		player->AddAmmo({ WEAPON_TYPE_TAD_RIFLE,5 });
+		player->AddAmmo({ WEAPON_TYPE_TAD_SHOTGUN,5 });
+		player->AddAmmo({ WEAPON_TYPE_TAD_SHOTGUN,1 });
 
 
 
@@ -2484,6 +2487,16 @@ public:
 			{
 				if (player->currentWeapon->clips > 0)
 				{
+					if (!player->ammoData->empty())
+					{
+						for (size_t i = 0; i < player->ammoData->size(); i++)
+						{
+							if (player->ammoData->at(i).weapon_type == player->currentWeapon->weaponType)
+							{
+								player->ammoData->at(i).clip_amount--;
+							}
+						}
+					}
 					player->currentWeapon->clips -= 1;
 					player->currentWeapon->ammoInTheClip = player->currentWeapon->ammoPerClip;
 				}			
