@@ -42,6 +42,11 @@ public:
 
 	float health = 100.f;
 
+
+	//change animation and movement according to this value
+	//mostly for the animation
+	bool is_shooting = false;
+
 	Animation::SpritesAnimation*currentAnimation = nullptr;
 	Animation::SpritesAnimationsContainer*spritesAnimations = new Animation::SpritesAnimationsContainer();
 
@@ -116,6 +121,9 @@ public:
 	{
 
 		body->SetTransform(body->GetPosition(), RotationAngle);
+
+		
+	
 		if (!weapons->empty())
 		{
 			currentWeapon = weapons->at(weapon_id);
@@ -126,6 +134,10 @@ public:
 					if (this->is_reloading)
 					{
 						SetAnimation("solder_rifle_reload");
+					}
+					else if (is_shooting)
+					{
+						SetAnimation("solder_rifle_shoot");
 					}
 					else
 					{
@@ -141,9 +153,13 @@ public:
 					{
 						SetAnimation("solder_shotgun_reload");
 					}
+					else if (is_shooting)
+					{
+						SetAnimation("solder_pistol_shoot");
+					}
 					else
 					{
-						SetAnimation("solder_rifle_move");
+						SetAnimation("solder_shotgun_move");
 					}
 				}
 				if (currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
@@ -154,6 +170,10 @@ public:
 					if (this->is_reloading)
 					{
 						SetAnimation("solder_pistol_reload");
+					}
+					else if (is_shooting)
+					{
+						SetAnimation("solder_pistol_shoot");
 					}
 					else
 					{
@@ -179,6 +199,20 @@ public:
 			currentAnimation->UpdateAnimation(dt);
 			currentAnimation->CurrentSprite.setPosition(sf::Vector2f(body->GetPosition().x, body->GetPosition().y));
 			currentAnimation->CurrentSprite.setRotation(RotationAngle);
+		}
+
+		if (currentAnimation != NULL)
+		{
+			if (currentAnimation->IsRepeated == false)
+			{
+				if (is_shooting)
+				{
+					if (currentAnimation->GetCurrentFrameIndex() >= currentAnimation->Sprites->size() - 1)
+					{
+						is_shooting = false;
+					}
+				}
+			}
 		}
 
 		this->collision.left = body->GetPosition().x + this->collision.width / 2;

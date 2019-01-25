@@ -179,13 +179,13 @@ namespace Animation
 
 
 
-		SpritesAnimation(bool IsRepeated, float frameDuration, std::string Name, FrameChangeDirection frameChangeDir = FrameChangeDirection::Left) :IsRepeated(IsRepeated), FrameDuration(frameDuration)
+		SpritesAnimation(bool IsRepeated, float frameDuration, std::string Name, FrameChangeDirection frameChangeDir = FrameChangeDirection::Right) :IsRepeated(IsRepeated), FrameDuration(frameDuration)
 		{
 			this->frameChangeDir = frameChangeDir;
 			this->Name = Name;
 		}
 
-		SpritesAnimation(bool IsRepeated, float frameDuration, std::string Name, std::vector<sf::Sprite>*&Sprites, FrameChangeDirection frameChangeDir = FrameChangeDirection::Left) :IsRepeated(IsRepeated), Sprites(Sprites), FrameDuration(frameDuration)
+		SpritesAnimation(bool IsRepeated, float frameDuration, std::string Name, std::vector<sf::Sprite>*&Sprites, FrameChangeDirection frameChangeDir = FrameChangeDirection::Right) :IsRepeated(IsRepeated), Sprites(Sprites), FrameDuration(frameDuration)
 		{
 			this->frameChangeDir = frameChangeDir;
 			this->Name = Name;

@@ -1379,12 +1379,47 @@ public:
 		player->spritesAnimations->addAnimation(pistol_reload);
 
 		//
+		Animation::SpritesAnimation*pistol_shoot = new  Animation::SpritesAnimation(false, 0.3f, "solder_pistol_shoot");
+		for (int i = 0; i < 3; i++)
+		{
+			pistol_shoot->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_pistol_shoot_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(pistol_shoot);
+
+		//
+		Animation::SpritesAnimation*rifle_shoot = new  Animation::SpritesAnimation(false, 0.3f, "solder_rifle_shoot");
+		for (int i = 0; i < 3; i++)
+		{
+			rifle_shoot->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_rifle_shoot_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(rifle_shoot);
+
+
+		//
+		Animation::SpritesAnimation*shotgun_shoot = new  Animation::SpritesAnimation(false, 0.3f, "solder_shotgun_shoot");
+		for (int i = 0; i < 3; i++)
+		{
+			shotgun_shoot->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_shotgun_shoot_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(shotgun_shoot);
+
+
+
+		//
 		Animation::SpritesAnimation*shotgun_reload = new  Animation::SpritesAnimation(true, 0.05f, "solder_shotgun_reload");
 		for (int i = 0; i < 20; i++)
 		{
 			shotgun_reload->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_shotgun_reload_" + std::to_string(i))->texture));
 		}
 		player->spritesAnimations->addAnimation(shotgun_reload);
+
+		//
+		Animation::SpritesAnimation*shotgun_move = new  Animation::SpritesAnimation(true, 0.05f, "solder_shotgun_move");
+		for (int i = 0; i < 20; i++)
+		{
+			shotgun_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_shotgun_move_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(shotgun_move);
 
 
 		Animation::SpritesAnimation*pistol_move = new  Animation::SpritesAnimation(true, 0.2f, "solder_pistol_move");
@@ -1815,70 +1850,77 @@ public:
 				}
 			}
 
-
-			if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_KNIFE)
+			if (!player->is_shooting)
 			{
 
-			}
-			if (!player->is_reloading)
-			{
-				if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
+				if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_KNIFE)
 				{
-					for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
-					{
-						if (player->currentWeapon->ammoInTheClip <= 0)
-						{
-							this->PlaySound(player->currentWeapon->empty_clip_sound);
-							break;
-						}
 
-						projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
-
-						bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-						{
-
-							bullet->projectileOnCollision(object, this->context, "PlayState");
-						};
-						bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-						{
-							bullet->projectileOnLeftCollision(object, this->context, "PlayState");
-						};
-
-						bullet->Launch(static_cast<float>((atan2(diff.y, diff.x) + i/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
-						player->Projectiles->push_back(bullet);
-						player->currentWeapon->ammoInTheClip -= 1;
-						PlaySound(player->currentWeapon->shoot_sound_name);
-
-					}
 				}
-				else
+				if (!player->is_reloading)
 				{
-					for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
+					player->is_shooting = true;
+					if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
 					{
-						if (player->currentWeapon->ammoInTheClip <= 0)
+						
+						for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
 						{
-							this->PlaySound(player->currentWeapon->empty_clip_sound);
-							break;
+
+							if (player->currentWeapon->ammoInTheClip <= 0)
+							{
+								this->PlaySound(player->currentWeapon->empty_clip_sound);
+								break;
+							}
+
+							projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
+
+							bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+							{
+
+								bullet->projectileOnCollision(object, this->context, "PlayState");
+							};
+							bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+							{
+								bullet->projectileOnLeftCollision(object, this->context, "PlayState");
+							};
+
+							bullet->Launch(static_cast<float>((atan2(diff.y, diff.x) + i/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
+							player->Projectiles->push_back(bullet);
+							player->currentWeapon->ammoInTheClip -= 1;
+							PlaySound(player->currentWeapon->shoot_sound_name);
+
 						}
-
-						projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
-
-						bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-						{
-
-							bullet->projectileOnCollision(object, this->context, "PlayState");
-						};
-						bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-						{
-							bullet->projectileOnLeftCollision(object, this->context, "PlayState");
-						};
-
-						bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
-						player->Projectiles->push_back(bullet);
-						player->currentWeapon->ammoInTheClip -= 1;
-						PlaySound(player->currentWeapon->shoot_sound_name);
-
 					}
+					else
+					{
+						for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
+						{
+							if (player->currentWeapon->ammoInTheClip <= 0)
+							{
+								this->PlaySound(player->currentWeapon->empty_clip_sound);
+								break;
+							}
+
+							projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
+
+							bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+							{
+
+								bullet->projectileOnCollision(object, this->context, "PlayState");
+							};
+							bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+							{
+								bullet->projectileOnLeftCollision(object, this->context, "PlayState");
+							};
+
+							bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
+							player->Projectiles->push_back(bullet);
+							player->currentWeapon->ammoInTheClip -= 1;
+							PlaySound(player->currentWeapon->shoot_sound_name);
+
+						}
+					}
+					
 				}
 			}
 		}
@@ -2343,10 +2385,94 @@ public:
 			}
 			else
 			{
-				int channel_id = 0;
-				std::string filename = "footstep_concrete" + std::to_string(m_get_random_number(1, 4));
-				this->PlaySound(filename, channel_id);
-				player->footsteps_sound_channel_id = channel_id;
+			int channel_id = 0;
+			std::string filename = "";
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_CONCRETE)
+			{
+				std::string name = MAT_SOUND_TYPE_CONCRETE_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_CHAINLINK)
+			{
+				std::string name = MAT_SOUND_TYPE_CHAINLINK_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_DIRT)
+			{
+				std::string name = MAT_SOUND_TYPE_DIRT_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_DUCT)
+			{
+				std::string name = MAT_SOUND_TYPE_DUCT_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_GRASS)
+			{
+				std::string name = MAT_SOUND_TYPE_GRASS_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_GRAVEL)
+			{
+				std::string name = MAT_SOUND_TYPE_GRAVEL_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_LADDER)
+			{
+				std::string name = MAT_SOUND_TYPE_LADDER_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_METAL)
+			{
+				std::string name = MAT_SOUND_TYPE_METAL_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_METALGRATE)
+			{
+				std::string name = MAT_SOUND_TYPE_METALGRATE_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_MUD)
+			{
+				std::string name = MAT_SOUND_TYPE_MUD_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_SAND)
+			{
+				std::string name = MAT_SOUND_TYPE_SAND_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_SLOSH)
+			{
+				std::string name = MAT_SOUND_TYPE_SLOSH_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_TILE)
+			{
+				std::string name = MAT_SOUND_TYPE_TILE_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_WADE)
+			{
+				std::string name = MAT_SOUND_TYPE_WADE_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_WOOD)
+			{
+				std::string name = MAT_SOUND_TYPE_WOOD_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_WOODPANEL)
+			{
+				std::string name = MAT_SOUND_TYPE_WOODPANEL_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+
+
+
+
+			this->PlaySound(filename, player->footsteps_sound_channel_id);
+			player->time_footstep_elapsed = 0.f;
 			}
 			
 		}
@@ -2384,7 +2510,7 @@ public:
 
 		if (player->currentWeapon != NULL)
 		{
-			dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("ammo_in_clip"))->text.setString(std::to_string(player->currentWeapon->ammoInTheClip));
+			dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("ammo_in_clip"))->text.setString(std::to_string(player->currentWeapon->ammoInTheClip)+"/");
 			dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("clips"))->text.setString(std::to_string(player->currentWeapon->clips));
 		}
 		

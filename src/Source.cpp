@@ -434,7 +434,7 @@ int main(int argc, char** argv)
 	w2->projectile_texture_name = "proj";
 	w2->shoot_sound_name = "shotgun_fire6";
 	w2->empty_clip_sound = "shotgun_empty";
-	w2->reload_sound_name = "shotgun_reload1";
+	w2->reload_sound_name = "rifle_reload";
 	w2->sprite = sf::Sprite(letterT->texture);
 	
 
@@ -491,6 +491,21 @@ int main(int argc, char** argv)
 	sf::Vector2f m2;
 	m2.x = 0.0f;
 	m2.y = 0.01f;
+
+	for (int i = 0; i < 3; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_rifle_shoot_" + std::to_string(i), "./../textures/Top_Down_Survivor/rifle/shoot/survivor-shoot_rifle_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i < 3; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_pistol_shoot_" + std::to_string(i), "./../textures/Top_Down_Survivor/handgun/shoot/survivor-shoot_handgun_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i < 3; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_shotgun_shoot_" + std::to_string(i), "./../textures/Top_Down_Survivor/shotgun/shoot/survivor-shoot_shotgun_" + std::to_string(i) + ".png", false, false));
+	}
 
 	for (int i = 0; i < 20; i++)
 	{
@@ -554,7 +569,7 @@ int main(int argc, char** argv)
 	game.Resources->AddSoundResource(new SoundResource("pistol_reload", "./../sounds/weapons/pistol/pistol_reload1.wav"));
 	game.Resources->AddSoundResource(new SoundResource("shotgun_reload1", "./../sounds/weapons/shotgun/shotgun_reload1.wav"));
 	game.Resources->AddSoundResource(new SoundResource("shotgun_reload2", "./../sounds/weapons/shotgun/shotgun_reload2.wav"));
-	game.Resources->AddSoundResource(new SoundResource("shotgun_reload3", "./../sounds/weapons/shotgun/shotgun_reload13wav"));
+	game.Resources->AddSoundResource(new SoundResource("shotgun_reload3", "./../sounds/weapons/shotgun/shotgun_reload1.wav"));
 
 	game.Resources->AddSoundResource(new SoundResource("fire1", "./../sounds/fire1.wav"));
 
@@ -574,6 +589,8 @@ int main(int argc, char** argv)
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_rough_loop1", "./../sounds/physics/metal/metal_box_scrape_rough_loop1.wav"));
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_rough_loop2", "./../sounds/physics/metal/metal_box_scrape_rough_loop2.wav"));
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_smooth_loop1", "./../sounds/physics/metal/metal_box_scrape_smooth_loop1.wav"));
+
+	game.Resources->AddSoundResource(new SoundResource("zombie_pain", "./../sounds/zo_pain1.wav"));
 
 
 	for (int i = 1; i < 5; i++)
