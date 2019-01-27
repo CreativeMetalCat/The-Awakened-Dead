@@ -403,23 +403,45 @@ int main(int argc, char** argv)
 	TextureResource *letterT = new TextureResource("letter", "./../textures/Letter.png", false, false);
 	letterT->CreateResourceFromFile();
 
-	Weapon*w=new Weapon("rifle",1.f,1.f);
+	Weapon*w=new Weapon("rifle",1.f,20.f);
 	w->weaponType = WEAPON_TYPE_TAD_RIFLE;
-	w->ammoPerClip = 3;
+	w->ammoPerClip = 40;
 	w->ammoInTheClip = w->ammoPerClip;
+	w->inaccuracy = 1.f;
+	w->projectile_texture_name = "proj";
+	w->shoot_sound_name = "rifle_single1";
+	w->empty_clip_sound = "rifle_empty";
+	w->reload_sound_name = "rifle_reload";
 	w->sprite = sf::Sprite(letterT->texture);
 	
 
-	Weapon*w1 = new Weapon("pistol",0.00001f, 1.f);
+	Weapon*w1 = new Weapon("pistol",1.f, 15.f);
 	w1->weaponType = WEAPON_TYPE_TAD_PISTOL;
-	w1->ammoPerClip = 4;
+	w1->ammoPerClip = 17;
 	w1->ammoInTheClip = w1->ammoPerClip;
+	w1->projectile_texture_name = "proj";
+	w1->shoot_sound_name = "pistol_fire2";
+	w1->empty_clip_sound = "pistol_empty";
 	w1->sprite = sf::Sprite(letterT->texture);
+	w1->reload_sound_name = "pistol_reload";
+
+	Weapon*w2 = new Weapon("shotgun", 1.f, 20.f);
+	w2->weaponType = WEAPON_TYPE_TAD_SHOTGUN;
+	w2->ammoPerClip = 8;
+	w2->ammoInTheClip = w2->ammoPerClip;
+	w2->inaccuracy = 1.f;
+	w2->bullets_per_shot = 4;
+	w2->projectile_texture_name = "proj";
+	w2->shoot_sound_name = "shotgun_fire6";
+	w2->empty_clip_sound = "shotgun_empty";
+	w2->reload_sound_name = "rifle_reload";
+	w2->sprite = sf::Sprite(letterT->texture);
 	
 
 
 	player->weapons->push_back(w);
 	player->weapons->push_back(w1);
+	player->weapons->push_back(w2);
 	
 	ps.player = player;
 
@@ -470,13 +492,48 @@ int main(int argc, char** argv)
 	m2.x = 0.0f;
 	m2.y = 0.01f;
 
+	for (int i = 0; i < 3; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_rifle_shoot_" + std::to_string(i), "./../textures/Top_Down_Survivor/rifle/shoot/survivor-shoot_rifle_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i < 3; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_pistol_shoot_" + std::to_string(i), "./../textures/Top_Down_Survivor/handgun/shoot/survivor-shoot_handgun_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i < 3; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_shotgun_shoot_" + std::to_string(i), "./../textures/Top_Down_Survivor/shotgun/shoot/survivor-shoot_shotgun_" + std::to_string(i) + ".png", false, false));
+	}
+
 	for (int i = 0; i < 20; i++)
 	{
 		game.Resources->AddTextureResource(new TextureResource("solder_rifle_move_" + std::to_string(i), "./../textures/Top_Down_Survivor/rifle/move/survivor-move_rifle_" + std::to_string(i) + ".png", false, false));
 	}
+
+	for (int i = 0; i < 20; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_rifle_reload_" + std::to_string(i), "./../textures/Top_Down_Survivor/rifle/reload/survivor-reload_rifle_" + std::to_string(i) + ".png", false, false));
+	}
 	for (int i = 0; i < 20; i++)
 	{
 		game.Resources->AddTextureResource(new TextureResource("solder_pistol_move_" + std::to_string(i), "./../textures/Top_Down_Survivor/handgun/move/survivor-move_handgun_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i < 15; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_pistol_reload_" + std::to_string(i), "./../textures/Top_Down_Survivor/handgun/reload/survivor-reload_handgun_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i < 20; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_shotgun_reload_" + std::to_string(i), "./../textures/Top_Down_Survivor/shotgun/reload/survivor-reload_shotgun_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i < 20; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_shotgun_move_" + std::to_string(i), "./../textures/Top_Down_Survivor/shotgun/move/survivor-move_shotgun_" + std::to_string(i) + ".png", false, false));
 	}
 
 	for (int i = 0; i < 17; i++)
@@ -500,8 +557,22 @@ int main(int argc, char** argv)
 	game.Resources->AddTextureResource(new TextureResource("letter", "./../textures/Letter.png", false, false));
 
 	game.Resources->AddSoundResource(new SoundResource("ambience_base", "./../sounds/ambience_base.wav"));
-	game.Resources->AddSoundResource(new SoundResource("pistol_fire2", "./../sounds//pistol_fire2.wav"));
+	game.Resources->AddSoundResource(new SoundResource("pistol_fire2", "./../sounds/weapons/pistol/pistol_fire2.wav"));
+	game.Resources->AddSoundResource(new SoundResource("rifle_single1", "./../sounds/weapons/m4/single1.wav"));
+	game.Resources->AddSoundResource(new SoundResource("shotgun_fire6", "./../sounds/weapons/shotgun/shotgun_fire6.wav"));
+
+	game.Resources->AddSoundResource(new SoundResource("pistol_empty", "./../sounds/weapons/pistol/pistol_empty.wav"));
+	game.Resources->AddSoundResource(new SoundResource("rifle_empty", "./../sounds/weapons/mp5/empty.wav"));
+	game.Resources->AddSoundResource(new SoundResource("shotgun_empty", "./../sounds/weapons/shotgun/empty.wav"));
+
+	game.Resources->AddSoundResource(new SoundResource("rifle_reload", "./../sounds/weapons/mp5/reload.wav"));
+	game.Resources->AddSoundResource(new SoundResource("pistol_reload", "./../sounds/weapons/pistol/pistol_reload1.wav"));
+	game.Resources->AddSoundResource(new SoundResource("shotgun_reload1", "./../sounds/weapons/shotgun/shotgun_reload1.wav"));
+	game.Resources->AddSoundResource(new SoundResource("shotgun_reload2", "./../sounds/weapons/shotgun/shotgun_reload2.wav"));
+	game.Resources->AddSoundResource(new SoundResource("shotgun_reload3", "./../sounds/weapons/shotgun/shotgun_reload1.wav"));
+
 	game.Resources->AddSoundResource(new SoundResource("fire1", "./../sounds/fire1.wav"));
+
 
 	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_PLASTIC_BOX_LIGHT_NAME, "./../sounds/physics/plastic/plastic_box_scrape_smooth_loop1.wav"));
 	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_PLASTIC_BOX_HARD_NAME, "./../sounds/physics/plastic/plastic_box_scrape_rough_loop1.wav"));
@@ -518,6 +589,8 @@ int main(int argc, char** argv)
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_rough_loop1", "./../sounds/physics/metal/metal_box_scrape_rough_loop1.wav"));
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_rough_loop2", "./../sounds/physics/metal/metal_box_scrape_rough_loop2.wav"));
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_smooth_loop1", "./../sounds/physics/metal/metal_box_scrape_smooth_loop1.wav"));
+
+	game.Resources->AddSoundResource(new SoundResource("zombie_pain", "./../sounds/zo_pain1.wav"));
 
 
 	for (int i = 1; i < 5; i++)

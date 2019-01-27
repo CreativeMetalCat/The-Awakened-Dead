@@ -6,7 +6,7 @@
 #include "Weapon.h"
 #include "Projectile.h"
 #include "MaterialTypes.h"
-
+#include "ammo_data.h"
 
 class Player :public SceneActor
 {
@@ -14,45 +14,8 @@ protected:
 
 	size_t animIndex = 0;
 
-	/*TextureResource* solder_rifle = new TextureResource("solder_rifle", "./textures/survivor_move_rifle_anim.png", false, false);
-	TextureResource* solder_pistol = new TextureResource("solder", "./textures/player_idle.gif", false, false);*/
-
 	void UpdateSprites()
 	{
-		if (currentAnimation != NULL)
-		{
-			/*if (currentAnimation->CurrentSprite.getTexture() != NULL)
-			{
-				Scale.x = collision.width / currentAnimation->CurrentSprite.getTexture()->getSize().x;
-				Scale.y = collision.height / currentAnimation->CurrentSprite.getTexture()->getSize().y;
-			}
-			else
-			{
-				Scale.x = collision.width / sprite.getTexture()->getSize().x;
-				Scale.y = collision.height / sprite.getTexture()->getSize().y;
-			}
-			for (size_t i = 0; i < currentAnimation->Sprites->size();i++)
-			{
-				currentAnimation->Sprites->at(i).setRotation(RotationAngle);
-				currentAnimation->Sprites->at(i).setScale(Scale);
-				currentAnimation->Sprites->at(i).setOrigin(sf::Vector2f(currentAnimation->Sprites->at(i).getTextureRect().width / 2, currentAnimation->Sprites->at(i).getTextureRect().height / 2));
-			}*/
-
-
-			/*currentAnimation->CurrentSprite.setRotation(RotationAngle);*/
-			/*if (currentAnimation->GetCurrentFrameIndex() < currentAnimation->Sprites->size())
-			{
-				currentAnimation->Sprites->at(currentAnimation->GetCurrentFrameIndex()).setRotation(RotationAngle);
-			}*/
-
-			/*currentAnimation->CurrentSprite.setScale(Scale);
-			currentAnimation->CurrentSprite.setOrigin(sf::Vector2f(collision.width / 2, collision.height / 2));*/
-		}
-		else
-		{
-			/*Scale.x = collision.width / sprite.getTexture()->getSize().x;
-			Scale.y = collision.height / sprite.getTexture()->getSize().y;*/
-		}
 
 		sprite.setRotation(RotationAngle);
 		sprite.setScale(Scale);
@@ -61,19 +24,38 @@ protected:
 
 	}
 public:
-	
+	//way of keeping track of amount of ammo player has
+	//this way player can have ammo for weapons that he currently doesn't have
+	std::vector<ammo_data>*ammoData = new std::vector<ammo_data>();
+
+	//temp value to use channel from state that player is currently in
+	int reload_sound_channel_id = -1;
+
+	//temp value to keep track of reloading
+	float _time_in_reload = 0.f;
+
+	//player can not shoot while reloading 
+	//also used to set proper animation
+	bool is_reloading = false;
+
+	//sound type of surface that player is stepping on
 	int footstep_sound_type = MAT_SOUND_TYPE_CONCRETE;
 
+	//time before next footstep sound will play(they override each other)
 	float time_per_footstep = 0.5f;
 
+	//temp value used by state
 	float time_footstep_elapsed = 0.f;
 
 	//used in states to controll footstep sounds
 	int footsteps_sound_channel_id = -1;
 
 	float health = 100.f;
-	/*std::vector<Animation::Animation> * animations = new std::vector<Animation::Animation>();
-	Animation::SpriteSheetAnimation* Anim;*/
+
+
+	//change animation and movement according to this value
+	//mostly for the animation
+	bool is_shooting = false;
 
 	Animation::SpritesAnimation*currentAnimation = nullptr;
 	Animation::SpritesAnimationsContainer*spritesAnimations = new Animation::SpritesAnimationsContainer();
@@ -83,6 +65,7 @@ public:
 
 	std::vector<Weapon*>*weapons = new std::vector<Weapon*>();
 
+	//not used
 	ItemContainer*items = new ItemContainer(3, 1, 3);
 
 	float MaxSpeed = 1.f;
@@ -149,26 +132,84 @@ public:
 	{
 
 		body->SetTransform(body->GetPosition(), RotationAngle);
+
+		
+	
 		if (!weapons->empty())
 		{
 			currentWeapon = weapons->at(weapon_id);
+			if (!ammoData->empty())
+			{
+				//temp way of searching
+				for (size_t i = 0; i < ammoData->size(); i++)
+				{
+					if (ammoData->at(i).ammo_type == currentWeapon->weapon_ammo_type)
+					{
+						currentWeapon->clips = ammoData->at(i).clip_amount;
+					}
+				}
+			}
+
 			if (currentWeapon->weaponType == WEAPON_TYPE_TAD_RIFLE)
 			{
 				/*if (body->GetLinearVelocity().x > 0 || body->GetLinearVelocity().y > 0)
 				{*/
-				SetAnimation("solder_rifle_move");
+				if (this->is_reloading)
+				{
+					SetAnimation("solder_rifle_reload");
+				}
+				else if (is_shooting)
+				{
+					SetAnimation("solder_rifle_shoot");
+				}
+				else
+				{
+					SetAnimation("solder_rifle_move");
+				}
+
 				//}
+			}
+			if (currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
+			{
+
+				if (this->is_reloading)
+				{
+					SetAnimation("solder_shotgun_reload");
+				}
+				else if (is_shooting)
+				{
+					SetAnimation("solder_pistol_shoot");
+				}
+				else
+				{
+					SetAnimation("solder_shotgun_move");
+				}
 			}
 			if (currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
 			{
 				Scale.x = GetObjectRectangle().width / sprite.getTexture()->getSize().x;
 				Scale.y = GetObjectRectangle().height / sprite.getTexture()->getSize().y;
 
-				if (body->GetLinearVelocity().x != 0 || body->GetLinearVelocity().y != 0)
+				if (this->is_reloading)
+				{
+					SetAnimation("solder_pistol_reload");
+				}
+				else if (is_shooting)
+				{
+					SetAnimation("solder_pistol_shoot");
+				}
+				else
 				{
 					SetAnimation("solder_pistol_move");
 				}
+
+				//if (body->GetLinearVelocity().x != 0 || body->GetLinearVelocity().y != 0)
+				//{
+				//	SetAnimation("solder_pistol_move");
+				//}
 			}
+
+
 			UpdateSprites();
 		}
 		else
@@ -183,25 +224,19 @@ public:
 			currentAnimation->CurrentSprite.setRotation(RotationAngle);
 		}
 
-		/*if (!animations->empty())
+		if (currentAnimation != NULL)
 		{
-			Anim->Time += dt.asSeconds();
-			if (Anim->Time >= Anim->FrameDuration)
+			if (currentAnimation->IsRepeated == false)
 			{
-				Anim->SetFrame(animations->at(animIndex).FrameIndexes->at(animations->at(animIndex).CurrentFrameIndex).ColumnIndex, animations->at(animIndex).FrameIndexes->at(animations->at(animIndex).CurrentFrameIndex).StripIndex);
-				Anim->Time = 0;
-				animations->at(animIndex).CurrentFrameIndex++;
-				if (animations->at(animIndex).CurrentFrameIndex > animations->at(animIndex).FrameIndexes->size() - 1)
+				if (is_shooting)
 				{
-					animations->at(animIndex).CurrentFrameIndex = 0;
+					if (currentAnimation->GetCurrentFrameIndex() >= currentAnimation->Sprites->size() - 1)
+					{
+						is_shooting = false;
+					}
 				}
 			}
-		}*/
-
-
-
-		/*this->Move(sf::Vector2f(Velocity.x*(dt.asMilliseconds()), Velocity.y*(dt.asMilliseconds())));*/
-		/*this->Anim->sprite.setPosition(sf::Vector2f(body->GetPosition().x, body->GetPosition().y));*/
+		}
 
 		this->collision.left = body->GetPosition().x + this->collision.width / 2;
 		this->collision.top = body->GetPosition().y + this->collision.height / 2;
@@ -211,6 +246,10 @@ public:
 			for (size_t i = 0; i < Projectiles->size(); i++)
 			{
 				Projectiles->at(i)->Update(dt);
+				if (Projectiles->at(i)->getIsDone())
+				{
+					Projectiles->erase(std::find(Projectiles->begin(), Projectiles->end(), Projectiles->at(i)));
+				}
 			}
 		}
 
@@ -288,6 +327,49 @@ public:
 		sprite.setOrigin(sf::Vector2f(collision.width / 2, collision.height / 2));
 	}
 
+	//adds ammo 
+	//if already have ammo for this type of weapon it will add to that
+	//it only will add for the firts of this type to escape copying same object
+	//if not it will create new entry for this type of ammo
+	void AddAmmo(ammo_data data)
+	{
+		if (!ammoData->empty())
+		{
+			for (size_t i = 0; i < ammoData->size(); i++)
+			{
+				if (ammoData->at(i).ammo_type == data.ammo_type) 
+				{
+					//it only will add for the firts of this type to escape copying same object
+					ammoData->at(i).clip_amount += data.clip_amount;
+					return;
+				}
+			}
+			//create new entry
+			ammoData->push_back(data);
+			return;
+		}
+		//create new entry
+		ammoData->push_back(data);
+	}
 
-
+	//returns NULL on failure
+	ammo_data FindAmmoDataByWeaponType(int ammo_type)
+	{
+		if (!ammoData->empty())
+		{
+			for (size_t i = 0; i < ammoData->size(); i++)
+			{
+				if (ammoData->at(i).ammo_type == ammo_type)
+				{
+					
+					return ammoData->at(i);
+				}
+			}
+			return NULL;
+		}
+		else
+		{
+			return NULL;
+		}
+	}
 };
