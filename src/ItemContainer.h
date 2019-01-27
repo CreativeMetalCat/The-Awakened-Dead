@@ -5,9 +5,6 @@
 class ItemContainer
 {
 protected:
-
-
-
 	//number of items per strip
 	//mostly needed for displaying items in states
 	int _stripLenght = 1;

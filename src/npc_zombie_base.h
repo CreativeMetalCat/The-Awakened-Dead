@@ -6,6 +6,7 @@
 
 #include <iostream>
 
+//base class for all pawns with zombie-like behaviour
 class npc_zombie_base :public MovingPawn
 {
 protected:
@@ -53,7 +54,7 @@ public:
 		collision.height = height;
 	}
 
-	
+
 
 	sf::Vector2f GetObjectPosition() override
 	{
@@ -64,7 +65,7 @@ public:
 	{
 		if (IsDead != true)
 		{
-			
+
 		}
 
 
