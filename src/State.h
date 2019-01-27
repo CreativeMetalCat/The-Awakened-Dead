@@ -43,10 +43,31 @@ public:
 	//Play state has world objects
 	//Menu\pause-Menu buttons, logos, etc.
 	std::vector<Object*>*StateObjects = new std::vector<Object*>();
+
+	//used to safely destroy physical objects
+	//but can also be used for evry object that can be deleted only on update
+	std::vector<Object*>*objectsToDestroy = new std::vector<Object*>();
+
 	virtual void HandleEvent(sf::Event& event) = 0;
 	virtual void Draw() = 0;
 	virtual void Update(sf::Time dt) = 0;
 	virtual void Init() = 0;
+
+	//destroys all objects from objectsToDestroy array
+	virtual void finishDestoy()
+	{
+		if (!objectsToDestroy->empty())
+		{
+			for (size_t i = 0; i < objectsToDestroy->size(); i++)
+			{
+				if (this->DeleteObjectFromState(objectsToDestroy->at(i)))
+				{
+					
+				}
+			}
+			objectsToDestroy->clear();
+		}
+	}
 
 	//basic function
 	//needs better version
@@ -82,6 +103,41 @@ public:
 		}
 
 	}
+
+	//Deletes object from StateObjects that equals parametr 
+	//IT WILL NOT DELETE OBJECT THAT YOU GIVE BUT RATHER IT'S COPY IN STATEOBJECTS
+	//returns true on success
+	virtual bool DeleteObjectFromState(Object*object)
+	{
+		auto it = std::find(StateObjects->begin(), StateObjects->end(), object);
+		if (it != StateObjects->end())
+		{
+			auto index = std::distance(StateObjects->begin(), it);
+			
+			//delete it's body if it has one
+			if (StateObjects->at(index)->physBodyInitialized)
+			{
+				//Make NULL step to avoid crashes
+				StateObjects->at(index)->body->GetWorld()->Step(0, 0, 0);
+
+				StateObjects->at(index)->body->SetActive(false);
+
+				StateObjects->at(index)->body->GetWorld()->DestroyBody(StateObjects->at(index)->body);
+
+				//just in case
+				StateObjects->at(index)->physBodyInitialized = false;
+			}
+			StateObjects->erase(it);
+
+			//object is deleted
+			//return true
+			return true;
+		}
+		{
+			return false;
+		}
+	}
+
 
 	//Plays sound using one of the channels
 	virtual void PlaySound(std::string name)
