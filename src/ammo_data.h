@@ -11,7 +11,7 @@ class ammo_data
 {
 public:
 	//weapons that can use this ammo type
-	int weapon_type = 0;
+	int ammo_type = 0;
 
 	//amount of clips that this object has
 	int clip_amount = 1;
@@ -27,7 +27,7 @@ public:
 	//@param max_clip_amount
 	//max amount of clips that pawn can have at one time
 	//to get it's amount in ammo for specific type of weapon just multiply it by weapon's ammo_per_clip value
-	ammo_data(int weapon_type = 0, int clip_amount = 1, int max_clips_amount = 100) :weapon_type(weapon_type), clip_amount(clip_amount)
+	ammo_data(int ammo_type = 0, int clip_amount = 1, int max_clips_amount = 100) :ammo_type(ammo_type), clip_amount(clip_amount)
 	{
 
 	}
