@@ -16,6 +16,7 @@
 #include "TextObject.h"
 #include "SoundSourceObject.h"
 #include "trigger_change_area_id.h"
+#include "ammo_object.h"
 
 #ifndef _RANDOM_
 #include <random>
@@ -1092,6 +1093,18 @@ public:
 		z->SetAnimation("skeleton_idle");
 		this->StateObjects->push_back(z);
 
+		ammo_pickup_object*apo = new ammo_pickup_object({ static_cast<int>(WEAPON_TYPE_TAD_SHOTGUN),1 },sf::Vector2f(0,0), sf::Sprite(),10,20, 0);
+		apo->OnCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+		{
+			apo->onCollision(object, fixtureA, fixtureB,this->context,this->Name);
+		};
+
+		apo->LeftCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+		{
+			apo->leftCollision(object, fixtureA, fixtureB, this->context, this->Name);
+		};
+
+		this->StateObjects->push_back(apo);
 
 		if (!StateObjects->empty())
 		{
@@ -1286,6 +1299,33 @@ public:
 					StateObjects->at(i)->body->SetMassData(&propMass);
 					StateObjects->at(i)->Init();
 				}
+
+				else if (ammo_pickup_object*apo = dynamic_cast<ammo_pickup_object*>(StateObjects->at(i)))
+				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_dynamicBody;
+
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					StateObjects->at(i)->Init();
+				}
+
 				else
 				{
 
@@ -1755,9 +1795,14 @@ public:
 		{
 			LoadMap("td_free_tv.tmx");
 		}
+		
 		if (event.key.code == sf::Keyboard::Num2&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			LoadMap("t_t1.tmx");
+		}
+		if (event.key.code == sf::Keyboard::I&&event.type == sf::Event::EventType::KeyPressed)
+		{
+			player->AddAmmo({ static_cast<int>(player->currentWeapon->weaponType),5 });
 		}
 		if (event.mouseButton.button == sf::Mouse::Left&&event.type == sf::Event::EventType::MouseButtonPressed)
 		{
@@ -2550,6 +2595,7 @@ public:
 		/*dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->Update(dt);
 		dynamic_cast<npc_test_turret*>(StateObjects->at(2))->Update(dt);*/
 		this->Current_area_id = player->area_id;
+		this->finishDestoy();
 		if (!StateObjects->empty())
 		{
 			for (size_t i = 0; i < StateObjects->size(); i++)
