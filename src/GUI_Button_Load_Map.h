@@ -4,6 +4,7 @@
 
 namespace GUI
 {
+	//button that contains data for loading map from state
 	class Button_Load_Map :public Button
 	{
 	protected:
