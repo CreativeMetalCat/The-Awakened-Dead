@@ -16,6 +16,8 @@
 #include "TextObject.h"
 #include "SoundSourceObject.h"
 #include "trigger_change_area_id.h"
+#include "ammo_object.h"
+#include "weapon_pickup_object.h"
 
 #ifndef _RANDOM_
 #include <random>
@@ -1092,6 +1094,44 @@ public:
 		z->SetAnimation("skeleton_idle");
 		this->StateObjects->push_back(z);
 
+		ammo_pickup_object*apo = new ammo_pickup_object({ static_cast<int>(AMMO_TYPE_SHOTGUN),1 },sf::Vector2f(0,0), sf::Sprite(),10,20, 0);
+		apo->OnCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+		{
+			apo->onCollision(object, fixtureA, fixtureB,this->context,this->Name);
+		};
+
+		apo->LeftCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+		{
+			apo->leftCollision(object, fixtureA, fixtureB, this->context, this->Name);
+		};
+
+		this->StateObjects->push_back(apo);
+
+
+
+		Weapon*w1 = new Weapon("pstol -  the slowest pistol in world. takes to much of screen? sowwy", 0.00002f, 15.f);
+		w1->weaponType = WEAPON_TYPE_TAD_PISTOL;
+		w1->ammoPerClip = 17;
+		w1->ammoInTheClip = w1->ammoPerClip;
+		w1->projectile_texture_name = "proj";
+		w1->shoot_sound_name = "pistol_fire2";
+		w1->empty_clip_sound = "pistol_empty";
+		w1->weapon_ammo_type = AMMO_TYPE_PISTOL;
+		w1->sprite = sf::Sprite();
+		w1->reload_sound_name = "pistol_reload";
+
+		weapon_pickup_object*wpo= new weapon_pickup_object(w1, sf::Vector2f(100, 100), sf::Sprite(), 50, 10,true,0);
+		wpo->OnCollision = [this, wpo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+		{
+			wpo->onCollision(object, fixtureA, fixtureB, this->context, this->Name);
+		};
+
+		wpo->LeftCollision = [this, wpo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+		{
+			wpo->leftCollision(object, fixtureA, fixtureB, this->context, this->Name);
+		};
+
+		this->StateObjects->push_back(wpo);
 
 		if (!StateObjects->empty())
 		{
@@ -1286,6 +1326,59 @@ public:
 					StateObjects->at(i)->body->SetMassData(&propMass);
 					StateObjects->at(i)->Init();
 				}
+
+				else if (ammo_pickup_object*apo = dynamic_cast<ammo_pickup_object*>(StateObjects->at(i)))
+				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_dynamicBody;
+
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					StateObjects->at(i)->Init();
+				}
+
+				else if (weapon_pickup_object*apo = dynamic_cast<weapon_pickup_object*>(StateObjects->at(i)))
+				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_dynamicBody;
+
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					StateObjects->at(i)->Init();
+				}
+
 				else
 				{
 
@@ -1371,6 +1464,57 @@ public:
 		}
 		player->spritesAnimations->addAnimation(rifle_reload);
 
+		Animation::SpritesAnimation*pistol_reload = new  Animation::SpritesAnimation(true, 0.06f, "solder_pistol_reload");
+		for (int i = 0; i < 15; i++)
+		{
+			pistol_reload->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_pistol_reload_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(pistol_reload);
+
+		//
+		Animation::SpritesAnimation*pistol_shoot = new  Animation::SpritesAnimation(false, 0.3f, "solder_pistol_shoot");
+		for (int i = 0; i < 3; i++)
+		{
+			pistol_shoot->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_pistol_shoot_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(pistol_shoot);
+
+		//
+		Animation::SpritesAnimation*rifle_shoot = new  Animation::SpritesAnimation(false, 0.3f, "solder_rifle_shoot");
+		for (int i = 0; i < 3; i++)
+		{
+			rifle_shoot->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_rifle_shoot_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(rifle_shoot);
+
+
+		//
+		Animation::SpritesAnimation*shotgun_shoot = new  Animation::SpritesAnimation(false, 0.3f, "solder_shotgun_shoot");
+		for (int i = 0; i < 3; i++)
+		{
+			shotgun_shoot->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_shotgun_shoot_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(shotgun_shoot);
+
+
+
+		//
+		Animation::SpritesAnimation*shotgun_reload = new  Animation::SpritesAnimation(true, 0.05f, "solder_shotgun_reload");
+		for (int i = 0; i < 20; i++)
+		{
+			shotgun_reload->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_shotgun_reload_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(shotgun_reload);
+
+		//
+		Animation::SpritesAnimation*shotgun_move = new  Animation::SpritesAnimation(true, 0.05f, "solder_shotgun_move");
+		for (int i = 0; i < 20; i++)
+		{
+			shotgun_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_shotgun_move_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(shotgun_move);
+
+
 		Animation::SpritesAnimation*pistol_move = new  Animation::SpritesAnimation(true, 0.2f, "solder_pistol_move");
 		for (int i = 0; i < 20; i++)
 		{
@@ -1403,7 +1547,10 @@ public:
 		
 
 
-
+		player->AddAmmo({ AMMO_TYPE_PISTOL,5});
+		player->AddAmmo({ AMMO_TYPE_RIFLE,5 });
+		player->AddAmmo({ AMMO_TYPE_SHOTGUN,5 });
+		player->AddAmmo({ AMMO_TYPE_SHOTGUN,1 });
 
 
 
@@ -1420,6 +1567,16 @@ public:
 		l2->SetPosition(sf::Vector2f(10, SCREENHEIGHT - 200));
 		l2->Init();
 		this->PlayerUI->Components->push_back(l2);
+
+		GUI::Label*l_ammo = new GUI::Label("ammo_in_clip", "9999", sf::Color::Red, context->game->Resources->getFontResourceDataByName("calibri")->font, 80, context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture);
+		l_ammo->SetPosition(sf::Vector2f(SCREENWIDTH-400, SCREENHEIGHT - 200));
+		l_ammo->Init();
+		this->PlayerUI->Components->push_back(l_ammo);
+
+		GUI::Label*l_clips = new GUI::Label("clips", "9999", sf::Color::Red, context->game->Resources->getFontResourceDataByName("calibri")->font, 80, context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture);
+		l_clips->SetPosition(sf::Vector2f(SCREENWIDTH - 220, SCREENHEIGHT - 200));
+		l_clips->Init();
+		this->PlayerUI->Components->push_back(l_clips);
 
 
 		cursorParticles.Stop();
@@ -1691,9 +1848,14 @@ public:
 		{
 			LoadMap("td_free_tv.tmx");
 		}
+		
 		if (event.key.code == sf::Keyboard::Num2&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			LoadMap("t_t1.tmx");
+		}
+		if (event.key.code == sf::Keyboard::I&&event.type == sf::Event::EventType::KeyPressed)
+		{
+			player->AddAmmo({ static_cast<int>(player->currentWeapon->weapon_ammo_type),5 });
 		}
 		if (event.mouseButton.button == sf::Mouse::Left&&event.type == sf::Event::EventType::MouseButtonPressed)
 		{
@@ -1778,97 +1940,88 @@ public:
 			diff.x = mousePos.x - player->GetObjectPosition().x;
 			diff.y = mousePos.y - player->GetObjectPosition().y;
 
-			//hidden for debug perposes
+			
 
 			if (player->currentWeapon->ammoInTheClip <= 0 && player->currentWeapon->clips > 0)
 			{
 				player->is_reloading = true;
 				if (player->reload_sound_channel_id == -1)
 				{
-					this->PlaySound("rifle_reload", player->reload_sound_channel_id);
+					this->PlaySound(player->currentWeapon->reload_sound_name, player->reload_sound_channel_id);
 				}
+			}
 
-				//moved to Update(sf::dt...)
+			if (!player->is_shooting)
+			{
 
-				/*if (player->_time_in_reload >= player->currentWeapon->reload_time)
+				if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_KNIFE)
 				{
-					if (player->currentWeapon->clips > 0)
+
+				}
+				if (!player->is_reloading)
+				{
+					player->is_shooting = true;
+					if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
 					{
-						player->currentWeapon->clips -= 1;
-						player->currentWeapon->ammoInTheClip = player->currentWeapon->ammoPerClip;
+						
+						for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
+						{
+
+							if (player->currentWeapon->ammoInTheClip <= 0)
+							{
+								this->PlaySound(player->currentWeapon->empty_clip_sound);
+								break;
+							}
+
+							projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
+
+							bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+							{
+
+								bullet->projectileOnCollision(object, this->context, "PlayState");
+							};
+							bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+							{
+								bullet->projectileOnLeftCollision(object, this->context, "PlayState");
+							};
+
+							bullet->Launch(static_cast<float>((atan2(diff.y, diff.x) + i/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
+							player->Projectiles->push_back(bullet);
+							player->currentWeapon->ammoInTheClip -= 1;
+							PlaySound(player->currentWeapon->shoot_sound_name);
+
+						}
 					}
 					else
 					{
-						return;
-					}
-					player->is_reloading = false;
-				}*/
-			}
-
-
-			if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_KNIFE)
-			{
-
-			}
-			if (!player->is_reloading)
-			{
-				if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
-				{
-					for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
-					{
-						if (player->currentWeapon->ammoInTheClip <= 0)
+						for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
 						{
-							this->PlaySound(player->currentWeapon->empty_clip_sound);
-							break;
+							if (player->currentWeapon->ammoInTheClip <= 0)
+							{
+								this->PlaySound(player->currentWeapon->empty_clip_sound);
+								break;
+							}
+
+							projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
+
+							bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+							{
+
+								bullet->projectileOnCollision(object, this->context, "PlayState");
+							};
+							bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+							{
+								bullet->projectileOnLeftCollision(object, this->context, "PlayState");
+							};
+
+							bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
+							player->Projectiles->push_back(bullet);
+							player->currentWeapon->ammoInTheClip -= 1;
+							PlaySound(player->currentWeapon->shoot_sound_name);
+
 						}
-
-						projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
-
-						bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-						{
-
-							bullet->projectileOnCollision(object, this->context, "PlayState");
-						};
-						bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-						{
-							bullet->projectileOnLeftCollision(object, this->context, "PlayState");
-						};
-
-						bullet->Launch(static_cast<float>((atan2(diff.y, diff.x) + i/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
-						player->Projectiles->push_back(bullet);
-						player->currentWeapon->ammoInTheClip -= 1;
-						PlaySound(player->currentWeapon->shoot_sound_name);
-
 					}
-				}
-				else
-				{
-					for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
-					{
-						if (player->currentWeapon->ammoInTheClip <= 0)
-						{
-							this->PlaySound(player->currentWeapon->empty_clip_sound);
-							break;
-						}
-
-						projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
-
-						bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-						{
-
-							bullet->projectileOnCollision(object, this->context, "PlayState");
-						};
-						bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-						{
-							bullet->projectileOnLeftCollision(object, this->context, "PlayState");
-						};
-
-						bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
-						player->Projectiles->push_back(bullet);
-						player->currentWeapon->ammoInTheClip -= 1;
-						PlaySound(player->currentWeapon->shoot_sound_name);
-
-					}
+					
 				}
 			}
 		}
@@ -2333,10 +2486,94 @@ public:
 			}
 			else
 			{
-				int channel_id = 0;
-				std::string filename = "footstep_concrete" + std::to_string(m_get_random_number(1, 4));
-				this->PlaySound(filename, channel_id);
-				player->footsteps_sound_channel_id = channel_id;
+			int channel_id = 0;
+			std::string filename = "";
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_CONCRETE)
+			{
+				std::string name = MAT_SOUND_TYPE_CONCRETE_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_CHAINLINK)
+			{
+				std::string name = MAT_SOUND_TYPE_CHAINLINK_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_DIRT)
+			{
+				std::string name = MAT_SOUND_TYPE_DIRT_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_DUCT)
+			{
+				std::string name = MAT_SOUND_TYPE_DUCT_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_GRASS)
+			{
+				std::string name = MAT_SOUND_TYPE_GRASS_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_GRAVEL)
+			{
+				std::string name = MAT_SOUND_TYPE_GRAVEL_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_LADDER)
+			{
+				std::string name = MAT_SOUND_TYPE_LADDER_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_METAL)
+			{
+				std::string name = MAT_SOUND_TYPE_METAL_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_METALGRATE)
+			{
+				std::string name = MAT_SOUND_TYPE_METALGRATE_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_MUD)
+			{
+				std::string name = MAT_SOUND_TYPE_MUD_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_SAND)
+			{
+				std::string name = MAT_SOUND_TYPE_SAND_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_SLOSH)
+			{
+				std::string name = MAT_SOUND_TYPE_SLOSH_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_TILE)
+			{
+				std::string name = MAT_SOUND_TYPE_TILE_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_WADE)
+			{
+				std::string name = MAT_SOUND_TYPE_WADE_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_WOOD)
+			{
+				std::string name = MAT_SOUND_TYPE_WOOD_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+			if (player->footstep_sound_type == MAT_SOUND_TYPE_WOODPANEL)
+			{
+				std::string name = MAT_SOUND_TYPE_WOODPANEL_NAME;
+				filename = name + std::to_string(m_get_random_number(1, 4));
+			}
+
+
+
+
+			this->PlaySound(filename, player->footsteps_sound_channel_id);
+			player->time_footstep_elapsed = 0.f;
 			}
 			
 		}
@@ -2348,6 +2585,16 @@ public:
 			{
 				if (player->currentWeapon->clips > 0)
 				{
+					if (!player->ammoData->empty())
+					{
+						for (size_t i = 0; i < player->ammoData->size(); i++)
+						{
+							if (player->ammoData->at(i).ammo_type == player->currentWeapon->weapon_ammo_type)
+							{
+								player->ammoData->at(i).clip_amount--;
+							}
+						}
+					}
 					player->currentWeapon->clips -= 1;
 					player->currentWeapon->ammoInTheClip = player->currentWeapon->ammoPerClip;
 				}			
@@ -2372,6 +2619,12 @@ public:
 		dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("weapon_name"))->text.setString(player->currentWeapon->name);
 		dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("health"))->text.setString(std::to_string(static_cast<int>(player->health)));
 
+		if (player->currentWeapon != NULL)
+		{
+			dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("ammo_in_clip"))->text.setString(std::to_string(player->currentWeapon->ammoInTheClip)+"/");
+			dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("clips"))->text.setString(std::to_string(player->currentWeapon->clips));
+		}
+		
 		if (!PlayerUI->Components->empty())
 		{
 			for (size_t i = 0; i < PlayerUI->Components->size(); i++)
@@ -2395,6 +2648,7 @@ public:
 		/*dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->Update(dt);
 		dynamic_cast<npc_test_turret*>(StateObjects->at(2))->Update(dt);*/
 		this->Current_area_id = player->area_id;
+		this->finishDestoy();
 		if (!StateObjects->empty())
 		{
 			for (size_t i = 0; i < StateObjects->size(); i++)
