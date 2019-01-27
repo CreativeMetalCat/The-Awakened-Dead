@@ -18,6 +18,11 @@
 #define WEAPON_TYPE_TAD_GRENADE 0xf
 #pragma endregion
 
+#ifndef AMMO_TYPES
+#include "ammo_types.h"
+#endif // !AMMO_TYPE
+
+
 //base class for weapons
 class Weapon :public Item
 {
@@ -63,6 +68,9 @@ public:
 	int  clips = maxClips;
 
 	size_t weaponType = WEAPON_TYPE_NONE;
+
+	int weapon_ammo_type = AMMO_TYPE_NULL;
+
 	float projectileSpeed = 0.f;
 	float projectileDamage = 0.f;
 	std::vector<Animation::Animation> * animations = new std::vector<Animation::Animation>();

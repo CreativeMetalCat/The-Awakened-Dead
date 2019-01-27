@@ -17,6 +17,7 @@
 #include "SoundSourceObject.h"
 #include "trigger_change_area_id.h"
 #include "ammo_object.h"
+#include "weapon_pickup_object.h"
 
 #ifndef _RANDOM_
 #include <random>
@@ -1093,7 +1094,7 @@ public:
 		z->SetAnimation("skeleton_idle");
 		this->StateObjects->push_back(z);
 
-		ammo_pickup_object*apo = new ammo_pickup_object({ static_cast<int>(WEAPON_TYPE_TAD_SHOTGUN),1 },sf::Vector2f(0,0), sf::Sprite(),10,20, 0);
+		ammo_pickup_object*apo = new ammo_pickup_object({ static_cast<int>(AMMO_TYPE_SHOTGUN),1 },sf::Vector2f(0,0), sf::Sprite(),10,20, 0);
 		apo->OnCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 		{
 			apo->onCollision(object, fixtureA, fixtureB,this->context,this->Name);
@@ -1105,6 +1106,32 @@ public:
 		};
 
 		this->StateObjects->push_back(apo);
+
+
+
+		Weapon*w1 = new Weapon("pistol", 1.f, 15.f);
+		w1->weaponType = WEAPON_TYPE_TAD_PISTOL;
+		w1->ammoPerClip = 17;
+		w1->ammoInTheClip = w1->ammoPerClip;
+		w1->projectile_texture_name = "proj";
+		w1->shoot_sound_name = "pistol_fire2";
+		w1->empty_clip_sound = "pistol_empty";
+		w1->weapon_ammo_type = AMMO_TYPE_PISTOL;
+		w1->sprite = sf::Sprite();
+		w1->reload_sound_name = "pistol_reload";
+
+		weapon_pickup_object*wpo= new weapon_pickup_object(w1, sf::Vector2f(100, 100), sf::Sprite(), 50, 10,true,0);
+		wpo->OnCollision = [this, wpo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+		{
+			wpo->onCollision(object, fixtureA, fixtureB, this->context, this->Name);
+		};
+
+		wpo->LeftCollision = [this, wpo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+		{
+			wpo->leftCollision(object, fixtureA, fixtureB, this->context, this->Name);
+		};
+
+		this->StateObjects->push_back(wpo);
 
 		if (!StateObjects->empty())
 		{
@@ -1326,6 +1353,32 @@ public:
 					StateObjects->at(i)->Init();
 				}
 
+				else if (weapon_pickup_object*apo = dynamic_cast<weapon_pickup_object*>(StateObjects->at(i)))
+				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_dynamicBody;
+
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					StateObjects->at(i)->Init();
+				}
+
 				else
 				{
 
@@ -1494,10 +1547,10 @@ public:
 		
 
 
-		player->AddAmmo({ WEAPON_TYPE_TAD_PISTOL,5});
-		player->AddAmmo({ WEAPON_TYPE_TAD_RIFLE,5 });
-		player->AddAmmo({ WEAPON_TYPE_TAD_SHOTGUN,5 });
-		player->AddAmmo({ WEAPON_TYPE_TAD_SHOTGUN,1 });
+		player->AddAmmo({ AMMO_TYPE_PISTOL,5});
+		player->AddAmmo({ AMMO_TYPE_RIFLE,5 });
+		player->AddAmmo({ AMMO_TYPE_SHOTGUN,5 });
+		player->AddAmmo({ AMMO_TYPE_SHOTGUN,1 });
 
 
 
@@ -1802,7 +1855,7 @@ public:
 		}
 		if (event.key.code == sf::Keyboard::I&&event.type == sf::Event::EventType::KeyPressed)
 		{
-			player->AddAmmo({ static_cast<int>(player->currentWeapon->weaponType),5 });
+			player->AddAmmo({ static_cast<int>(player->currentWeapon->weapon_ammo_type),5 });
 		}
 		if (event.mouseButton.button == sf::Mouse::Left&&event.type == sf::Event::EventType::MouseButtonPressed)
 		{
@@ -2536,7 +2589,7 @@ public:
 					{
 						for (size_t i = 0; i < player->ammoData->size(); i++)
 						{
-							if (player->ammoData->at(i).weapon_type == player->currentWeapon->weaponType)
+							if (player->ammoData->at(i).ammo_type == player->currentWeapon->weapon_ammo_type)
 							{
 								player->ammoData->at(i).clip_amount--;
 							}

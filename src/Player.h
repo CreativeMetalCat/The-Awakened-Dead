@@ -143,7 +143,7 @@ public:
 				//temp way of searching
 				for (size_t i = 0; i < ammoData->size(); i++)
 				{
-					if (ammoData->at(i).weapon_type == currentWeapon->weaponType)
+					if (ammoData->at(i).ammo_type == currentWeapon->weapon_ammo_type)
 					{
 						currentWeapon->clips = ammoData->at(i).clip_amount;
 					}
@@ -337,7 +337,7 @@ public:
 		{
 			for (size_t i = 0; i < ammoData->size(); i++)
 			{
-				if (ammoData->at(i).weapon_type == data.weapon_type) 
+				if (ammoData->at(i).ammo_type == data.ammo_type) 
 				{
 					//it only will add for the firts of this type to escape copying same object
 					ammoData->at(i).clip_amount += data.clip_amount;
@@ -353,13 +353,13 @@ public:
 	}
 
 	//returns NULL on failure
-	ammo_data FindAmmoDataByWeaponType(int weapon_type)
+	ammo_data FindAmmoDataByWeaponType(int ammo_type)
 	{
 		if (!ammoData->empty())
 		{
 			for (size_t i = 0; i < ammoData->size(); i++)
 			{
-				if (ammoData->at(i).weapon_type == weapon_type)
+				if (ammoData->at(i).ammo_type == ammo_type)
 				{
 					
 					return ammoData->at(i);
