@@ -1109,7 +1109,7 @@ public:
 
 
 
-		Weapon*w1 = new Weapon("pstol -  the slowest pistol in world. takes to much of screen? sowwy", 0.00002f, 15.f);
+		Weapon*w1 = new Weapon("pistol", 1.f, 15.f);
 		w1->weaponType = WEAPON_TYPE_TAD_PISTOL;
 		w1->ammoPerClip = 17;
 		w1->ammoInTheClip = w1->ammoPerClip;
