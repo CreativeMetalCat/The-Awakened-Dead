@@ -3,7 +3,10 @@
 #include "State.h"
 #include "AnimationDataContainer.h"
 #include <iostream>
+
+#ifndef MAX_SOUND_CHANNELS_COUNT
 #define MAX_SOUND_CHANNELS_COUNT 1024
+#endif // !MAX_SOUND_CHANNELS_COUNT
 
 //class that manages work of the game's bones and musles
 class Game
@@ -82,13 +85,73 @@ protected:
 
 public:
 
-
+	//channels used to play sounds
+	std::vector<FMOD::Channel*>*Channels = new std::vector<FMOD::Channel*>(MAX_SOUND_CHANNELS_COUNT);
 
 	FMOD::System*lowSoundSystem = NULL;
 	sf::RenderWindow window;
 	State*CurrentState;
 	AnimationDataContainer*animationsData = new AnimationDataContainer();
 	ResourceContainer*Resources = new ResourceContainer();
+
+
+	//Plays sound using one of the channels
+	void PlaySound(std::string name)
+	{
+		for (size_t i = 0; i < Channels->size(); i++)
+		{
+			bool res;
+			Channels->at(i)->isPlaying(&res);
+			if (Channels->at(i) == NULL)
+			{
+				lowSoundSystem->playSound(Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
+
+				break;
+			}
+			else if (res == false)
+			{
+				lowSoundSystem->playSound(Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
+
+				break;
+			}
+		}
+	}
+
+	//Plays sound using one of the channels and sound from game->resourses->SoundData
+	//@param
+	//channel_id - id of channel that was used for this sound 
+	void PlaySound(std::string name, int &channel_id)
+	{
+		for (size_t i = 0; i < Channels->size(); i++)
+		{
+			bool res;
+			Channels->at(i)->isPlaying(&res);
+			if (Channels->at(i) == NULL)
+			{
+				FMOD_RESULT r;
+				r = lowSoundSystem->playSound(Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
+				if (r != FMOD_OK)
+				{
+					throw(std::runtime_error(FMOD_ErrorString(r)));
+				}
+				channel_id = i;
+				break;
+			}
+			else if (res == false)
+			{
+				FMOD_RESULT r;
+				r = lowSoundSystem->playSound(Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
+				if (r != FMOD_OK)
+				{
+					throw(std::runtime_error(FMOD_ErrorString(r)));
+				}
+				channel_id = i;
+				break;
+			}
+		}
+	}
+
+
 
 	Game(std::string WindowName, sf::VideoMode videoMode) :window(videoMode, WindowName)
 	{
