@@ -220,6 +220,7 @@ public:
 
 			this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
 
+			this->Done = false;
 			this->Pattern->clear();
 			this->body->SetLinearVelocity(b2Vec2(0, 0));
 			this->dirIndex = 0;
