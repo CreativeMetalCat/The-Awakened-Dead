@@ -66,7 +66,7 @@ protected:
 		std::uniform_int_distribution<> distr(min,max); // define the range
 
 		int h=distr(eng);
-		std::cout << h << std::endl;
+		
 		return h;
 	}
 
@@ -2630,7 +2630,7 @@ public:
 						if (pp->StateSoundChannelId == -1)
 						{
 
-							if (pp->MaterialType == MAT_TYPE_PLASTIC_BARREL)
+							 if (pp->MaterialType == MAT_TYPE_PLASTIC_BARREL)
 							{
 								if (pp->mass >= 100.f)
 								{
@@ -2643,7 +2643,7 @@ public:
 								}
 							}
 
-							if (pp->MaterialType == MAT_TYPE_PLASTIC_BOX)
+							else if (pp->MaterialType == MAT_TYPE_PLASTIC_BOX)
 							{
 								if (pp->mass >= 100.f)
 								{
@@ -2656,7 +2656,7 @@ public:
 								}
 							}
 
-							if (pp->MaterialType == MAT_TYPE_WOOD_CRATE)
+							else if (pp->MaterialType == MAT_TYPE_WOOD_CRATE)
 							{
 								if (pp->mass >= 100.f)
 								{
@@ -2669,7 +2669,7 @@ public:
 
 							}
 
-							if (pp->MaterialType == MAT_TYPE_WOOD_PLANK)
+							else if (pp->MaterialType == MAT_TYPE_WOOD_PLANK)
 							{
 								if (pp->mass >= 100.f)
 								{
@@ -2682,7 +2682,7 @@ public:
 
 							}
 
-							if (pp->MaterialType == MAT_TYPE_WOOD_BOX)
+							else if (pp->MaterialType == MAT_TYPE_WOOD_BOX)
 							{
 								if (pp->mass >= 100.f)
 								{
@@ -2695,7 +2695,10 @@ public:
 
 							}
 
-							break;
+							else
+							{
+								std::cout << "Warning: Physics object doesn't have material type set. Bug are known to appear" << std::endl;						
+							}
 						}
 						else
 						{
