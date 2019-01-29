@@ -1042,6 +1042,11 @@ public:
 			z->onCollision(object, this->context, "PlayState");
 		};
 
+		z->LeftCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+		{
+			z->leftCollision(object, this->context, "PlayState");
+		};
+
 		Animation::SpritesAnimation*zombie_idle = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_idle");
 		for (int i = 0; i < 17; i++)
 		{
@@ -1230,7 +1235,7 @@ public:
 					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
 
 					b2PolygonShape senseShape;
-					senseShape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width, StateObjects->at(i)->GetObjectRectangle().height);
+					senseShape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width*2, StateObjects->at(i)->GetObjectRectangle().height*2);
 
 					b2FixtureDef TriggerFixture;
 					TriggerFixture.filter = filter;

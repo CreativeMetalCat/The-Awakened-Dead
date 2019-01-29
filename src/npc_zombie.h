@@ -3,6 +3,7 @@
 #include "npc_zombie_base.h"
 
 
+
 class npc_zombie :public npc_zombie_base
 {
 protected:
@@ -24,6 +25,11 @@ protected:
 		}
 	}
 public:
+
+	//test object 
+	//object that npc will follow
+	Object*target = NULL;
+
 	float Health = 100.f;
 
 	Animation::SpritesAnimation*currentAnimation = nullptr;
@@ -33,10 +39,13 @@ public:
 	{
 		if (!IsDead)
 		{
+			context->game->GetStateByName(stateName)->PlaySound("zombie_pain");
 			Health -= damage;
 
 			if (Health <= 0)
 			{
+				this->Pattern->clear();
+				this->body->SetLinearVelocity(b2Vec2(0, 0));
 				context->game->GetStateByName(stateName)->worldIsPaused = true;
 
 
@@ -95,7 +104,10 @@ public:
 
 	virtual void leftCollision(Object*&object, Context*&context, std::string stateName) override
 	{
-
+		if (target != NULL && target == object)
+		{
+			target = NULL;
+		}
 	}
 
 	virtual void onCollision(Object*&object, Context*&context, std::string stateName) override
@@ -104,10 +116,12 @@ public:
 		{
 			std::cout << "found player" << std::endl;
 			sf::Vector2f diff;
-			diff.x = object->GetObjectPosition().x - this->GetObjectPosition().x;
-			diff.y = object->GetObjectPosition().y - this->GetObjectPosition().x;
+			diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+			diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
 
 			this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+			target = object;
 		}
 		
 	}
@@ -197,6 +211,19 @@ public:
 			currentAnimation->UpdateAnimation(dt);
 			currentAnimation->CurrentSprite.setPosition(sf::Vector2f(body->GetPosition().x, body->GetPosition().y));
 			currentAnimation->CurrentSprite.setRotation(RotationAngle);
+		}
+		if (target != NULL)
+		{
+			sf::Vector2f diff;
+			diff.x = target->GetObjectPosition().x - this->body->GetPosition().x;
+			diff.y = target->GetObjectPosition().y - this->body->GetPosition().y;
+
+			this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+			this->Pattern->clear();
+			this->body->SetLinearVelocity(b2Vec2(0, 0));
+			this->dirIndex = 0;
+			this->AddMovement(MovementDirection(static_cast<float>((atan2(diff.y, diff.x)*(180 / M_PI))), sqrt(diff.x*diff.x + diff.y*diff.y)));
 		}
 		this->UpdateMovement(dt);
 	}
