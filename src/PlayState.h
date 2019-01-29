@@ -66,7 +66,7 @@ protected:
 		std::uniform_int_distribution<> distr(min,max); // define the range
 
 		int h=distr(eng);
-		std::cout << h << std::endl;
+		
 		return h;
 	}
 
@@ -99,7 +99,7 @@ public:
 
 	b2World world;
 	/*FMOD::Channel *channel;*/
-	std::vector<FMOD::Channel*>*Channels = new std::vector<FMOD::Channel*>(MAX_SOUND_CHANNELS_COUNT);
+	/*std::vector<FMOD::Channel*>*Channels = new std::vector<FMOD::Channel*>(MAX_SOUND_CHANNELS_COUNT);*/
 	std::vector<PixelParticleSystemObject>*pixelParticleSystems = new std::vector<PixelParticleSystemObject>();
 
 	std::vector<FMOD::Reverb3D*>*reverbs = new std::vector<FMOD::Reverb3D*>();
@@ -131,60 +131,18 @@ public:
 
 	}
 
-	//Plays sound using one of the channels
+	//uses Game::PlaySound
 	void PlaySound(std::string name)override
 	{
-		for (size_t i = 0; i < Channels->size(); i++)
-		{
-			bool res;
-			Channels->at(i)->isPlaying(&res);
-			if (Channels->at(i) == NULL)
-			{
-				context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
-
-				break;
-			}
-			else if (res == false)
-			{
-				context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
-
-				break;
-			}
-		}
+		context->game->PlaySound(name);
 	}
 
-	//Plays sound using one of the channels and sound from game->resourses->SoundData
+	//uses Game::PlaySound
 	//@param
 	//channel_id - id of channel that was used for this sound 
 	 void PlaySound(std::string name, int &channel_id) override
 	{
-		 for (size_t i = 0; i < Channels->size(); i++)
-		 {
-			 bool res;
-			 Channels->at(i)->isPlaying(&res);
-			 if (Channels->at(i) == NULL)
-			 {
-				 FMOD_RESULT r;
-				 r = context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
-				 if (r != FMOD_OK)
-				 {
-					 throw(std::runtime_error(FMOD_ErrorString(r)));
-				 }
-				 channel_id = i;
-				 break;
-			 }
-			 else if (res == false)
-			 {
-				 FMOD_RESULT r;
-				 r = context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
-				 if (r != FMOD_OK)
-				 {
-					 throw(std::runtime_error(FMOD_ErrorString(r)));
-				 }
-				 channel_id = i;
-				 break;
-			 }
-		 }
+		 context->game->PlaySound(name,channel_id);
 	}
 
 	//creates physical body for object using given data
@@ -1109,7 +1067,7 @@ public:
 
 
 
-		Weapon*w1 = new Weapon("pistol", 1.f, 15.f);
+		Weapon*w1 = new Weapon("pstol -  the slowest pistol in world. takes to much of screen? sowwy", 0.00002f, 15.f);
 		w1->weaponType = WEAPON_TYPE_TAD_PISTOL;
 		w1->ammoPerClip = 17;
 		w1->ammoInTheClip = w1->ammoPerClip;
@@ -2279,7 +2237,7 @@ public:
 		player->body->SetLinearVelocity(b2Vec2(player->Velocity.x * 5, player->Velocity.y * 5));
 		if (!worldIsPaused)
 		{
-			world.Step(1.f / dt.asSeconds(), 35, 20);
+			world.Step(1.f / dt.asSeconds(), 5, 5);
 		}
 
 		player->Update(dt);
@@ -2290,7 +2248,7 @@ public:
 			if (player->footsteps_sound_channel_id >= 0)
 			{
 				bool isPlaying = false;
-				Channels->at(player->footsteps_sound_channel_id)->isPlaying(&isPlaying);
+				context->game->Channels->at(player->footsteps_sound_channel_id)->isPlaying(&isPlaying);
 				if (!isPlaying)
 				{
 					if (player->time_footstep_elapsed >= player->time_per_footstep)
@@ -2610,7 +2568,7 @@ public:
 		{
 			if (player->reload_sound_channel_id != -1)
 			{
-				Channels->at(player->reload_sound_channel_id)->stop();
+				context->game->Channels->at(player->reload_sound_channel_id)->stop();
 				player->reload_sound_channel_id = -1;
 			}
 		}
@@ -2671,125 +2629,75 @@ public:
 					{
 						if (pp->StateSoundChannelId == -1)
 						{
-							for (size_t ind = 0; ind < Channels->size(); ind++)
+
+							 if (pp->MaterialType == MAT_TYPE_PLASTIC_BARREL)
 							{
-								bool res;
-								Channels->at(ind)->isPlaying(&res);
-								if (Channels->at(ind) == NULL)
+								if (pp->mass >= 100.f)
 								{
-									if (pp->MaterialType == MAT_TYPE_PLASTIC_BARREL)
-									{
-										if (pp->mass >= 100.f)
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BARREL_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BARREL_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-									}
 
-									if (pp->MaterialType == MAT_TYPE_PLASTIC_BOX)
-									{
-										if (pp->mass >= 100.f)
-										{
-
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BOX_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BOX_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-									}
-
-									if (pp->MaterialType == MAT_TYPE_WOOD)
-									{
-										if (pp->mass >= 100.f)
-										{
-
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_BOX_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_BOX_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-
-									}
-
-									pp->StateSoundChannelId = ind;
-									break;
+									PlaySound(MAT_TYPE_PLASTIC_BARREL_HARD_NAME, pp->StateSoundChannelId);
 								}
-								else if (res == false)
+								else
 								{
-									if (pp->MaterialType == MAT_TYPE_PLASTIC_BARREL)
-									{
-										if (pp->mass >= 100.f)
-										{
+									PlaySound(MAT_TYPE_PLASTIC_BARREL_LIGHT_NAME, pp->StateSoundChannelId);
+								}
+							}
 
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BARREL_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BARREL_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-									}
+							else if (pp->MaterialType == MAT_TYPE_PLASTIC_BOX)
+							{
+								if (pp->mass >= 100.f)
+								{
 
-									if (pp->MaterialType == MAT_TYPE_PLASTIC_BOX)
-									{
-										if (pp->mass >= 100.f)
-										{
+									PlaySound(MAT_TYPE_PLASTIC_BOX_HARD_NAME, pp->StateSoundChannelId);
+								}
+								else
+								{
+									PlaySound(MAT_TYPE_PLASTIC_BOX_LIGHT_NAME, pp->StateSoundChannelId);
+								}
+							}
 
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BOX_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BOX_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-									}
-
-									if (pp->MaterialType == MAT_TYPE_WOOD_CRATE)
-									{
-										if (pp->mass >= 100.f)
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_CRATE_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_CRATE_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-
-									}
-									if (pp->MaterialType == MAT_TYPE_WOOD_PLANK)
-									{
-										if (pp->mass >= 100.f)
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_PLANK_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_PLANK_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-
-									}
-									if (pp->MaterialType == MAT_TYPE_WOOD_BOX)
-									{
-										if (pp->mass >= 100.f)
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_BOX_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_BOX_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-
-									}
-
-									pp->StateSoundChannelId = ind;
-
-
-									break;
+							else if (pp->MaterialType == MAT_TYPE_WOOD_CRATE)
+							{
+								if (pp->mass >= 100.f)
+								{
+									PlaySound(MAT_TYPE_WOOD_CRATE_HARD_NAME, pp->StateSoundChannelId);
+								}
+								else
+								{
+									PlaySound(MAT_TYPE_WOOD_CRATE_LIGHT_NAME, pp->StateSoundChannelId);
 								}
 
+							}
+
+							else if (pp->MaterialType == MAT_TYPE_WOOD_PLANK)
+							{
+								if (pp->mass >= 100.f)
+								{
+									PlaySound(MAT_TYPE_WOOD_PLANK_HARD_NAME, pp->StateSoundChannelId);
+								}
+								else
+								{
+									PlaySound(MAT_TYPE_WOOD_PLANK_LIGHT_NAME, pp->StateSoundChannelId);
+								}
+
+							}
+
+							else if (pp->MaterialType == MAT_TYPE_WOOD_BOX)
+							{
+								if (pp->mass >= 100.f)
+								{
+									PlaySound(MAT_TYPE_WOOD_BOX_HARD_NAME, pp->StateSoundChannelId);
+								}
+								else
+								{
+									PlaySound(MAT_TYPE_WOOD_BOX_LIGHT_NAME, pp->StateSoundChannelId);
+								}
+
+							}
+
+							else
+							{
+								std::cout << "Warning: Physics object doesn't have material type set. Bug are known to appear" << std::endl;						
 							}
 						}
 						else
@@ -2798,22 +2706,23 @@ public:
 							pos.z = 0;
 							pos.x = pp->body->GetPosition().x;
 							pos.y = -pp->body->GetPosition().y;
-							Channels->at(pp->StateSoundChannelId)->set3DAttributes(&pos, 0, 0);
+							context->game->Channels->at(pp->StateSoundChannelId)->set3DAttributes(&pos, 0, 0);
 							/*Channels->at(pp->StateSoundChannelId)->setVolume(50);*/
 						}
+
 					}
+
 					else
 					{
 						StateObjects->at(i)->body->SetAwake(false);
 						if (pp->StateSoundChannelId != -1)
 						{
-							FMOD_RESULT r = Channels->at(pp->StateSoundChannelId)->stop();
+							FMOD_RESULT r = context->game->Channels->at(pp->StateSoundChannelId)->stop();
 							pp->StateSoundChannelId = -1;
 						}
 					}
 
 				}
-
 
 				if (Decal*d = dynamic_cast<Decal*>(StateObjects->at(i)))
 				{
@@ -2839,7 +2748,7 @@ public:
 						else
 						{
 							bool isPlaying = false;
-							Channels->at(sso->sound_channel_id)->isPlaying(&isPlaying);
+							context->game->Channels->at(sso->sound_channel_id)->isPlaying(&isPlaying);
 							if (!isPlaying)
 							{
 								if (sso->sound_is_looped)
@@ -2855,7 +2764,7 @@ public:
 								pos.x = sso->GetObjectPosition().x;
 								pos.y = sso->GetObjectPosition().y;
 								pos.z = 0;
-								Channels->at(sso->sound_channel_id)->set3DAttributes(&pos, 0);
+								context->game->Channels->at(sso->sound_channel_id)->set3DAttributes(&pos, 0);
 							}
 						}
 					}
@@ -2864,18 +2773,19 @@ public:
 						if (sso->sound_channel_id != -1)
 						{
 							bool isPlaying = false;
-							Channels->at(sso->sound_channel_id)->isPlaying(&isPlaying);
+							context->game->Channels->at(sso->sound_channel_id)->isPlaying(&isPlaying);
 							if (isPlaying)
 							{
-								Channels->at(sso->sound_channel_id)->stop();
+								context->game->Channels->at(sso->sound_channel_id)->stop();
 								sso->sound_channel_id = -1;
 							}
 						}
-						
+
 					}
 				}
 			}
 		}
+		
 		/*if (dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->dirIndex == dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->Pattern->size() - 1)
 		{
 			cursorParticles.Stop();
