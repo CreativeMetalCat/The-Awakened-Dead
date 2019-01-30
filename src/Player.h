@@ -87,6 +87,10 @@ public:
 	}
 
 
+	void onDamage(float damage, Object*object, Context*&context, std::string stateName) override
+	{
+		this->health -= damage;
+	}
 
 	bool SetAnimation(std::string name)
 	{

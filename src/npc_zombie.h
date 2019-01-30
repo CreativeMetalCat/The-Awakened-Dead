@@ -102,7 +102,7 @@ public:
 		}
 	}
 
-	virtual void leftCollision(Object*&object,b2Fixture *fixtureA, b2Fixture *fixtureB, Context*&context, std::string stateName)
+	virtual void leftCollision(Object*&object, b2Fixture *fixtureA, b2Fixture *fixtureB, Context*&context, std::string stateName)
 	{
 		if (static_cast<npc_zombie*>(fixtureA->GetBody()->GetUserData()) == this)
 		{
@@ -113,7 +113,7 @@ public:
 				{
 					target = NULL;
 				}
-			}		
+			}
 		}
 
 		else if (static_cast<npc_zombie*>(fixtureB->GetBody()->GetUserData()) == this)
@@ -127,30 +127,60 @@ public:
 				}
 			}
 		}
-		
+
 	}
 
-	virtual void onCollision(Object*&object, Context*&context, std::string stateName) override
+	virtual void onCollision(Object*&object, b2Fixture *fixtureA, b2Fixture *fixtureB, Context*&context, std::string stateName)
 	{
+
 		if (!IsDead)
 		{
 
-			if (dynamic_cast<Player*>(object))
+			if (static_cast<npc_zombie*>(fixtureA->GetBody()->GetUserData()) == this)
 			{
-				std::cout << "found player" << std::endl;
-				sf::Vector2f diff;
-				diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
-				diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+				
+				if (dynamic_cast<Player*>(object))
+				{
+					if (!fixtureA->IsSensor())
+					{
+						object->onDamage(20.f, this, context, stateName);
+					}
+					
+					sf::Vector2f diff;
+					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
 
-				this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+					this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
 
-				target = object;
+					target = object;
+				}
 			}
+
+			else if (static_cast<npc_zombie*>(fixtureB->GetBody()->GetUserData()) == this)
+			{
+				
+				if (dynamic_cast<Player*>(object))
+				{
+					if (!fixtureB->IsSensor())
+					{
+						object->onDamage(20.f, this, context, stateName);
+					}
+					
+					sf::Vector2f diff;
+					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+
+					this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+					target = object;
+				}
+			}
+
 
 		}
 	}
 
-	npc_zombie(sf::Vector2f position, float speed, float width, float height) :npc_zombie_base(position,speed, width, height)
+	npc_zombie(sf::Vector2f position, float speed, float width, float height) :npc_zombie_base(position, speed, width, height)
 	{
 		collision.width = width;
 		collision.height = height;

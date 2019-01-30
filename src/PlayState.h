@@ -171,6 +171,7 @@ public:
 
 	void LoadMap(std::string name)
 	{
+		context->window->setFramerateLimit(100);
 
 		world.Step(0, 0, 0);
 
@@ -1039,7 +1040,7 @@ public:
 		z->Init();
 		z->OnCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 		{
-			z->onCollision(object, this->context, "PlayState");
+			z->onCollision(object, fixtureA, fixtureB, this->context, "PlayState");
 		};
 
 		z->LeftCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
@@ -1485,23 +1486,6 @@ public:
 		}
 		player->spritesAnimations->addAnimation(pistol_move);
 		player->Init();
-
-		npc_zombie*z = new npc_zombie(sf::Vector2f(500, 500), 1.f, 100, 100);
-		z->Init();
-		z->OnCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-		{
-			z->onCollision(object, this->context, "PlayState");
-		};
-
-		Animation::SpritesAnimation*zombie_idle = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_idle");
-		for (int i = 0; i < 17; i++)
-		{
-			zombie_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-idle_" + std::to_string(i))->texture));
-		}
-		z->spritesAnimations->addAnimation(zombie_idle);
-		z->Init();
-		z->SetAnimation("skeleton_idle");
-		this->StateObjects->push_back(z);
 
 
 		projObj = new projectile(sf::Vector2f(0, 0), 100.f, 100.f, 50.0f, 2.0f, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
@@ -2225,7 +2209,7 @@ public:
 	virtual void Update(sf::Time dt) override
 	{
 
-		context->window->setFramerateLimit(100);
+		
 		if (_map_is_loaded != true)
 		{
 			if (current_map != "")
