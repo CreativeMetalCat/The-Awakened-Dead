@@ -102,28 +102,52 @@ public:
 		}
 	}
 
-	virtual void leftCollision(Object*&object, Context*&context, std::string stateName) override
+	virtual void leftCollision(Object*&object,b2Fixture *fixtureA, b2Fixture *fixtureB, Context*&context, std::string stateName)
 	{
-		if (target != NULL && target == object)
+		if (static_cast<npc_zombie*>(fixtureA->GetBody()->GetUserData()) == this)
 		{
-			target = NULL;
+			//Zombie has one fixure that is responsible for it's senses and it is set to sensor
+			if (fixtureA->IsSensor())
+			{
+				if (target != NULL && target == object)
+				{
+					target = NULL;
+				}
+			}		
 		}
+
+		else if (static_cast<npc_zombie*>(fixtureB->GetBody()->GetUserData()) == this)
+		{
+			//Zombie has one fixure that is responsible for it's senses and it is set to sensor
+			if (fixtureB->IsSensor())
+			{
+				if (target != NULL && target == object)
+				{
+					target = NULL;
+				}
+			}
+		}
+		
 	}
 
 	virtual void onCollision(Object*&object, Context*&context, std::string stateName) override
 	{
-		if (dynamic_cast<Player*>(object))
+		if (!IsDead)
 		{
-			std::cout << "found player" << std::endl;
-			sf::Vector2f diff;
-			diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
-			diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
 
-			this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+			if (dynamic_cast<Player*>(object))
+			{
+				std::cout << "found player" << std::endl;
+				sf::Vector2f diff;
+				diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+				diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
 
-			target = object;
+				this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+				target = object;
+			}
+
 		}
-		
 	}
 
 	npc_zombie(sf::Vector2f position, float speed, float width, float height) :npc_zombie_base(position,speed, width, height)
@@ -201,6 +225,10 @@ public:
 	void Update(sf::Time dt)
 	{
 		SetAnimation("skeleton_idle");
+		if (IsDead)
+		{
+			target = NULL;
+		}
 		if (physBodyInitialized)
 		{
 			this->collision.left = body->GetPosition().x;

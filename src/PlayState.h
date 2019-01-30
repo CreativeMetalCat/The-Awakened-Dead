@@ -1035,7 +1035,7 @@ public:
 		b2Filter filter;
 		filter.categoryBits = 0x1;
 
-		npc_zombie*z = new npc_zombie(sf::Vector2f(500, 500), 1.f, 100, 100);
+		npc_zombie*z = new npc_zombie(sf::Vector2f(500, 500), 0.01f, 100, 100);
 		z->Init();
 		z->OnCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 		{
@@ -1044,7 +1044,7 @@ public:
 
 		z->LeftCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 		{
-			z->leftCollision(object, this->context, "PlayState");
+			z->leftCollision(object,fixtureA,fixtureB, this->context, "PlayState");
 		};
 
 		Animation::SpritesAnimation*zombie_idle = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_idle");
@@ -1816,6 +1816,11 @@ public:
 		{
 			LoadMap("t_t1.tmx");
 		}
+
+		if (event.key.code == sf::Keyboard::Num3&&event.type == sf::Event::EventType::KeyPressed)
+		{
+			LoadMap("ai_zombie_test.tmx");
+		}
 		if (event.key.code == sf::Keyboard::I&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			player->AddAmmo({ static_cast<int>(player->currentWeapon->weapon_ammo_type),5 });
@@ -2220,7 +2225,7 @@ public:
 	virtual void Update(sf::Time dt) override
 	{
 
-		
+		context->window->setFramerateLimit(100);
 		if (_map_is_loaded != true)
 		{
 			if (current_map != "")
