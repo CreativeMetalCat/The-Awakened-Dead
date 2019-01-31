@@ -1054,6 +1054,21 @@ public:
 			zombie_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-idle_" + std::to_string(i))->texture));
 		}
 		z->spritesAnimations->addAnimation(zombie_idle);
+
+		Animation::SpritesAnimation*zombie_move = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_move");
+		for (int i = 0; i < 17; i++)
+		{
+			zombie_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-move_" + std::to_string(i))->texture));
+		}
+		z->spritesAnimations->addAnimation(zombie_move);
+
+		Animation::SpritesAnimation*zombie_attack = new  Animation::SpritesAnimation(true, 0.1f, "skeleton_attack");
+		for (int i = 0; i < 9; i++)
+		{
+			zombie_attack->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-attack_" + std::to_string(i))->texture));
+		}
+		z->spritesAnimations->addAnimation(zombie_attack);
+
 		z->Init();
 		z->SetAnimation("skeleton_idle");
 		this->StateObjects->push_back(z);

@@ -6,6 +6,8 @@
 
 class npc_zombie :public npc_zombie_base
 {
+private:
+	//float attacc = meme.size();
 protected:
 	//index of current animation
 	size_t animIndex = 0;
@@ -24,6 +26,10 @@ protected:
 
 		}
 	}
+
+	bool isAttacking = false;
+
+	float timeInAttack = 0.f;
 public:
 
 	//test object 
@@ -31,6 +37,10 @@ public:
 	Object*target = NULL;
 
 	float Health = 100.f;
+
+	//time that takes for object to end attacking(end animation, sound etc.)
+	//damage will be applied on the start of the time
+	float attackTime = 3.f;
 
 	Animation::SpritesAnimation*currentAnimation = nullptr;
 	Animation::SpritesAnimationsContainer*spritesAnimations = new Animation::SpritesAnimationsContainer();
@@ -143,7 +153,8 @@ public:
 				{
 					if (!fixtureA->IsSensor())
 					{
-						object->onDamage(20.f, this, context, stateName);
+						if (!isAttacking)
+							this->Attack(object, context, stateName);
 					}
 					
 					sf::Vector2f diff;
@@ -163,7 +174,8 @@ public:
 				{
 					if (!fixtureB->IsSensor())
 					{
-						object->onDamage(20.f, this, context, stateName);
+						if (!isAttacking)
+							this->Attack(object, context, stateName);
 					}
 					
 					sf::Vector2f diff;
@@ -230,6 +242,8 @@ public:
 
 	void Init()override
 	{
+		Scale.x = 0.4f;
+		Scale.y = 0.45f;
 		if (!spritesAnimations->animations->empty())
 		{
 			for (size_t in = 0; in < spritesAnimations->animations->size(); in++)
@@ -243,7 +257,7 @@ public:
 						scale.y = collision.height / spritesAnimations->animations->at(in)->Sprites->at(i).getTexture()->getSize().y;
 
 						spritesAnimations->animations->at(in)->Sprites->at(i).setRotation(RotationAngle);
-						spritesAnimations->animations->at(in)->Sprites->at(i).setScale(scale);
+						spritesAnimations->animations->at(in)->Sprites->at(i).setScale(Scale);
 						spritesAnimations->animations->at(in)->Sprites->at(i).setOrigin(sf::Vector2f(spritesAnimations->animations->at(in)->Sprites->at(i).getTextureRect().width / 2, spritesAnimations->animations->at(in)->Sprites->at(i).getTextureRect().height / 2));
 					}
 				}
@@ -252,9 +266,41 @@ public:
 
 	}
 
+	//attacks current target if it isn't NULL
+	void Attack(Context*&context, std::string stateName)
+	{
+		if (target != NULL)
+		{
+			isAttacking = true;
+
+			target->onDamage(20.f, this, context, stateName);
+			timeInAttack = 0.f;
+
+			SetAnimation("skeleton_attack");
+
+			int id = m_get_random_number(1, 2);
+			context->game->PlaySound("zombie_attack"+std::to_string(id));
+		}
+	}
+
+	//attcks given object.... well... that's all
+	void Attack(Object*&obj, Context*&context, std::string stateName)
+	{
+		isAttacking = true;
+
+		obj->onDamage(20.f, this, context, stateName);
+		timeInAttack = 0.f;
+
+		SetAnimation("skeleton_attack");
+
+		int id = m_get_random_number(1, 2);
+		context->game->PlaySound("zombie_attack" + std::to_string(id));
+	}
+
 	void Update(sf::Time dt)
 	{
-		SetAnimation("skeleton_idle");
+		
+		
 		if (IsDead)
 		{
 			target = NULL;
@@ -284,6 +330,30 @@ public:
 			this->dirIndex = 0;
 			this->AddMovement(MovementDirection(static_cast<float>((atan2(diff.y, diff.x)*(180 / M_PI))), sqrt(diff.x*diff.x + diff.y*diff.y)));
 		}
+
 		this->UpdateMovement(dt);
+
+		if (isAttacking)
+		{
+			timeInAttack += dt.asSeconds();
+			if (timeInAttack >= attackTime)
+			{
+				isAttacking = false;
+			}
+		}
+		else
+		{
+			if (body->GetLinearVelocity().x != 0 || body->GetLinearVelocity().y != 0)
+			{
+				SetAnimation("skeleton_move");
+			}
+			else
+			{
+				SetAnimation("skeleton_idle");
+			}
+		}
+		
+
+	
 	}
 };

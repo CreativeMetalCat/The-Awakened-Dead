@@ -412,18 +412,20 @@ int main(int argc, char** argv)
 	w->shoot_sound_name = "rifle_single1";
 	w->empty_clip_sound = "rifle_empty";
 	w->reload_sound_name = "rifle_reload";
+	w->weapon_ammo_type = AMMO_TYPE_RIFLE;
 	w->sprite = sf::Sprite(letterT->texture);
 	
 
-	Weapon*w1 = new Weapon("pistol",1.f, 15.f);
+	/*Weapon*w1 = new Weapon("pistol",1.f, 15.f);
 	w1->weaponType = WEAPON_TYPE_TAD_PISTOL;
 	w1->ammoPerClip = 17;
 	w1->ammoInTheClip = w1->ammoPerClip;
 	w1->projectile_texture_name = "proj";
 	w1->shoot_sound_name = "pistol_fire2";
 	w1->empty_clip_sound = "pistol_empty";
+	w1->weapon_ammo_type = AMMO_TYPE_PISTOL;
 	w1->sprite = sf::Sprite(letterT->texture);
-	w1->reload_sound_name = "pistol_reload";
+	w1->reload_sound_name = "pistol_reload";*/
 
 	Weapon*w2 = new Weapon("shotgun", 1.f, 20.f);
 	w2->weaponType = WEAPON_TYPE_TAD_SHOTGUN;
@@ -435,12 +437,13 @@ int main(int argc, char** argv)
 	w2->shoot_sound_name = "shotgun_fire6";
 	w2->empty_clip_sound = "shotgun_empty";
 	w2->reload_sound_name = "rifle_reload";
+	w2->weapon_ammo_type = AMMO_TYPE_SHOTGUN;
 	w2->sprite = sf::Sprite(letterT->texture);
 	
 
 
 	player->weapons->push_back(w);
-	player->weapons->push_back(w1);
+	/*player->weapons->push_back(w1);*/
 	player->weapons->push_back(w2);
 	
 	ps.player = player;
@@ -516,6 +519,7 @@ int main(int argc, char** argv)
 	{
 		game.Resources->AddTextureResource(new TextureResource("solder_rifle_reload_" + std::to_string(i), "./../textures/Top_Down_Survivor/rifle/reload/survivor-reload_rifle_" + std::to_string(i) + ".png", false, false));
 	}
+
 	for (int i = 0; i < 20; i++)
 	{
 		game.Resources->AddTextureResource(new TextureResource("solder_pistol_move_" + std::to_string(i), "./../textures/Top_Down_Survivor/handgun/move/survivor-move_handgun_" + std::to_string(i) + ".png", false, false));
@@ -539,6 +543,16 @@ int main(int argc, char** argv)
 	for (int i = 0; i < 17; i++)
 	{
 		game.Resources->AddTextureResource(new TextureResource("skeleton-idle_" + std::to_string(i), "./../textures/zombie/idle/skeleton-idle_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i <9; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("skeleton-attack_" + std::to_string(i), "./../textures/zombie/attack/skeleton-attack_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i < 17; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("skeleton-move_" + std::to_string(i), "./../textures/zombie/move/skeleton-move_" + std::to_string(i) + ".png", false, false));
 	}
 
 	sf::View view;
@@ -591,6 +605,8 @@ int main(int argc, char** argv)
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_smooth_loop1", "./../sounds/physics/metal/metal_box_scrape_smooth_loop1.wav"));
 
 	game.Resources->AddSoundResource(new SoundResource("zombie_pain", "./../sounds/zo_pain1.wav"));
+	game.Resources->AddSoundResource(new SoundResource("zombie_attack1", "./../sounds/zo_attack1.wav"));
+	game.Resources->AddSoundResource(new SoundResource("zombie_attack2", "./../sounds/zo_attack2.wav"));
 
 
 	for (int i = 1; i < 5; i++)

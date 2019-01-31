@@ -5,6 +5,10 @@
 #include <Box2D.h>
 #include <functional>
 
+#ifndef _RANDOM_
+#include <random>
+#endif // !_RANDOM_
+
 #define M_PI           3.14159265358979323846  /* pi */
 
 struct Context;
@@ -14,6 +18,20 @@ class Object
 private:
 
 protected:
+
+	//min - min of range
+	//max - max of range
+	int m_get_random_number(int min, int max)
+	{
+		std::random_device rd; // obtain a random number from hardware
+		std::mt19937 eng(rd()); // seed the generator
+		std::uniform_int_distribution<> distr(min, max); // define the range
+
+		int h = distr(eng);
+
+		return h;
+	}
+
 	//NOT a proper collision object made for setting sfml properties of object
 	//e.g. 
 	//sprites,scales,positions
