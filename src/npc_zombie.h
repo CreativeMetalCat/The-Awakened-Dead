@@ -1,7 +1,7 @@
 #pragma once
 
 #include "npc_zombie_base.h"
-
+#include "MaterialTypes.h"
 
 
 class npc_zombie :public npc_zombie_base
@@ -30,6 +30,14 @@ protected:
 	bool isAttacking = false;
 
 	float timeInAttack = 0.f;
+
+	Object*attackTarget = NULL;
+
+	//used for attacking
+	Context*context;
+
+	//used for attacking
+	std::string stateName = "";
 public:
 
 	//test object 
@@ -99,14 +107,20 @@ public:
 
 				context->game->GetStateByName(stateName)->CreatePhysicsObject(lhand, leftHandDef, lhandFixture, 50.f);
 
+			
 
-				/*Decal*meat_chunk = new Decal(sf::Vector2f(this->body->GetPosition().x, this->body->GetPosition().y), 0.05f, true, 20.0f, 35, 65, sf::Sprite(context->game->Resources->getTextureResourceDataByName("meat_chunk")->texture), 100, 100);
+				Decal*blood_splat = new Decal(sf::Vector2f(this->body->GetPosition().x-50, this->body->GetPosition().y-50), 0.05f, true, 20.0f, 133, 100, sf::Sprite(context->game->Resources->getTextureResourceDataByName("blood_splat_1")->texture), 200, 100);
+				blood_splat->Init();
+				context->game->GetStateByName(stateName)->StateObjects->push_back(blood_splat);
+
+				Decal*meat_chunk = new Decal(sf::Vector2f(this->body->GetPosition().x, this->body->GetPosition().y), 0.05f, true, 20.0f, 35, 65, sf::Sprite(context->game->Resources->getTextureResourceDataByName("meat_chunk")->texture), 20, 30);
 				meat_chunk->Init();
 				meat_chunk->animations->push_back(rhand_anim);
 				meat_chunk->SetAnimation("rhand");
-				context->game->GetStateByName(stateName)->StateObjects->push_back(meat_chunk);*/
+				context->game->GetStateByName(stateName)->StateObjects->push_back(meat_chunk);
 
 				context->game->GetStateByName(stateName)->worldIsPaused = false;
+
 				IsDead = true;
 			}
 		}
@@ -165,6 +179,23 @@ public:
 
 					target = object;
 				}
+
+				if (dynamic_cast<npc_zombie_base*>(object))
+				{
+					if (!fixtureB->IsSensor())
+					{
+						if (!isAttacking)
+							this->Attack(object, context, stateName);
+					}
+
+					sf::Vector2f diff;
+					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+
+					this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+					target = object;
+				}
 			}
 
 			else if (static_cast<npc_zombie*>(fixtureB->GetBody()->GetUserData()) == this)
@@ -178,6 +209,22 @@ public:
 							this->Attack(object, context, stateName);
 					}
 					
+					sf::Vector2f diff;
+					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+
+					this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+					target = object;
+				}
+				if (dynamic_cast<npc_zombie_base*>(object))
+				{
+					if (!fixtureB->IsSensor())
+					{
+						if (!isAttacking)
+							this->Attack(object, context, stateName);
+					}
+
 					sf::Vector2f diff;
 					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
 					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
@@ -286,9 +333,13 @@ public:
 	//attcks given object.... well... that's all
 	void Attack(Object*&obj, Context*&context, std::string stateName)
 	{
+		attackTarget = obj;
 		isAttacking = true;
 
-		obj->onDamage(20.f, this, context, stateName);
+		/*obj->onDamage(20.f, this, context, stateName);*/
+		this->context = context;
+		this->stateName = stateName;
+
 		timeInAttack = 0.f;
 
 		SetAnimation("skeleton_attack");
@@ -333,11 +384,17 @@ public:
 
 		this->UpdateMovement(dt);
 
+
 		if (isAttacking)
 		{
 			timeInAttack += dt.asSeconds();
 			if (timeInAttack >= attackTime)
 			{
+				if (attackTarget != NULL)
+				{
+					attackTarget->onDamage(20.f, this, context, stateName);
+				}
+				
 				isAttacking = false;
 			}
 		}
