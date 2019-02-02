@@ -8,6 +8,9 @@
 #include "MaterialTypes.h"
 #include "ammo_data.h"
 
+
+#define PAWN_PLAYER 12
+
 class Player :public SceneActor
 {
 protected:
@@ -24,6 +27,9 @@ protected:
 
 	}
 public:
+	//gets type of the object for the relations
+	static int Type() { return PAWN_PLAYER; }
+
 	//way of keeping track of amount of ammo player has
 	//this way player can have ammo for weapons that he currently doesn't have
 	std::vector<ammo_data>*ammoData = new std::vector<ammo_data>();

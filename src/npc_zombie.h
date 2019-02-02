@@ -4,6 +4,10 @@
 #include "MaterialTypes.h"
 
 
+//the awakened dead zombie
+#define PAWN_ZOMBIE_TAD 13
+
+
 class npc_zombie :public npc_zombie_base
 {
 private:
@@ -40,6 +44,17 @@ protected:
 	std::string stateName = "";
 public:
 
+	//gets type of the object for the relations
+	static int Type() { return PAWN_ZOMBIE_TAD; }
+
+	//used for checking if zombie moans, panics or attack sounds are playing
+	//can only speak one thing at the time
+	//because that the way human work
+	int voice_sound_channel_id = -1;
+
+	//body used for attacking
+	b2Body* attackBody;
+
 	//test object 
 	//object that npc will follow
 	Object*target = NULL;
@@ -48,7 +63,7 @@ public:
 
 	//time that takes for object to end attacking(end animation, sound etc.)
 	//damage will be applied on the start of the time
-	float attackTime = 3.f;
+	float attackTime = 0.3f;
 
 	Animation::SpritesAnimation*currentAnimation = nullptr;
 	Animation::SpritesAnimationsContainer*spritesAnimations = new Animation::SpritesAnimationsContainer();
@@ -135,7 +150,16 @@ public:
 			{
 				if (target != NULL && target == object)
 				{
+					
 					target = NULL;
+
+				}
+			}
+			else
+			{
+				if (object == attackTarget)
+				{
+					attackTarget = NULL;
 				}
 			}
 		}
@@ -147,7 +171,16 @@ public:
 			{
 				if (target != NULL && target == object)
 				{
+					
 					target = NULL;
+				}
+
+			}
+			else
+			{
+				if (object == attackTarget)
+				{
+					attackTarget = NULL;
 				}
 			}
 		}
@@ -165,19 +198,23 @@ public:
 				
 				if (dynamic_cast<Player*>(object))
 				{
-					if (!fixtureA->IsSensor())
+					if (this->getRelationWithPawnType(Player::Type())==RelationType::Enemy)
 					{
-						if (!isAttacking)
-							this->Attack(object, context, stateName);
+						if (!fixtureA->IsSensor())
+						{
+							if (!isAttacking)
+								this->Attack(object, context, stateName);
+						}
+
+						sf::Vector2f diff;
+						diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+						diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+
+						this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+						target = object;
 					}
 					
-					sf::Vector2f diff;
-					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
-					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
-
-					this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
-
-					target = object;
 				}
 
 				if (dynamic_cast<npc_zombie_base*>(object))
@@ -203,19 +240,23 @@ public:
 				
 				if (dynamic_cast<Player*>(object))
 				{
-					if (!fixtureB->IsSensor())
+					if (this->getRelationWithPawnType(Player::Type()) == RelationType::Enemy)
 					{
-						if (!isAttacking)
-							this->Attack(object, context, stateName);
+						if (!fixtureB->IsSensor())
+						{
+							if (!isAttacking)
+								this->Attack(object, context, stateName);
+						}
+
+						sf::Vector2f diff;
+						diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+						diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+
+						this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+						target = object;
 					}
-					
-					sf::Vector2f diff;
-					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
-					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
 
-					this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
-
-					target = object;
 				}
 				if (dynamic_cast<npc_zombie_base*>(object))
 				{
@@ -344,8 +385,21 @@ public:
 
 		SetAnimation("skeleton_attack");
 
-		int id = m_get_random_number(1, 2);
-		context->game->PlaySound("zombie_attack" + std::to_string(id));
+		bool isPlaying = false;
+
+		if (voice_sound_channel_id > 0)
+		{
+			context->game->Channels->at(voice_sound_channel_id)->isPlaying(&isPlaying);
+		}
+
+		if (!isPlaying)
+		{
+			int id = m_get_random_number(1, 2);
+			context->game->PlaySound("zombie_attack" + std::to_string(id),voice_sound_channel_id);
+		}
+
+
+
 	}
 
 	void Update(sf::Time dt)

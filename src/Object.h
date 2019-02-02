@@ -9,13 +9,20 @@
 #include <random>
 #endif // !_RANDOM_
 
+#define BASE_OBJECT_TYPE 0
+
 #define M_PI           3.14159265358979323846  /* pi */
 
 struct Context;
+
 //Base Class for EVERY object in scene. Drawable & not
 class Object
 {
 private:
+	//That is an example of the Type Function that should be used
+	//but due to the way c++ works for every class that needs it there will be need to create it from 0
+	//DO NOT USE THAT PLS
+	static int ______Type() { return BASE_OBJECT_TYPE; }
 
 protected:
 
@@ -49,6 +56,9 @@ protected:
 	//temp value
 	b2Vec2 _velocity;
 public:
+
+	
+
 	//it's id that is usually assinged by layer on the map 
 	//needed for the optimization
 	int area_id = 0;

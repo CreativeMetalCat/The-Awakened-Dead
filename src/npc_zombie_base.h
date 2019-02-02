@@ -6,7 +6,11 @@
 
 #include <iostream>
 
-class npc_zombie_base :public MovingPawn
+#include"ai_relationmanager.h"
+
+#define PAWN_BASIC_ZOMBIE 10 
+
+class npc_zombie_base :public MovingPawn, public ai_relationmanager
 {
 protected:
 	//index of current animation
@@ -15,7 +19,24 @@ protected:
 	bool IsDead = false;
 
 public:
+
+	//gets type of the object for the relations
+	static int Type() { return PAWN_BASIC_ZOMBIE; }
+
 	float Health = 100.f;
+
+
+	//sound type of surface that player is stepping on
+	int footstep_sound_type = MAT_SOUND_TYPE_CONCRETE;
+
+	//time before next footstep sound will play(they override each other)
+	float time_per_footstep = 1.f;
+
+	//temp value used by state
+	float time_footstep_elapsed = 0.f;
+
+	//used in states to controll footstep sounds
+	int footsteps_sound_channel_id = -1;
 
 
 	virtual void onDamage(float damage, Object*object, Context*&context, std::string stateName)
@@ -39,6 +60,7 @@ public:
 	{
 		if (dynamic_cast<Player*>(object))
 		{
+			
 			sf::Vector2f diff;
 			diff.x = object->GetObjectPosition().x - this->GetObjectPosition().x;
 			diff.y = object->GetObjectPosition().y - this->GetObjectPosition().x;
