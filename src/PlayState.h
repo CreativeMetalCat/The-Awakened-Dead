@@ -1080,7 +1080,7 @@ public:
 		this->StateObjects->push_back(z);
 
 
-		npc_zombie*z1 = new npc_zombie(sf::Vector2f(500, -300), 0.01f, 100, 100);
+		npc_zombie*z1 = new npc_zombie(sf::Vector2f(500, 300), 0.01f, 100, 100);
 		z1->Init();
 		z1->OnCollision = [this, z1](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 		{
@@ -1896,64 +1896,7 @@ public:
 				}
 			}
 
-			/*if (!Channels->empty())
-			{
-				for (size_t i = 0; i < Channels->size(); i++)
-				{
-					bool res;
-					Channels->at(i)->isPlaying(&res);
-					if (Channels->at(i) == NULL)
-					{
-						if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
-						{
-							FMOD_RESULT res;
-							res = context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName("pistol_fire2")->sound, 0, false, &Channels->at(i));
-							if (res != FMOD_OK)
-							{
-								std::cout << "Error playing sound. Name: " << context->game->Resources->getSoundResourceDataByName("pistol_fire2")->name.c_str() << "Filename: " << context->game->Resources->getSoundResourceDataByName("pistol_fire2")->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
-							}
-
-						}
-						if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_RIFLE)
-						{
-							FMOD_RESULT res;
-							res = context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName("./weapons/")->sound, 0, false, &Channels->at(i));
-							if (res != FMOD_OK)
-							{
-								std::cout << "Error playing sound. Name: " << context->game->Resources->getSoundResourceDataByName("fire1")->name.c_str() << "Filename: " << context->game->Resources->getSoundResourceDataByName("fire1")->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
-							}
-
-
-							break;
-						}
-						else if (res == false)
-						{
-							if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
-							{
-								FMOD_RESULT res;
-								res = context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName("pistol_fire2")->sound, 0, false, &Channels->at(i));
-								if (res != FMOD_OK)
-								{
-									std::cout << "Error playing sound. Name: " << context->game->Resources->getSoundResourceDataByName("pistol_fire2")->name.c_str() << "Filename: " << context->game->Resources->getSoundResourceDataByName("pistol_fire2")->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
-								}
-
-							}
-							if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_RIFLE)
-							{
-								FMOD_RESULT res;
-								res = context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName("fire1")->sound, 0, false, &Channels->at(i));
-								if (res != FMOD_OK)
-								{
-									std::cout << "Error playing sound. Name: " << context->game->Resources->getSoundResourceDataByName("fire1")->name.c_str() << "Filename: " << context->game->Resources->getSoundResourceDataByName("fire1")->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
-								}
-
-							}
-
-						}
-					}
-
-				}
-			}*/
+			
 			this->world;
 			this->context->game->GetStateByName("PlayState")->world;
 			Animation::Animation blood_a = context->game->animationsData->getAnimationDataByName("blood_a");
@@ -2028,7 +1971,7 @@ public:
 								break;
 							}
 
-							projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
+							projectile* bullet = new projectile(sf::Vector2f(0, 0), 5.f, 5.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
 
 							bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 							{
@@ -2854,7 +2797,16 @@ public:
 
 				if (npc_zombie_base*nz = dynamic_cast<npc_zombie_base*>(StateObjects->at(i)))
 				{
-					if (nz->body->GetLinearVelocity().x != 0 || nz->body->GetLinearVelocity().y != 0)
+					if (nz->isDead())
+					{
+						if (nz->physBodyInitialized)
+						{
+							nz->body->GetWorld()->DestroyBody(nz->body);
+							nz->physBodyInitialized = false;
+						}
+						
+					}
+					else if (nz->body->GetLinearVelocity().x != 0 || nz->body->GetLinearVelocity().y != 0)
 					{
 
 						if (nz->footsteps_sound_channel_id >= 0)

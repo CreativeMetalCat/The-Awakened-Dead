@@ -42,6 +42,7 @@ public:
 	//used in states to controll footstep sounds
 	int footsteps_sound_channel_id = -1;
 
+	bool isDead()const { return IsDead; }
 
 	virtual void onDamage(float damage, Object*object, Context*&context, std::string stateName)
 	{
