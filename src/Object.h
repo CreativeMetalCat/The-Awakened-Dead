@@ -5,15 +5,40 @@
 #include <Box2D.h>
 #include <functional>
 
+#ifndef _RANDOM_
+#include <random>
+#endif // !_RANDOM_
+
+#define BASE_OBJECT_TYPE 0
+
 #define M_PI           3.14159265358979323846  /* pi */
 
 struct Context;
+
 //Base Class for EVERY object in scene. Drawable & not
 class Object
 {
 private:
+	//That is an example of the Type Function that should be used
+	//but due to the way c++ works for every class that needs it there will be need to create it from 0
+	//DO NOT USE THAT PLS
+	static int ______Type() { return BASE_OBJECT_TYPE; }
 
 protected:
+
+	//min - min of range
+	//max - max of range
+	int m_get_random_number(int min, int max)
+	{
+		std::random_device rd; // obtain a random number from hardware
+		std::mt19937 eng(rd()); // seed the generator
+		std::uniform_int_distribution<> distr(min, max); // define the range
+
+		int h = distr(eng);
+
+		return h;
+	}
+
 	//NOT a proper collision object made for setting sfml properties of object
 	//e.g. 
 	//sprites,scales,positions
@@ -31,6 +56,12 @@ protected:
 	//temp value
 	b2Vec2 _velocity;
 public:
+	static int Type() { return BASE_OBJECT_TYPE; }
+	
+	//use it only if you do not not what object class you may encounter
+	//MUST RETURN THE SAME TYPE AS TYPE() METHOD
+	virtual int getType()const { return BASE_OBJECT_TYPE; }
+
 	//it's id that is usually assinged by layer on the map 
 	//needed for the optimization
 	int area_id = 0;

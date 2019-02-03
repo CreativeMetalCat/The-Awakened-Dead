@@ -61,8 +61,12 @@ public:
 				float vy = Speed * std::sin(rads);
 				this->body->SetLinearVelocity(b2Vec2(vx, vy));
 				this->SetObjectRotation(Pattern->at(dirIndex).Angle);
-				mTravelledDist += Speed * 10.f * dt.asSeconds();
+				mTravelledDist += Speed *10.f* dt.asMilliseconds();
 			}
+		}
+		else
+		{
+			this->body->SetLinearVelocity(b2Vec2(0,0));
 		}
 
 	}
