@@ -56,8 +56,11 @@ protected:
 	//temp value
 	b2Vec2 _velocity;
 public:
-
+	static int Type() { return BASE_OBJECT_TYPE; }
 	
+	//use it only if you do not not what object class you may encounter
+	//MUST RETURN THE SAME TYPE AS TYPE() METHOD
+	virtual int getType()const { return BASE_OBJECT_TYPE; }
 
 	//it's id that is usually assinged by layer on the map 
 	//needed for the optimization

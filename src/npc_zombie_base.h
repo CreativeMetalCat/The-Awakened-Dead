@@ -23,6 +23,10 @@ public:
 	//gets type of the object for the relations
 	static int Type() { return PAWN_BASIC_ZOMBIE; }
 
+	//use it only if you do not not what object class you may encounter
+	//MUST RETURN THE SAME TYPE AS TYPE() METHOD
+	virtual int getType()const { return PAWN_BASIC_ZOMBIE; }
+
 	float Health = 100.f;
 
 

@@ -3,6 +3,7 @@
 #include "npc_zombie_base.h"
 #include "MaterialTypes.h"
 
+#include <typeinfo>
 
 //the awakened dead zombie
 #define PAWN_ZOMBIE_TAD 13
@@ -46,6 +47,10 @@ public:
 
 	//gets type of the object for the relations
 	static int Type() { return PAWN_ZOMBIE_TAD; }
+
+	//use it only if you do not not what object class you may encounter
+	//MUST RETURN THE SAME TYPE AS TYPE() METHOD
+	virtual int getType()const { return PAWN_ZOMBIE_TAD; }
 
 	//used for checking if zombie moans, panics or attack sounds are playing
 	//can only speak one thing at the time
@@ -196,15 +201,43 @@ public:
 			if (static_cast<npc_zombie*>(fixtureA->GetBody()->GetUserData()) == this)
 			{
 				
-				if (dynamic_cast<Player*>(object))
+				if (this->getRelationWithPawnType(object->getType()) == RelationType::Enemy)
 				{
-					if (this->getRelationWithPawnType(Player::Type())==RelationType::Enemy)
+					if (!fixtureA->IsSensor())
+					{
+						if (!isAttacking)
+							this->Attack(object, context, stateName);
+					}
+
+
+					sf::Vector2f diff;
+					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+
+					this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+					target = object;
+				}
+				if (this->getRelationWithPawnType(object->getType()) == RelationType::Ally)
+				{
+					sf::Vector2f diff;
+					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+
+					this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+					target = object;
+				}
+				/*if (dynamic_cast<Player*>(object))
+				{
+					if (this->getRelationWithPawnType(Player::Type()) == RelationType::Enemy)
 					{
 						if (!fixtureA->IsSensor())
 						{
 							if (!isAttacking)
 								this->Attack(object, context, stateName);
 						}
+
 
 						sf::Vector2f diff;
 						diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
@@ -214,7 +247,17 @@ public:
 
 						target = object;
 					}
-					
+					else if (this->getRelationWithPawnType(Player::Type()) == RelationType::Ally)
+					{
+						sf::Vector2f diff;
+						diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+						diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+
+						this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+						target = object;
+					}
+
 				}
 
 				if (dynamic_cast<npc_zombie_base*>(object))
@@ -232,7 +275,7 @@ public:
 					this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
 
 					target = object;
-				}
+				}*/
 			}
 
 			else if (static_cast<npc_zombie*>(fixtureB->GetBody()->GetUserData()) == this)
@@ -248,6 +291,16 @@ public:
 								this->Attack(object, context, stateName);
 						}
 
+						sf::Vector2f diff;
+						diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+						diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+
+						this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+						target = object;
+					}
+					else if (this->getRelationWithPawnType(Player::Type()) == RelationType::Ally)
+					{
 						sf::Vector2f diff;
 						diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
 						diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
