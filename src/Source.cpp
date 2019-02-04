@@ -560,6 +560,8 @@ int main(int argc, char** argv)
 	game.Resources->AddTextureResource(new TextureResource("textBoxTexture1","./../textures/textbox.png" , false, false));
 	game.Resources->AddTextureResource(new TextureResource("proj", "./../textures/projectile.png", false, false));
 	game.Resources->AddTextureResource(new TextureResource("blood1", "./../textures/blood/blood_a_0002.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("blood_splat_1", "./../textures/blood/blood_splat_1.png", false, false));
+
 	game.Resources->AddTextureResource(new TextureResource("blood_yellow_1", "./../textures/blood/blood_yellow_b_0001.png", false, false));
 	game.Resources->AddTextureResource(new TextureResource("blood_a_anim", "./../textures/blood/blood_a_anim.png", false, false));
 	game.Resources->AddTextureResource(new TextureResource("solder_rifle", "./../textures/survivor-move_rifle_0.png", false, false));
@@ -607,7 +609,12 @@ int main(int argc, char** argv)
 	game.Resources->AddSoundResource(new SoundResource("zombie_pain", "./../sounds/zo_pain1.wav"));
 	game.Resources->AddSoundResource(new SoundResource("zombie_attack1", "./../sounds/zo_attack1.wav"));
 	game.Resources->AddSoundResource(new SoundResource("zombie_attack2", "./../sounds/zo_attack2.wav"));
+	game.Resources->AddSoundResource(new SoundResource("zombie_foot1", "./../sounds/npc/zombie/foot1.wav"));
+	game.Resources->AddSoundResource(new SoundResource("zombie_foot2", "./../sounds/npc/zombie/foot2.wav"));
+	game.Resources->AddSoundResource(new SoundResource("zombie_foot3", "./../sounds/npc/zombie/foot3.wav"));
 
+
+	game.Resources->AddSoundResource(new SoundResource("plastic_box_impact_bullet1", "./../sounds/physics/plastic/plastic_box_impact_bullet1.wav"));
 
 	for (int i = 1; i < 5; i++)
 	{

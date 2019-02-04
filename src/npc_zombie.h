@@ -3,7 +3,7 @@
 #include "npc_zombie_base.h"
 #include "MaterialTypes.h"
 
-#include <typeinfo>
+
 
 //the awakened dead zombie
 #define PAWN_ZOMBIE_TAD 13
@@ -16,8 +16,6 @@ private:
 protected:
 	//index of current animation
 	size_t animIndex = 0;
-
-	bool IsDead = false;
 
 	void UpdateSprites()
 	{
@@ -45,6 +43,8 @@ protected:
 	std::string stateName = "";
 public:
 
+	
+
 	//gets type of the object for the relations
 	static int Type() { return PAWN_ZOMBIE_TAD; }
 
@@ -64,7 +64,7 @@ public:
 	//object that npc will follow
 	Object*target = NULL;
 
-	float Health = 100.f;
+	
 
 	//time that takes for object to end attacking(end animation, sound etc.)
 	//damage will be applied on the start of the time
@@ -201,6 +201,11 @@ public:
 			if (static_cast<npc_zombie*>(fixtureA->GetBody()->GetUserData()) == this)
 			{
 				
+				if (dynamic_cast<Player*>(object))
+				{
+					this->addRelation(ai_relationtype(RelationType::Enemy, Player::Type()));
+					this->addRelation(ai_relationtype(RelationType::Ally, npc_zombie::Type()));
+				}
 				if (this->getRelationWithPawnType(object->getType()) == RelationType::Enemy)
 				{
 					if (!fixtureA->IsSensor())

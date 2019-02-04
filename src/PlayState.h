@@ -609,6 +609,77 @@ public:
 									float posY = obj->FindAttribute("y")->FloatValue();
 									this->player->SetObjectPosition(sf::Vector2f(posX, posY));
 								}
+								if (type == "npc_zombie")
+								{
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+
+									float health = 100.f;
+									float speed = 0.01f;
+
+									XMLElement*objProps = objData->FirstChildElement("properties");
+
+									if (objProps != NULL)
+									{
+										for (tinyxml2::XMLElement* Prop = objProps->FirstChildElement(); Prop != NULL; Prop = Prop->NextSiblingElement())
+										{
+
+											if (Prop->FindAttribute("name") != NULL)
+											{
+												std::string f = Prop->FindAttribute("name")->Value();
+												if (f == "health")
+												{
+													health = Prop->FindAttribute("value")->FloatValue();
+												}
+												else if (f == "speed")
+												{
+													speed = Prop->FindAttribute("value")->FloatValue();
+												}
+											}
+										}
+									}
+
+									
+									/*z->Init();
+									z->OnCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+									{
+										z->onCollision(object, fixtureA, fixtureB, this->context, "PlayState");
+									};
+
+									z->LeftCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+									{
+										z->leftCollision(object, fixtureA, fixtureB, this->context, "PlayState");
+									};
+
+									Animation::SpritesAnimation*zombie_idle = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_idle");
+									for (int i = 0; i < 17; i++)
+									{
+										zombie_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-idle_" + std::to_string(i))->texture));
+									}
+									z->spritesAnimations->addAnimation(zombie_idle);
+
+									Animation::SpritesAnimation*zombie_move = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_move");
+									for (int i = 0; i < 17; i++)
+									{
+										zombie_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-move_" + std::to_string(i))->texture));
+									}
+									z->spritesAnimations->addAnimation(zombie_move);
+
+									Animation::SpritesAnimation*zombie_attack = new  Animation::SpritesAnimation(true, 0.1f, "skeleton_attack");
+									for (int i = 0; i < 9; i++)
+									{
+										zombie_attack->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-attack_" + std::to_string(i))->texture));
+									}
+									z->spritesAnimations->addAnimation(zombie_attack);
+
+									z->addRelation({ RelationType::Enemy,Player::Type() });
+									z->Init();
+									z->SetAnimation("skeleton_idle");*/
+									this->StateObjects->push_back(new npc_zombie(sf::Vector2f(posX, posY), speed, 100, 100));
+
+
+
+								}
 								if (type == "SoundReverbPreset")
 								{
 									float width;
@@ -1041,7 +1112,7 @@ public:
 		b2Filter filter;
 		filter.categoryBits = 0x1;
 
-		npc_zombie*z = new npc_zombie(sf::Vector2f(500, 500), 0.01f, 100, 100);
+		/*npc_zombie*z = new npc_zombie(sf::Vector2f(500, 500), 0.01f, 100, 100);
 		z->Init();
 		z->OnCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 		{
@@ -1077,12 +1148,13 @@ public:
 		z->addRelation({ RelationType::Enemy,Player::Type()});
 		z->Init();
 		z->SetAnimation("skeleton_idle");
-		this->StateObjects->push_back(z);
+		this->StateObjects->push_back(z);*/
 
 
-		npc_zombie*z1 = new npc_zombie(sf::Vector2f(500, 300), 0.01f, 100, 100);
+		npc_zombie*z1 = new npc_zombie(sf::Vector2f(500, -300), 0.01f, 100, 100);
 		z1->Init();
-		z1->OnCollision = [this, z1](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+
+		/*z1->OnCollision = [this, z1](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 		{
 			z1->onCollision(object, fixtureA, fixtureB, this->context, "PlayState");
 		};
@@ -1122,7 +1194,7 @@ public:
 
 		z1->addRelation({ RelationType::Ally ,Player::Type() });
 		z1->Init();
-		z1->SetAnimation("skeleton_attack");
+		z1->SetAnimation("skeleton_attack");*/
 		this->StateObjects->push_back(z1);
 
 		ammo_pickup_object*apo = new ammo_pickup_object({ static_cast<int>(AMMO_TYPE_SHOTGUN),1 },sf::Vector2f(0,0), sf::Sprite(),10,20, 0);
@@ -1332,6 +1404,50 @@ public:
 					StateObjects->at(i)->physBodyInitialized = true;
 					//is set by main fixture and/or purpose of the object itself
 					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					
+
+					z->OnCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						z->onCollision(object, fixtureA, fixtureB, this->context, "PlayState");
+					};
+
+					z->LeftCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						z->leftCollision(object, fixtureA, fixtureB, this->context, "PlayState");
+					};
+
+
+					Animation::SpritesAnimation*zombie1_idle = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_idle");
+					for (int i = 0; i < 17; i++)
+					{
+						zombie1_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-idle_" + std::to_string(i))->texture));
+					}
+
+
+					Animation::SpritesAnimation*zombie1_move = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_move");
+					for (int i = 0; i < 17; i++)
+					{
+						zombie1_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-move_" + std::to_string(i))->texture));
+					}
+
+
+					Animation::SpritesAnimation*zombie1_attack = new  Animation::SpritesAnimation(true, 0.1f, "skeleton_attack");
+					for (int i = 0; i < 9; i++)
+					{
+						zombie1_attack->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-attack_" + std::to_string(i))->texture));
+					}
+
+
+					z->spritesAnimations->addAnimation(zombie1_idle);
+
+					z->spritesAnimations->addAnimation(zombie1_move);
+
+					z->spritesAnimations->addAnimation(zombie1_attack);
+
+					z->addRelation({ RelationType::Ally ,Player::Type() });
+					z->Init();
+					z->SetAnimation("skeleton_attack");
 
 				}
 				else if (PropPhysics*pp = dynamic_cast<PropPhysics*>(StateObjects->at(i)))
@@ -1953,7 +2069,7 @@ public:
 							{
 								bullet->projectileOnLeftCollision(object, this->context, "PlayState");
 							};
-
+							bullet->owner = player;
 							bullet->Launch(static_cast<float>((atan2(diff.y, diff.x) + i/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
 							player->Projectiles->push_back(bullet);
 							player->currentWeapon->ammoInTheClip -= 1;
@@ -1972,7 +2088,7 @@ public:
 							}
 
 							projectile* bullet = new projectile(sf::Vector2f(0, 0), 5.f, 5.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
-
+							bullet->owner = player;
 							bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 							{
 
@@ -3098,6 +3214,30 @@ public:
 							nz->time_footstep_elapsed = 0.f;
 						}
 
+						if (nz->zombie_footstep_sound_channel_id >= 0)
+						{
+							bool isPlaying = false;
+							context->game->Channels->at(nz->zombie_footstep_sound_channel_id)->isPlaying(&isPlaying);
+							if (!isPlaying)
+							{
+								if (nz->time_footstep_elapsed >= nz->time_per_footstep)
+								{
+									context->game->PlaySound("zombie_foot" + std::to_string(m_get_random_number(1, 3)), nz->zombie_footstep_sound_channel_id);
+								}							
+							}
+							else
+							{
+
+								if (nz->time_footstep_elapsed >= nz->time_per_footstep)
+								{
+									context->game->PlaySound("zombie_foot" + std::to_string(m_get_random_number(1, 3)), nz->zombie_footstep_sound_channel_id);
+								}								
+							}
+						}
+						else
+						{
+							context->game->PlaySound("zombie_foot" + std::to_string(m_get_random_number(1, 3)), nz->zombie_footstep_sound_channel_id);
+						}
 					}
 				}
 			}
