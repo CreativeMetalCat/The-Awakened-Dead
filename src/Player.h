@@ -7,6 +7,7 @@
 #include "Projectile.h"
 #include "MaterialTypes.h"
 #include "ammo_data.h"
+#include "object_point.h"
 
 
 #define PAWN_PLAYER 12
@@ -255,6 +256,19 @@ public:
 		this->collision.left = body->GetPosition().x + this->collision.width / 2;
 		this->collision.top = body->GetPosition().y + this->collision.height / 2;
 
+		if (!Children->empty())
+		{
+			for (size_t i = 0; i < Children->size(); i++)
+			{
+				
+				if (dynamic_cast<PointObject*>(Children->at(i)))
+				{
+					
+					/*Children->at(i)->SetObjectPosition(RotatePoint(Children->at(i)->GetObjectPosition(), this->RotationAngle, this->GetObjectPosition()));*/
+				}
+			}
+		}
+
 		if (!Projectiles->empty())
 		{
 			for (size_t i = 0; i < Projectiles->size(); i++)
@@ -306,6 +320,10 @@ public:
 	}
 	void Init()override
 	{
+
+		this->AttachChild(new PointObject(sf::Vector2f(70, 20),"rifle_shoot_point"));
+		this->AttachChild(new PointObject(sf::Vector2f(140, 70), "pistol_shoot_point"));
+
 		if (!spritesAnimations->animations->empty())
 		{
 			for (size_t in = 0; in < spritesAnimations->animations->size(); in++)
@@ -385,5 +403,93 @@ public:
 		{
 			return NULL;
 		}
+	}
+
+	//Gets name of current footstep according to inner values
+	//This function is not obligatory and made for simplicity of code
+	std::string GetFootstepSoundName()const
+	{
+		std::string filename = "";
+		if (footstep_sound_type == MAT_SOUND_TYPE_CONCRETE)
+		{
+			std::string name = MAT_SOUND_TYPE_CONCRETE_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_CHAINLINK)
+		{
+			std::string name = MAT_SOUND_TYPE_CHAINLINK_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_DIRT)
+		{
+			std::string name = MAT_SOUND_TYPE_DIRT_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_DUCT)
+		{
+			std::string name = MAT_SOUND_TYPE_DUCT_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_GRASS)
+		{
+			std::string name = MAT_SOUND_TYPE_GRASS_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_GRAVEL)
+		{
+			std::string name = MAT_SOUND_TYPE_GRAVEL_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_LADDER)
+		{
+			std::string name = MAT_SOUND_TYPE_LADDER_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_METAL)
+		{
+			std::string name = MAT_SOUND_TYPE_METAL_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_METALGRATE)
+		{
+			std::string name = MAT_SOUND_TYPE_METALGRATE_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_MUD)
+		{
+			std::string name = MAT_SOUND_TYPE_MUD_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_SAND)
+		{
+			std::string name = MAT_SOUND_TYPE_SAND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_SLOSH)
+		{
+			std::string name = MAT_SOUND_TYPE_SLOSH_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_TILE)
+		{
+			std::string name = MAT_SOUND_TYPE_TILE_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_WADE)
+		{
+			std::string name = MAT_SOUND_TYPE_WADE_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_WOOD)
+		{
+			std::string name = MAT_SOUND_TYPE_WOOD_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		if (footstep_sound_type == MAT_SOUND_TYPE_WOODPANEL)
+		{
+			std::string name = MAT_SOUND_TYPE_WOODPANEL_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+		return filename;
 	}
 };

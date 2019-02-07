@@ -602,6 +602,29 @@ int main(int argc, char** argv)
 	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_WOOD_PLANK_HARD_NAME, "./../sounds/physics/wood/wood_plank_scrape_rough_loop1.wav"));
 	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_WOOD_PLANK_LIGHT_NAME, "./../sounds/physics/wood/wood_plank_scrape_light_loop1.wav"));
 
+	for (int i = 1; i < 5; i++)
+	{
+		game.Resources->AddSoundResource(new SoundResource(std::string(MAT_TYPE_WOOD_IMPACT_BULLET_SOUND_NAME) + std::to_string(i), "./../sounds/physics/wood/wood_box_impact_bullet"+std::to_string(i)+".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		game.Resources->AddSoundResource(new SoundResource(std::string(MAT_TYPE_WOOD_CRATE_IMPACT_BULLET_SOUND_NAME) + std::to_string(i), "./../sounds/physics/wood/wood_box_impact_bullet" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 5; i++)
+	{
+		game.Resources->AddSoundResource(new SoundResource(std::string(MAT_TYPE_WOOD_PLANK_IMPACT_BULLET_SOUND_NAME) + std::to_string(i), "./../sounds/physics/wood/wood_box_impact_bullet" + std::to_string(i) + ".wav"));
+	}
+	for (int i = 1; i < 6; i++)
+	{
+		game.Resources->AddSoundResource(new SoundResource(std::string(MAT_TYPE_PLASTIC_BOX_IMPACT_BULLET_SOUND_NAME) + std::to_string(i), "./../sounds/physics/plastic/plastic_box_impact_bullet" + std::to_string(i) + ".wav"));
+	}
+	
+	for (int i = 1; i < 4; i++)
+	{
+		game.Resources->AddSoundResource(new SoundResource(std::string(MAT_TYPE_PLASTIC_BARREL_IMPACT_BULLET_SOUND_NAME) + std::to_string(i), "./../sounds/physics/plastic/plastic_barrel_impact_bullet" + std::to_string(i) + ".wav"));
+	}
+
+
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_rough_loop1", "./../sounds/physics/metal/metal_box_scrape_rough_loop1.wav"));
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_rough_loop2", "./../sounds/physics/metal/metal_box_scrape_rough_loop2.wav"));
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_smooth_loop1", "./../sounds/physics/metal/metal_box_scrape_smooth_loop1.wav"));

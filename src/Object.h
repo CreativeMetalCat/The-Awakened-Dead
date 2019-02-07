@@ -28,15 +28,13 @@ protected:
 
 	//min - min of range
 	//max - max of range
-	int m_get_random_number(int min, int max)
+	static int m_get_random_number(int min, int max)
 	{
 		std::random_device rd; // obtain a random number from hardware
 		std::mt19937 eng(rd()); // seed the generator
 		std::uniform_int_distribution<> distr(min, max); // define the range
 
-		int h = distr(eng);
-
-		return h;
+		return distr(eng);
 	}
 
 	//NOT a proper collision object made for setting sfml properties of object
@@ -56,11 +54,17 @@ protected:
 	//temp value
 	b2Vec2 _velocity;
 public:
+	//name of the object for creating special ones
+	//It is made for dynamicly created objects with no static variable name
+	//e.g.
+	//Children of the class
+	std::string name = "";
+
 	static int Type() { return BASE_OBJECT_TYPE; }
 	
 	//use it only if you do not not what object class you may encounter
 	//MUST RETURN THE SAME TYPE AS TYPE() METHOD
-	virtual int getType()const { return BASE_OBJECT_TYPE; }
+	virtual int getType()const { return Type(); }
 
 	//it's id that is usually assinged by layer on the map 
 	//needed for the optimization
@@ -133,7 +137,7 @@ public:
 			this->collision.top = body->GetPosition().y;
 		}
 	}
-	const sf::FloatRect GetObjectRectangle()
+	const virtual sf::FloatRect GetObjectRectangle()
 	{
 		return collision;
 	}
@@ -146,6 +150,25 @@ public:
 	{
 		object->Parent = this;
 		Children->push_back(object);
+	}
+
+	void AttachChild(Object*object)
+	{
+		object->Parent = this;
+		Children->push_back(object);
+	}
+
+	virtual Object* GetChildByName(std::string name)
+	{
+		if (Children->empty()) { return NULL; }
+		else
+		{
+			for (size_t i = 0; i < Children->size(); i++)
+			{
+				if (Children->at(i)->name == name) { return Children->at(i); }
+			}
+			return NULL;
+		}
 	}
 
 	virtual void Move(sf::Vector2f vec)
@@ -214,8 +237,6 @@ public:
 	{
 		collision.left = pos.x;
 		collision.top = pos.y;
-
-
 	}
 
 
@@ -250,17 +271,17 @@ public:
 		}
 	}
 
-	void SetObjectRectangleWidth(float width)
+	virtual void SetObjectRectangleWidth(float width)
 	{
 		collision.width = width;
 	}
 
-	void SetObjectRectangleHeight(float height)
+	virtual void SetObjectRectangleHeight(float height)
 	{
 		collision.height = height;
 	}
 
-	void SetObjectRectangle(sf::FloatRect rect) { this->collision = rect; }
+	virtual void SetObjectRectangle(sf::FloatRect rect) { this->collision = rect; }
 
 	//if you need to locate sprites, text etc.
 	virtual void Init() {}
