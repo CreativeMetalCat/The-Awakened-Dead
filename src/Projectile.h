@@ -8,6 +8,7 @@
 #include "Animation.h"
 #include "Decal.h"
 #include "SceneTile.h"
+#include "SolidObject.h"
 
 
 #include <iostream>
@@ -24,6 +25,11 @@ protected:
 	b2Vec2 Velocity;
 
 public:
+	//Object that launched projectile
+	//e.g. Player,Solder,Zombie, Wall
+	Object*owner = NULL;
+
+
 	//get if object should be deleted
 	bool getIsDone()const { return IsDone; }
 
@@ -46,10 +52,21 @@ public:
 
 	virtual void projectileOnCollision(Object*&object, Context*&context, std::string stateName)
 	{
-		object->onDamage(100.f, this, context, stateName);
+		if (object == owner)
+		{
+			return;
+		}
+		object->onDamage(20.f, this, context, stateName);
 
 		if (PropPhysics*pp = dynamic_cast<PropPhysics*>(object))
 		{
+			int channel_id = 0;
+
+			if (pp->getMaterialTypeImpactSoundName() != "")
+			{
+				context->game->PlaySound(pp->getMaterialTypeImpactSoundName());
+			}
+
 			//mass1 - mass 2(m=minus)
 			//big name. but that's physics what can i do
 			b2Vec2 m1mm2bythisVelandDividedBym1plusm2 = b2Vec2
@@ -60,6 +77,8 @@ public:
 			b2Vec2 impulse = object->body->GetMass()*m1mm2bythisVelandDividedBym1plusm2;
 
 			object->applyImpulse(impulse);
+
+			this->IsDone = true;
 		}
 		if (npc_test_turret* ntt = dynamic_cast<npc_test_turret*>(object))
 		{
@@ -79,11 +98,15 @@ public:
 		{
 			return;
 		}
-		
+
 		if (dynamic_cast<projectile*>(object)) { return; }
 		/*if (dynamic_cast<Player*>(object)) { return; }*/
 		this->CollidingObjects->push_back(object);
 
+		if (dynamic_cast<SolidObject*>(object))
+		{
+			IsDone = true;
+		}
 
 		sf::Vector2f diff;
 
@@ -248,22 +271,31 @@ public:
 					body->ApplyLinearImpulse(imp, body->GetPosition(), true);
 					_impulseApplied = true;
 				}
-			}
-			this->sprite.move(Speed*sf::Vector2f(Velocity.x,Velocity.y)*(20.0f / dt.asMicroseconds()));
-			this->body->SetTransform(b2Vec2(sprite.getPosition().x, sprite.getPosition().y), RotationAngle);
-			
-			travelledDistance += Speed * (20.0f / dt.asMilliseconds());
-			if (travelledDistance >= MaxDistance)
-			{
-				this->IsDone = true;
+
+				this->sprite.move(Speed*sf::Vector2f(Velocity.x, Velocity.y)*(20.0f / dt.asMicroseconds()));
+				this->body->SetTransform(b2Vec2(sprite.getPosition().x, sprite.getPosition().y), RotationAngle);
+
+				travelledDistance += Speed * (20.0f / dt.asMilliseconds());
+				if (travelledDistance >= MaxDistance)
+				{
+					this->IsDone = true;
+				}
 			}
 		}
 	}
 
 	void cleanUpObject()
 	{
-		this->body->GetWorld()->Step(0, 0, 0);
-		this->body->GetWorld()->DestroyBody(this->body);	
+		if (physBodyInitialized)
+		{
+
+			this->body->GetWorld()->Step(0, 0, 0);
+			if (!this->body->GetWorld()->IsLocked())
+			{
+				this->body->GetWorld()->DestroyBody(this->body);
+				physBodyInitialized = false;
+			}
+		}
 	}
 
 	void  SetObjectPosition(sf::Vector2f pos) override

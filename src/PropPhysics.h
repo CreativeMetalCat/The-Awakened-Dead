@@ -172,4 +172,136 @@ public:
 			}
 		}
 	}
+
+	//Gets name of sound for object's movement
+	//This function is not obligatory and made for simplicity of code
+	std::string GetMaterialTypeMovementSoundName()const
+	{
+		if (MaterialType == MAT_TYPE_PLASTIC_BARREL)
+		{
+			if (this->SoundDependsOnMass)
+			{
+				if (mass >= 100.f)
+				{
+
+					return MAT_TYPE_PLASTIC_BARREL_HARD_NAME;
+				}
+				else
+				{
+					return MAT_TYPE_PLASTIC_BARREL_LIGHT_NAME;
+				}
+			}
+		}
+
+		else if (MaterialType == MAT_TYPE_PLASTIC_BOX)
+		{
+			if (this->SoundDependsOnMass)
+			{
+				if (mass >= 100.f)
+				{
+
+					return MAT_TYPE_PLASTIC_BOX_HARD_NAME;
+				}
+				else
+				{
+					return MAT_TYPE_PLASTIC_BOX_LIGHT_NAME;
+				}
+			}
+		}
+
+		else if (MaterialType == MAT_TYPE_WOOD_CRATE)
+		{
+			if (this->SoundDependsOnMass)
+			{
+				if (mass >= 100.f)
+				{
+					return MAT_TYPE_WOOD_CRATE_HARD_NAME;
+				}
+				else
+				{
+					return MAT_TYPE_WOOD_CRATE_LIGHT_NAME;
+				}
+			}
+
+		}
+
+		else if (MaterialType == MAT_TYPE_WOOD_PLANK)
+		{
+			if (this->SoundDependsOnMass)
+			{
+				if (mass >= 100.f)
+				{
+					return MAT_TYPE_WOOD_PLANK_HARD_NAME;
+				}
+				else
+				{
+					return MAT_TYPE_WOOD_PLANK_LIGHT_NAME;
+				}
+			}
+		}
+
+		else if (MaterialType == MAT_TYPE_WOOD_BOX)
+		{
+			if (this->SoundDependsOnMass)
+			{
+				if (mass >= 100.f)
+				{
+					return MAT_TYPE_WOOD_BOX_HARD_NAME;
+				}
+				else
+				{
+					return MAT_TYPE_WOOD_BOX_LIGHT_NAME;
+				}
+			}
+		}
+
+		else
+		{
+			std::cout << "Warning: Physics object doesn't have material type set. Bug are known to appear" << std::endl;
+			return "";
+		}
+	}
+
+	//Gets name of sound for object's impact
+	//This function is not obligatory and made for simplicity of code
+	std::string getMaterialTypeImpactSoundName()const
+	{
+		std::string filename = "";
+
+		if (MaterialType == MAT_TYPE_PLASTIC_BARREL)
+		{
+			std::string name = MAT_TYPE_PLASTIC_BARREL_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 3));
+		}
+
+		else if (MaterialType == MAT_TYPE_PLASTIC_BOX)
+		{
+			std::string name = MAT_TYPE_PLASTIC_BOX_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 5));
+		}
+
+		else if (MaterialType == MAT_TYPE_WOOD_CRATE)
+		{
+			std::string name = MAT_TYPE_WOOD_CRATE_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+
+		else if (MaterialType == MAT_TYPE_WOOD_PLANK)
+		{
+			std::string name = MAT_TYPE_WOOD_PLANK_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+
+		else if (MaterialType == MAT_TYPE_WOOD_BOX)
+		{
+			std::string name = MAT_TYPE_WOOD_BOX_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+
+		else
+		{
+			std::cout << "Warning: Physics object doesn't have material type set. Bug are known to appear" << std::endl;
+		}
+		return filename;
+	}
 };

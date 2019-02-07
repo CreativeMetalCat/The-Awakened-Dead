@@ -2531,75 +2531,9 @@ public:
 					{
 						if (pp->StateSoundChannelId == -1)
 						{
-
-							 if (pp->MaterialType == MAT_TYPE_PLASTIC_BARREL)
+							if (pp->GetMaterialTypeMovementSoundName() != "")
 							{
-								if (pp->mass >= 100.f)
-								{
-
-									PlaySound(MAT_TYPE_PLASTIC_BARREL_HARD_NAME, pp->StateSoundChannelId);
-								}
-								else
-								{
-									PlaySound(MAT_TYPE_PLASTIC_BARREL_LIGHT_NAME, pp->StateSoundChannelId);
-								}
-							}
-
-							else if (pp->MaterialType == MAT_TYPE_PLASTIC_BOX)
-							{
-								if (pp->mass >= 100.f)
-								{
-
-									PlaySound(MAT_TYPE_PLASTIC_BOX_HARD_NAME, pp->StateSoundChannelId);
-								}
-								else
-								{
-									PlaySound(MAT_TYPE_PLASTIC_BOX_LIGHT_NAME, pp->StateSoundChannelId);
-								}
-							}
-
-							else if (pp->MaterialType == MAT_TYPE_WOOD_CRATE)
-							{
-								if (pp->mass >= 100.f)
-								{
-									PlaySound(MAT_TYPE_WOOD_CRATE_HARD_NAME, pp->StateSoundChannelId);
-								}
-								else
-								{
-									PlaySound(MAT_TYPE_WOOD_CRATE_LIGHT_NAME, pp->StateSoundChannelId);
-								}
-
-							}
-
-							else if (pp->MaterialType == MAT_TYPE_WOOD_PLANK)
-							{
-								if (pp->mass >= 100.f)
-								{
-									PlaySound(MAT_TYPE_WOOD_PLANK_HARD_NAME, pp->StateSoundChannelId);
-								}
-								else
-								{
-									PlaySound(MAT_TYPE_WOOD_PLANK_LIGHT_NAME, pp->StateSoundChannelId);
-								}
-
-							}
-
-							else if (pp->MaterialType == MAT_TYPE_WOOD_BOX)
-							{
-								if (pp->mass >= 100.f)
-								{
-									PlaySound(MAT_TYPE_WOOD_BOX_HARD_NAME, pp->StateSoundChannelId);
-								}
-								else
-								{
-									PlaySound(MAT_TYPE_WOOD_BOX_LIGHT_NAME, pp->StateSoundChannelId);
-								}
-
-							}
-
-							else
-							{
-								std::cout << "Warning: Physics object doesn't have material type set. Bug are known to appear" << std::endl;						
+								PlaySound(pp->GetMaterialTypeMovementSoundName(), pp->StateSoundChannelId);
 							}
 						}
 						else
