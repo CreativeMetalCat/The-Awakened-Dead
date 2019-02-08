@@ -1673,6 +1673,31 @@ public:
 			pistol_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_pistol_move_" + std::to_string(i))->texture));
 		}
 		player->spritesAnimations->addAnimation(pistol_move);
+
+		//
+		Animation::SpritesAnimation*pistol_idle = new  Animation::SpritesAnimation(true, 0.05f, "solder_pistol_idle");
+		for (int i = 0; i < 20; i++)
+		{
+			pistol_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_pistol_idle_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(pistol_idle);
+
+		//
+		Animation::SpritesAnimation*rifle_idle = new  Animation::SpritesAnimation(true, 0.05f, "solder_rifle_idle");
+		for (int i = 0; i < 20; i++)
+		{
+			rifle_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_rifle_idle_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(rifle_idle);
+
+		//
+		Animation::SpritesAnimation*shotgun_idle = new  Animation::SpritesAnimation(true, 0.05f, "solder_shotgun_idle");
+		for (int i = 0; i < 20; i++)
+		{
+			shotgun_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_shotgun_idle_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(shotgun_idle);
+
 		player->Init();
 
 

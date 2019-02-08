@@ -179,7 +179,14 @@ public:
 				}
 				else
 				{
-					SetAnimation("solder_rifle_move");
+					if (body->GetLinearVelocity().x > 0 || body->GetLinearVelocity().y > 0)
+					{
+						SetAnimation("solder_rifle_move");
+					}
+					else
+					{
+						SetAnimation("solder_rifle_idle");
+					}
 				}
 
 				//}
@@ -197,7 +204,14 @@ public:
 				}
 				else
 				{
-					SetAnimation("solder_shotgun_move");
+					if (body->GetLinearVelocity().x > 0 || body->GetLinearVelocity().y > 0)
+					{
+						SetAnimation("solder_shotgun_move");
+					}
+					else
+					{
+						SetAnimation("solder_shotgun_idle");
+					}
 				}
 			}
 			if (currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
@@ -215,7 +229,14 @@ public:
 				}
 				else
 				{
-					SetAnimation("solder_pistol_move");
+					if (body->GetLinearVelocity().x > 0 || body->GetLinearVelocity().y > 0)
+					{
+						SetAnimation("solder_pistol_move");
+					}
+					else
+					{
+						SetAnimation("solder_pistol_idle");
+					}
 				}
 
 				//if (body->GetLinearVelocity().x != 0 || body->GetLinearVelocity().y != 0)
