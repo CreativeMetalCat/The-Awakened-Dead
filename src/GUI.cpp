@@ -194,8 +194,11 @@ namespace GUI
 	{
 		ComponentRectangle.width = this->text.getLocalBounds().width;
 		ComponentRectangle.height = this->text.getLocalBounds().height;
-		Scale.x = this->text.getLocalBounds().width / Sprite.getTexture()->getSize().x;
-		Scale.y = this->text.getLocalBounds().height / Sprite.getTexture()->getSize().y;
+		if (Sprite.getTexture() != NULL)
+		{
+			Scale.x = this->text.getLocalBounds().width / Sprite.getTexture()->getSize().x;
+			Scale.y = this->text.getLocalBounds().height / Sprite.getTexture()->getSize().y;
+		}	
 		this->Sprite.setScale(Scale);
 		this->Sprite.setPosition(sf::Vector2f((this->ComponentRectangle.left), (this->ComponentRectangle.top + this->text.getLocalBounds().height / 2)));
 		this->text.setPosition(sf::Vector2f(this->ComponentRectangle.left, this->ComponentRectangle.top));

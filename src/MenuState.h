@@ -52,6 +52,7 @@ public:
 			map_loading_menu->IsVisible = true;
 			map_loading_menu->IsActive = true;
 			container->IsActive = false;
+			container->IsVisible = false;
 		};
 		this->container->Components->push_back(Button);
 
@@ -69,7 +70,23 @@ public:
 			
 			dynamic_cast<PlayState*>(context->game->GetStateByName("PlayState"))->current_map = blm->map_path;
 		};
+		blm->Init();
 		this->map_loading_menu->Components->push_back(blm);
+
+		GUI::Button_Load_Map*blm1 = new GUI::Button_Load_Map("AI Test рус текст", sf::Color::White, context->game->Resources->getFontResourceDataByName("Calibri")->font, 64, sf::Sprite());
+
+		blm1->SetPosition(sf::Vector2<float>(300, 220));
+		blm1->map_path = "ai_zombie_test.tmx";
+		blm1->Action = [this, blm1]()
+		{
+			context->game->DisableState(context->game->GetStateByName("MenuState"));
+			context->game->ActivateState(context->game->GetStateByName("PlayState"));
+
+
+			dynamic_cast<PlayState*>(context->game->GetStateByName("PlayState"))->current_map = blm1->map_path;
+		};
+		blm1->Init();
+		this->map_loading_menu->Components->push_back(blm1);
 		
 
 		Button->Init();
@@ -127,7 +144,7 @@ public:
 			}
 		}*/
 
-		if (!container->Components->empty())
+		if (!container->Components->empty()&&container->IsVisible)
 		{
 			for (size_t i = 0; i < container->Components->size(); i++)
 			{
@@ -377,7 +394,7 @@ public:
 
 				for (size_t i = 0; i < map_loading_menu->Components->size(); i++)
 				{
-					if (map_loading_menu->Components->at(i)->ComponentRectangle.contains(sf::Vector2f(event.mouseMove.x, event.mouseMove.y)))
+					if (map_loading_menu->Components->at(i)->ComponentRectangle.contains(sf::Vector2f(event.mouseButton.x, event.mouseButton.y)))
 					{
 						map_loading_menu->Components->at(seletion_index)->Activate();
 						seletion_index = i;
