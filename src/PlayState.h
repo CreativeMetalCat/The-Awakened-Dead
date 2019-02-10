@@ -18,6 +18,7 @@
 #include "trigger_change_area_id.h"
 #include "ammo_object.h"
 #include "weapon_pickup_object.h"
+#include "ai_node.h"
 
 #ifndef _RANDOM_
 #include <random>
@@ -44,7 +45,7 @@
 #endif // !MAX_SOUND_CHANNELS_COUNT
 
 
-bool DEBUG_DRAWCOLLISION = false;
+bool DEBUG_DRAWCOLLISION = true;
 
 bool DEBUG_DRAWREVERB = false;
 
@@ -601,6 +602,62 @@ public:
 									gid = objData->FindAttribute("gid")->IntValue();
 								}
 								gid--;
+								if (type == "ai_node")
+								{
+									float width = 0;
+									float height = 0;
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+									if (obj->FindAttribute("width") == NULL)
+									{
+										width = objData->FindAttribute("width")->FloatValue();
+									}
+									else
+									{
+										width = obj->FindAttribute("width")->FloatValue();
+									}
+
+									if (obj->FindAttribute("height") == NULL)
+									{
+										height = objData->FindAttribute("height")->FloatValue();
+									}
+									else
+									{
+										height = obj->FindAttribute("height")->FloatValue();
+									}
+
+									std::string name = obj->FindAttribute("name")->Value();
+									XMLElement*props = obj->FirstChildElement("properties");
+
+									std::string next_name ="";
+
+									if (props != NULL)
+									{
+										for (tinyxml2::XMLElement* prop = props->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+										{
+
+											if (prop->FindAttribute("name") != NULL)
+											{
+												std::string f = prop->FindAttribute("name")->Value();
+												if (f == "Next")
+												{
+													next_name = prop->FindAttribute("value")->Value();
+												}
+											}
+										}
+									}
+
+
+									
+
+									ai_node*n = new ai_node({ posX,posY }, name, 50.f, 50.f, width, height, layer_area_id);
+
+									if (next_name != "")
+									{
+										n->next_name = next_name;
+									}
+									this->StateObjects->push_back(n);
+								}
 								if (type == "info_player_start")
 								{
 									float posX = obj->FindAttribute("x")->FloatValue();
@@ -673,7 +730,7 @@ public:
 									z->addRelation({ RelationType::Enemy,Player::Type() });
 									z->Init();
 									z->SetAnimation("skeleton_idle");*/
-									this->StateObjects->push_back(new npc_zombie(sf::Vector2f(posX, posY), speed, 100, 100));
+									this->StateObjects->push_back(new npc_zombie(sf::Vector2f(posX, posY), speed, 100, 100,layer_area_id));
 
 
 
@@ -1148,9 +1205,12 @@ public:
 		z->SetAnimation("skeleton_idle");
 		this->StateObjects->push_back(z);*/
 
+		
 
-		npc_zombie*z1 = new npc_zombie(sf::Vector2f(500, -300), 0.01f, 100, 100);
-		z1->Init();
+
+
+		/*npc_zombie*z1 = new npc_zombie(sf::Vector2f(500, -300), 0.01f, 100, 100);
+		z1->Init();*/
 
 		/*z1->OnCollision = [this, z1](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 		{
@@ -1193,7 +1253,7 @@ public:
 		z1->addRelation({ RelationType::Ally ,Player::Type() });
 		z1->Init();
 		z1->SetAnimation("skeleton_attack");*/
-		this->StateObjects->push_back(z1);
+		/*this->StateObjects->push_back(z1);*/
 
 		ammo_pickup_object*apo = new ammo_pickup_object({ static_cast<int>(AMMO_TYPE_SHOTGUN),1 },sf::Vector2f(0,0), sf::Sprite(),10,20, 0);
 		apo->OnCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
@@ -1388,12 +1448,15 @@ public:
 					TriggerFixture.density = 0.f;
 					TriggerFixture.shape = &shape;
 					TriggerFixture.isSensor = 0;
+					TriggerFixture.userData = new FixtureData(FixtureActionType::Collision);
+					
 
 					b2FixtureDef senceFixture;
 					senceFixture.filter = filter;
 					senceFixture.density = 0.f;
 					senceFixture.shape = &senseShape;
 					senceFixture.isSensor = 1;
+					senceFixture.userData = new FixtureData(FixtureActionType::Sense);
 
 					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
 					StateObjects->at(i)->body->CreateFixture(&senceFixture);
@@ -1443,7 +1506,7 @@ public:
 
 					z->spritesAnimations->addAnimation(zombie1_attack);
 
-					z->addRelation({ RelationType::Ally ,Player::Type() });
+					/*z->addRelation({ RelationType::Enemy ,Player::Type() });*/
 					z->Init();
 					z->SetAnimation("skeleton_attack");
 
@@ -1531,6 +1594,62 @@ public:
 					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
 
 					StateObjects->at(i)->Init();
+				}
+
+				else if (ai_node*ain = dynamic_cast<ai_node*>(StateObjects->at(i)))
+				{
+					if (this->GetObjectByName(ain->next_name) != NULL && ain->next_name.c_str() != "")
+					{
+						ain->next = dynamic_cast<ai_node*>(this->GetObjectByName(ain->next_name));
+					}
+
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_staticBody;
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2PolygonShape Actshape;
+					Actshape.SetAsBox(ain->actionRectWidth / 2, ain->actionRectHeight / 2);
+
+					b2FixtureDef actionFixture;
+					actionFixture.filter = filter;
+					actionFixture.density = 0.f;
+					actionFixture.shape = &Actshape;
+					actionFixture.isSensor = 1;
+					actionFixture.userData = new FixtureData(FixtureActionType::AI_Node_Action);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+					TriggerFixture.userData = new FixtureData(FixtureActionType::Trigger);
+
+
+
+					StateObjects->at(i)->body->CreateFixture(&actionFixture);
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					//ai_nodes can not have collision of the solid object
+					StateObjects->at(i)->bodyIsSensor = true;
+
+					ain->OnCollision = [this, ain](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						ain->onCollision(object, fixtureA, fixtureB, this->context, "PlayState");
+					};
+
+					ain->LeftCollision = [this, ain](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						ain->leftCollision(object, fixtureA, fixtureB, this->context, "PlayState");
+					};
+
+
 				}
 
 				else
@@ -1813,16 +1932,15 @@ public:
 				}
 				if (DEBUG_DRAWCOLLISION)
 				{
+
 					if (!dynamic_cast<SceneTile*>(StateObjects->at(i)))
 					{
+					
 						if (this->StateObjects->at(i)->physBodyInitialized == true)
 						{
 
 							if (this->StateObjects->at(i)->body->GetFixtureList() != NULL)
 							{
-
-
-
 								for (b2Fixture*fix = this->StateObjects->at(i)->body->GetFixtureList(); fix != NULL; fix = fix->GetNext())
 								{
 									if (fix->GetType() == b2Shape::Type::e_circle)

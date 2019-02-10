@@ -2,6 +2,7 @@
 
 #include "npc_zombie_base.h"
 #include "MaterialTypes.h"
+#include "ai_node.h"
 
 
 
@@ -43,7 +44,7 @@ protected:
 	std::string stateName = "";
 public:
 
-	
+	ai_node*usedNode = NULL;
 
 	//gets type of the object for the relations
 	static int Type() { return PAWN_ZOMBIE_TAD; }
@@ -201,10 +202,43 @@ public:
 			if (static_cast<npc_zombie*>(fixtureA->GetBody()->GetUserData()) == this)
 			{
 				
-				if (dynamic_cast<Player*>(object))
+				/*if (dynamic_cast<Player*>(object))
 				{
-					this->addRelation(ai_relationtype(RelationType::Enemy, Player::Type()));
+					this->addRelation(ai_relationtype(RelationType::Noone, Player::Type()));
 					this->addRelation(ai_relationtype(RelationType::Ally, npc_zombie::Type()));
+				}*/
+				if (dynamic_cast<ai_node*>(object))
+				{
+					if (static_cast<FixtureData*>(fixtureA->GetUserData())->getActionType() == FixtureActionType::Collision)
+					{
+						if (static_cast<FixtureData*>(fixtureB->GetUserData())->getActionType() == FixtureActionType::AI_Node_Action)
+						{
+							this->usedNode = dynamic_cast<ai_node*>(object);
+							if (usedNode != NULL)
+							{
+								if (usedNode->next != NULL)
+								{
+									this->target = usedNode->next;
+								}
+							}
+						}
+						 
+					}
+					else if (static_cast<FixtureData*>(fixtureA->GetUserData())->getActionType() == FixtureActionType::Sense)
+					{
+						if (static_cast<FixtureData*>(fixtureB->GetUserData())->getActionType() == FixtureActionType::Trigger)
+						{
+							this->target = object;
+						}
+					}
+					else
+					{
+						FixtureData*d = static_cast<FixtureData*>(fixtureA->GetUserData());
+						std::cout << d->getActionType() << std::endl;;
+
+					}
+
+					
 				}
 				if (this->getRelationWithPawnType(object->getType()) == RelationType::Enemy)
 				{
@@ -225,6 +259,21 @@ public:
 				}
 				if (this->getRelationWithPawnType(object->getType()) == RelationType::Ally)
 				{
+					sf::Vector2f diff;
+					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+
+					this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+					target = object;
+				}
+				if (this->getRelationWithPawnType(object->getType()) == RelationType::Follow)
+				{
+					//it is techically same as Ally with the difference that Ally should have more complexity
+					//zombies Ally hovever is close to following
+					//but this one is made for ai_nodes
+					//because object is supposed to walk close to ai_nodes area of action
+
 					sf::Vector2f diff;
 					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
 					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
@@ -285,37 +334,88 @@ public:
 
 			else if (static_cast<npc_zombie*>(fixtureB->GetBody()->GetUserData()) == this)
 			{
-				
-				if (dynamic_cast<Player*>(object))
+
+				/*if (dynamic_cast<Player*>(object))
 				{
-					if (this->getRelationWithPawnType(Player::Type()) == RelationType::Enemy)
+					this->addRelation(ai_relationtype(RelationType::Enemy, Player::Type()));
+					this->addRelation(ai_relationtype(RelationType::Ally, npc_zombie::Type()));
+				}*/
+				if (dynamic_cast<ai_node*>(object))
+				{
+					if (static_cast<FixtureData*>(fixtureA->GetUserData())->getActionType() == FixtureActionType::Collision)
 					{
-						if (!fixtureB->IsSensor())
+						if (static_cast<FixtureData*>(fixtureB->GetUserData())->getActionType() == FixtureActionType::AI_Node_Action)
 						{
-							if (!isAttacking)
-								this->Attack(object, context, stateName);
+							this->usedNode = dynamic_cast<ai_node*>(object);
+							if (usedNode != NULL)
+							{
+								if (usedNode->next != NULL)
+								{
+									this->target = usedNode->next;
+								}
+							}
 						}
 
-						sf::Vector2f diff;
-						diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
-						diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
-
-						this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
-
-						target = object;
 					}
-					else if (this->getRelationWithPawnType(Player::Type()) == RelationType::Ally)
+					else if (static_cast<FixtureData*>(fixtureA->GetUserData())->getActionType() == FixtureActionType::Sense)
 					{
-						sf::Vector2f diff;
-						diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
-						diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+						if (static_cast<FixtureData*>(fixtureB->GetUserData())->getActionType() == FixtureActionType::Trigger)
+						{
+							this->target = object;
+						}
+					}
+					else
+					{
+						FixtureData*d = static_cast<FixtureData*>(fixtureA->GetUserData());
+						std::cout << d->getActionType() << std::endl;;
 
-						this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
-
-						target = object;
 					}
 
 				}
+				if (this->getRelationWithPawnType(object->getType()) == RelationType::Enemy)
+				{
+					if (!fixtureB->IsSensor())
+					{
+						if (!isAttacking)
+							this->Attack(object, context, stateName);
+					}
+
+
+					sf::Vector2f diff;
+					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+
+					this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+					target = object;
+				}
+				if (this->getRelationWithPawnType(object->getType()) == RelationType::Ally)
+				{
+					sf::Vector2f diff;
+					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+
+					this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+					target = object;
+				}
+				if (this->getRelationWithPawnType(object->getType()) == RelationType::Follow)
+				{
+					//it is techically same as Ally with the difference that Ally should have more complexity
+					//zombies Ally hovever is close to following
+					//but this one is made for ai_nodes
+					//because object is supposed to walk close to ai_nodes area of action
+
+					sf::Vector2f diff;
+					diff.x = object->GetObjectPosition().x - this->body->GetPosition().x;
+					diff.y = object->GetObjectPosition().y - this->body->GetPosition().y;
+
+					this->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+
+					target = object;
+				}
+
+
 				if (dynamic_cast<npc_zombie_base*>(object))
 				{
 					if (!fixtureB->IsSensor())
@@ -338,7 +438,7 @@ public:
 		}
 	}
 
-	npc_zombie(sf::Vector2f position, float speed, float width, float height) :npc_zombie_base(position, speed, width, height)
+	npc_zombie(sf::Vector2f position, float speed, float width, float height, int area_id = 0) :npc_zombie_base(position, speed, width, height)
 	{
 		collision.width = width;
 		collision.height = height;
