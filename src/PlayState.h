@@ -2353,71 +2353,7 @@ public:
 			WalkDown = false;
 		}
 
-		/*if (WalkLeft)
-		{
-
-			player->AddVelocity(sf::Vector2f(-(player->accel), 0.f));
-			if (player->Velocity.x < -player->MaxSpeed)
-			{
-				player->Velocity.x = -player->MaxSpeed;
-			}
-		}
-		else if (!WalkLeft)
-		{
-			player->AddVelocity(sf::Vector2f((player->accel), 0.f));
-			if (player->Velocity.x > player->MaxSpeed)
-			{
-				player->Velocity.x = player->MaxSpeed;
-			}
-		}
-		if (WalkRight)
-		{
-			player->AddVelocity(sf::Vector2f((player->accel), 0.f));
-			if (player->Velocity.x > player->MaxSpeed)
-			{
-				player->Velocity.x = player->MaxSpeed;
-			}
-		}
-		else if (!WalkRight)
-		{
-			player->AddVelocity(sf::Vector2f(-(player->accel), 0.f));
-			if (player->Velocity.x < -player->MaxSpeed)
-			{
-				player->Velocity.x = -player->MaxSpeed;
-			}
-		}
-		if (WalkUp)
-		{
-			player->AddVelocity(sf::Vector2f(0.f, -(player->accel)));
-			if (player->Velocity.y < -player->MaxSpeed)
-			{
-				player->Velocity.y = -player->MaxSpeed;
-			}
-		}
-		else if (!WalkUp)
-		{
-			player->AddVelocity(sf::Vector2f(0.f, (player->accel)));
-			if (player->Velocity.y > player->MaxSpeed)
-			{
-				player->Velocity.y = player->MaxSpeed;
-			}
-		}
-		if (WalkDown)
-		{
-			player->AddVelocity(sf::Vector2f(0.f, (player->accel)));
-			if (player->Velocity.y > player->MaxSpeed)
-			{
-				player->Velocity.y = player->MaxSpeed;
-			}
-		}
-		else if (!WalkDown)
-		{
-			player->AddVelocity(sf::Vector2f(0.f, -(player->accel)));
-			if (player->Velocity.y < -player->MaxSpeed)
-			{
-				player->Velocity.y = -player->MaxSpeed;
-			}
-		}*/
+		
 
 		if (WalkLeft)
 		{
@@ -2469,40 +2405,7 @@ public:
 
 		}
 
-		/*if (WalkLeft)
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(-m);
-		}
-		if (WalkRight)
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(m);
-		}
-		if (WalkUp)
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(-m2);
-		}
-		if (WalkDown)
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(m2);
-		}*/
 
-
-		/*if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(-m);
-		}
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(m);
-		}
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(-m2);
-		}
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(m2);
-		}*/
 
 	}
 
@@ -2551,11 +2454,22 @@ public:
 
 						this->PlaySound(player->GetFootstepSoundName(), player->footsteps_sound_channel_id);
 						player->time_footstep_elapsed = 0.f;
+
+						FMOD_VECTOR pos;
+						pos.z = 0;
+						pos.x = player->body->GetPosition().x;
+						pos.y = -player->body->GetPosition().y;
+						FMOD_RESULT r = context->game->Channels->at(player->footsteps_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+						if (r != FMOD_OK)
+						{
+							std::cout << FMOD_ErrorString(r) << "aaa" << std::endl;
+						}
 					}
 					else
 					{
-						player->time_footstep_elapsed += dt.asSeconds();
+						player->time_footstep_elapsed += dt.asSeconds();				
 					}
+					
 				}
 				else
 				{
@@ -2568,7 +2482,17 @@ public:
 					}
 					else
 					{
-						player->time_footstep_elapsed += dt.asSeconds();
+						player->time_footstep_elapsed += dt.asSeconds();				
+					}
+
+					FMOD_VECTOR pos;
+					pos.z = 0;
+					pos.x = player->body->GetPosition().x;
+					pos.y = -player->body->GetPosition().y;
+					FMOD_RESULT r = context->game->Channels->at(player->footsteps_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+					if (r != FMOD_OK)
+					{
+						std::cout << FMOD_ErrorString(r) <<"0"<< std::endl;
 					}
 				}
 			}
@@ -2576,9 +2500,22 @@ public:
 			{
 				int channel_id = 0;
 				this->PlaySound(player->GetFootstepSoundName(), player->footsteps_sound_channel_id);
-				player->time_footstep_elapsed = 0.f;
-			}
+				player->time_footstep_elapsed = 0.f;			
 
+				FMOD_VECTOR pos;
+				pos.z = 0;
+				pos.x = player->body->GetPosition().x;
+				pos.y = -player->body->GetPosition().y;
+				FMOD_RESULT r = context->game->Channels->at(player->footsteps_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+				if (r != FMOD_OK)
+				{
+					std::cout << FMOD_ErrorString(r) <<"1"<< std::endl;
+				}
+			}
+			if (context->game->Channels->at(player->footsteps_sound_channel_id) != NULL)
+			{
+				
+			}
 		}
 	
 		if (player->is_reloading)
@@ -2685,7 +2622,13 @@ public:
 							pos.z = 0;
 							pos.x = pp->body->GetPosition().x;
 							pos.y = -pp->body->GetPosition().y;
-							context->game->Channels->at(pp->StateSoundChannelId)->set3DAttributes(&pos, 0, 0);
+							FMOD_RESULT r = context->game->Channels->at(pp->StateSoundChannelId)->set3DAttributes(&pos, 0, 0);
+							if (r != FMOD_OK)
+							{
+								std::cout << FMOD_ErrorString(r) << std::endl;
+							}
+
+							
 							/*Channels->at(pp->StateSoundChannelId)->setVolume(50);*/
 						}
 
@@ -2970,9 +2913,10 @@ public:
 								}
 								else
 								{
-									nz->time_footstep_elapsed += dt.asSeconds();
+									
 								}
 							}
+							
 						}
 						else
 						{
@@ -3066,6 +3010,13 @@ public:
 							nz->time_footstep_elapsed = 0.f;
 						}
 
+						nz->time_footstep_elapsed += dt.asSeconds();
+						FMOD_VECTOR pos;
+						pos.x = nz->body->GetPosition().x;
+						pos.y = nz->body->GetPosition().y;
+						pos.z = 0;
+						context->game->Channels->at(nz->footsteps_sound_channel_id)->set3DAttributes(&pos, 0);
+
 						if (nz->zombie_footstep_sound_channel_id >= 0)
 						{
 							bool isPlaying = false;
@@ -3083,13 +3034,21 @@ public:
 								if (nz->time_footstep_elapsed >= nz->time_per_footstep)
 								{
 									context->game->PlaySound("zombie_foot" + std::to_string(m_get_random_number(1, 3)), nz->zombie_footstep_sound_channel_id);
-								}								
+								}
+								
 							}
 						}
 						else
 						{
 							context->game->PlaySound("zombie_foot" + std::to_string(m_get_random_number(1, 3)), nz->zombie_footstep_sound_channel_id);
 						}
+
+						nz->time_footstep_elapsed += dt.asSeconds();
+						FMOD_VECTOR pos1;
+						pos1.x = nz->body->GetPosition().x;
+						pos1.y = nz->body->GetPosition().y;
+						pos1.z = 0;
+						context->game->Channels->at(nz->zombie_footstep_sound_channel_id)->set3DAttributes(&pos1, 0);
 					}
 				}
 			}
@@ -3114,6 +3073,24 @@ public:
 		context->game->lowSoundSystem->set3DListenerAttributes(0, &playerPos, 0, 0, 0);
 
 		context->game->lowSoundSystem->update();
+
+		/*for (size_t i = 0; i < context->game->Channels->size(); i++)
+		{
+			
+			if (context->game->Channels->at(i) != NULL)
+			{
+				bool ip = false;
+				context->game->Channels->at(i)->isPlaying(&ip);
+				if (ip)
+				{
+					float v = 0;
+					context->game->Channels->at(i)->getVolume(&v);
+
+					std::cout << v << std::endl;
+				}
+				
+			}
+		}*/
 	}
 
 };

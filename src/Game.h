@@ -160,12 +160,20 @@ public:
 		res = FMOD::System_Create(&lowSoundSystem);
 		if (res != FMOD_RESULT::FMOD_OK)
 		{
-
+			std::cout << FMOD_ErrorString(res) << std::endl;
+		}
+		else
+		{
+			std::cout << "Sound system was created without errors" << std::endl;
 		}
 		res = lowSoundSystem->init(MAX_SOUND_CHANNELS_COUNT, FMOD_INIT_NORMAL, NULL);
 		if (res != FMOD_RESULT::FMOD_OK)
 		{
-
+			std::cout << FMOD_ErrorString(res) << std::endl;
+		}
+		else
+		{
+			std::cout << "Sound system was inited without errors" << std::endl;
 		}
 	}
 
@@ -181,7 +189,11 @@ public:
 			for (size_t i = 0; i < Resources->SoundData->size(); i++)
 			{
 				FMOD_RESULT res;
-				res = this->lowSoundSystem->createSound(Resources->SoundData->at(i)->filename.c_str(), FMOD_2D, 0, &Resources->SoundData->at(i)->sound);
+				res = this->lowSoundSystem->createSound(Resources->SoundData->at(i)->filename.c_str(),FMOD_3D_LINEARROLLOFF, 0, &Resources->SoundData->at(i)->sound);
+				float min = 0;
+				float max = 2000;
+				Resources->SoundData->at(i)->sound->set3DMinMaxDistance(min, max);
+				/*std::cout << "min: " << min << "max: " << max << std::endl;*/
 				if (res != FMOD_OK)
 				{
 					std::cout << "Error creating sound. Name: " << Resources->SoundData->at(i)->name.c_str() << "Filename: " << Resources->SoundData->at(i)->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
