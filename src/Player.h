@@ -28,6 +28,8 @@ protected:
 
 	}
 public:
+
+	std::vector<int>*shooting_sound_channel_ids = new std::vector<int>();
 	//gets type of the object for the relations
 	static int Type() { return PAWN_PLAYER; }
 

@@ -2189,6 +2189,24 @@ public:
 				if (player->reload_sound_channel_id == -1)
 				{
 					this->PlaySound(player->currentWeapon->reload_sound_name, player->reload_sound_channel_id);
+
+					if (player->reload_sound_channel_id != -1)
+					{
+						bool isPlaying = false;
+						context->game->Channels->at(player->reload_sound_channel_id)->isPlaying(&isPlaying);
+						if (isPlaying)
+						{
+							FMOD_VECTOR pos;
+							pos.z = 0;
+							pos.x = player->body->GetPosition().x;
+							pos.y = -player->body->GetPosition().y;
+							FMOD_RESULT r = context->game->Channels->at(player->reload_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+							if (r != FMOD_OK)
+							{
+								std::cout << FMOD_ErrorString(r) << " -\"Reload\" Sound 3D positioning" << std::endl;
+							}
+						}
+					}
 				}
 			}
 
@@ -2210,7 +2228,15 @@ public:
 
 							if (player->currentWeapon->ammoInTheClip <= 0)
 							{
-								this->PlaySound(player->currentWeapon->empty_clip_sound);
+								int channel_id = -1;
+								this->PlaySound(player->currentWeapon->empty_clip_sound,channel_id);
+								if (channel_id != -1)
+								{
+									player->shooting_sound_channel_ids->push_back(channel_id);
+								}
+
+						
+
 								break;
 							}
 
@@ -2229,7 +2255,17 @@ public:
 							bullet->Launch(static_cast<float>((atan2(diff.y, diff.x) + i/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
 							player->Projectiles->push_back(bullet);
 							player->currentWeapon->ammoInTheClip -= 1;
-							PlaySound(player->currentWeapon->shoot_sound_name);
+							
+							int channel_id = -1;
+							PlaySound(player->currentWeapon->shoot_sound_name, channel_id);
+
+							if (channel_id != -1)
+							{
+								if (channel_id != -1)
+								{
+									player->shooting_sound_channel_ids->push_back(channel_id);
+								}
+							}
 
 						}
 					}
@@ -2269,8 +2305,17 @@ public:
 							bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), pointPos/*sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y)*/, this->world, filter);
 							player->Projectiles->push_back(bullet);
 							player->currentWeapon->ammoInTheClip -= 1;
-							PlaySound(player->currentWeapon->shoot_sound_name);
 
+							int channel_id = -1;
+							PlaySound(player->currentWeapon->shoot_sound_name, channel_id);
+
+							if (channel_id != -1)
+							{
+								if (channel_id != -1)
+								{
+									player->shooting_sound_channel_ids->push_back(channel_id);
+								}
+							}
 						}
 					}
 					
@@ -2544,6 +2589,16 @@ public:
 			else
 			{
 				player->_time_in_reload += dt.asSeconds();
+
+				FMOD_VECTOR pos;
+				pos.z = 0;
+				pos.x = player->body->GetPosition().x;
+				pos.y = -player->body->GetPosition().y;
+				FMOD_RESULT r = context->game->Channels->at(player->reload_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+				if (r != FMOD_OK)
+				{
+					std::cout << FMOD_ErrorString(r) << " -\"Reload\" Sound 3D positioning" << std::endl;
+				}
 			}
 		}
 		else
@@ -2552,6 +2607,35 @@ public:
 			{
 				context->game->Channels->at(player->reload_sound_channel_id)->stop();
 				player->reload_sound_channel_id = -1;
+			}
+		}
+
+		if (!player->shooting_sound_channel_ids->empty())
+		{
+			for (size_t i = 0; i < player->shooting_sound_channel_ids->size(); i++)
+			{
+				if (player->shooting_sound_channel_ids->at(i) != -1)
+				{
+					bool isPlaying = false;
+
+					if (context->game->Channels->at(player->shooting_sound_channel_ids->at(i)) != NULL)
+					{
+						context->game->Channels->at(player->shooting_sound_channel_ids->at(i))->isPlaying(&isPlaying);
+						if (isPlaying)
+						{
+							FMOD_VECTOR pos;
+							pos.z = 0;
+							pos.x = player->body->GetPosition().x;
+							pos.y = player->body->GetPosition().y;
+							context->game->Channels->at(player->shooting_sound_channel_ids->at(i))->set3DAttributes(&pos, 0);
+						}
+						else
+						{
+							auto it = std::find(player->shooting_sound_channel_ids->begin(), player->shooting_sound_channel_ids->end(), player->shooting_sound_channel_ids->at(i));
+							player->shooting_sound_channel_ids->erase(it);
+						}
+					}
+				}
 			}
 		}
 		projObj->Update(dt);
@@ -3093,4 +3177,15 @@ public:
 		}*/
 	}
 
+	~PlayState()
+	{
+		if (!StateObjects->empty())
+		{
+			for (size_t i = 0; i < StateObjects->size(); i++)
+			{
+				StateObjects->at(i)->~Object();
+			}
+		}
+		StateObjects->~vector();
+	}
 };
