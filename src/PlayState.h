@@ -1168,7 +1168,7 @@ public:
 		filter.categoryBits = 0x1;
 
 
-		ammo_pickup_object*apo = new ammo_pickup_object({ static_cast<int>(AMMO_TYPE_SHOTGUN),1 },sf::Vector2f(0,0), sf::Sprite(context->game->Resources->getTextureResourceDataByName("shotgun_ammopack_big")->texture),32,20, 0);
+		ammo_pickup_object*apo = new ammo_pickup_object({ static_cast<int>(AMMO_TYPE_SHOTGUN),8 },sf::Vector2f(0,0), sf::Sprite(context->game->Resources->getTextureResourceDataByName("shotgun_ammopack_big")->texture),32,20, 0);
 		apo->OnCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 		{
 			apo->onCollision(object, fixtureA, fixtureB,this->context,this->Name);
@@ -2135,51 +2135,54 @@ public:
 					player->is_shooting = true;
 					if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
 					{
-						
-						for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
+						if (player->currentWeapon->ammoInTheClip > 0)
 						{
-
-							if (player->currentWeapon->ammoInTheClip <= 0)
+							for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
 							{
+
+								if (player->currentWeapon->ammoInTheClip <= 0)
+								{
+									int channel_id = -1;
+									this->PlaySound(player->currentWeapon->empty_clip_sound, channel_id);
+									if (channel_id != -1)
+									{
+										player->shooting_sound_channel_ids->push_back(channel_id);
+									}
+
+
+
+									break;
+								}
+
+								projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
+
+								bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+								{
+
+									bullet->projectileOnCollision(object, this->context, "PlayState");
+								};
+								bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+								{
+									bullet->projectileOnLeftCollision(object, this->context, "PlayState");
+								};
+								bullet->owner = player;
+								bullet->Launch(static_cast<float>((atan2(diff.y, diff.x) + i/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
+								player->Projectiles->push_back(bullet);
+
+
 								int channel_id = -1;
-								this->PlaySound(player->currentWeapon->empty_clip_sound,channel_id);
+								PlaySound(player->currentWeapon->shoot_sound_name, channel_id);
+
 								if (channel_id != -1)
 								{
-									player->shooting_sound_channel_ids->push_back(channel_id);
+									if (channel_id != -1)
+									{
+										player->shooting_sound_channel_ids->push_back(channel_id);
+									}
 								}
 
-						
-
-								break;
 							}
-
-							projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
-
-							bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-							{
-
-								bullet->projectileOnCollision(object, this->context, "PlayState");
-							};
-							bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-							{
-								bullet->projectileOnLeftCollision(object, this->context, "PlayState");
-							};
-							bullet->owner = player;
-							bullet->Launch(static_cast<float>((atan2(diff.y, diff.x) + i/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
-							player->Projectiles->push_back(bullet);
 							player->currentWeapon->ammoInTheClip -= 1;
-							
-							int channel_id = -1;
-							PlaySound(player->currentWeapon->shoot_sound_name, channel_id);
-
-							if (channel_id != -1)
-							{
-								if (channel_id != -1)
-								{
-									player->shooting_sound_channel_ids->push_back(channel_id);
-								}
-							}
-
 						}
 					}
 					else
@@ -2494,9 +2497,36 @@ public:
 						}
 					}
 					player->currentWeapon->clips -= 1;
-					player->currentWeapon->ammoInTheClip = player->currentWeapon->ammoPerClip;
+					if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
+					{
+						player->currentWeapon->ammoInTheClip += 1;
+						if (player->currentWeapon->ammoInTheClip >= player->currentWeapon->ammoPerClip)
+						{
+							player->is_reloading = false;
+						}
+						else
+						{
+							if (player->currentWeapon->clips <= 0)
+							{
+								player->is_reloading = false;
+							}
+							else
+							{
+								this->PlaySound(player->currentWeapon->reload_sound_name, player->reload_sound_channel_id);
+							}
+							
+							
+						}
+					}
+					else
+					{
+						player->currentWeapon->ammoInTheClip += player->currentWeapon->ammoPerClip;
+						player->is_reloading = false;
+					}
+
+					
 				}			
-				player->is_reloading = false;
+				
 				player->_time_in_reload = 0.f;
 			}
 			else
