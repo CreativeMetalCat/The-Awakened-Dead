@@ -1167,95 +1167,8 @@ public:
 		b2Filter filter;
 		filter.categoryBits = 0x1;
 
-		/*npc_zombie*z = new npc_zombie(sf::Vector2f(500, 500), 0.01f, 100, 100);
-		z->Init();
-		z->OnCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-		{
-			z->onCollision(object, fixtureA, fixtureB, this->context, "PlayState");
-		};
 
-		z->LeftCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-		{
-			z->leftCollision(object,fixtureA,fixtureB, this->context, "PlayState");
-		};
-
-		Animation::SpritesAnimation*zombie_idle = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_idle");
-		for (int i = 0; i < 17; i++)
-		{
-			zombie_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-idle_" + std::to_string(i))->texture));
-		}
-		z->spritesAnimations->addAnimation(zombie_idle);
-
-		Animation::SpritesAnimation*zombie_move = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_move");
-		for (int i = 0; i < 17; i++)
-		{
-			zombie_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-move_" + std::to_string(i))->texture));
-		}
-		z->spritesAnimations->addAnimation(zombie_move);
-
-		Animation::SpritesAnimation*zombie_attack = new  Animation::SpritesAnimation(true, 0.1f, "skeleton_attack");
-		for (int i = 0; i < 9; i++)
-		{
-			zombie_attack->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-attack_" + std::to_string(i))->texture));
-		}
-		z->spritesAnimations->addAnimation(zombie_attack);
-
-		z->addRelation({ RelationType::Enemy,Player::Type()});
-		z->Init();
-		z->SetAnimation("skeleton_idle");
-		this->StateObjects->push_back(z);*/
-
-		
-
-
-
-		/*npc_zombie*z1 = new npc_zombie(sf::Vector2f(500, -300), 0.01f, 100, 100);
-		z1->Init();*/
-
-		/*z1->OnCollision = [this, z1](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-		{
-			z1->onCollision(object, fixtureA, fixtureB, this->context, "PlayState");
-		};
-
-		z1->LeftCollision = [this, z1](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-		{
-			z1->leftCollision(object, fixtureA, fixtureB, this->context, "PlayState");
-		};
-
-		
-		Animation::SpritesAnimation*zombie1_idle = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_idle");
-		for (int i = 0; i < 17; i++)
-		{
-			zombie1_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-idle_" + std::to_string(i))->texture));
-		}
-		
-
-		Animation::SpritesAnimation*zombie1_move = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_move");
-		for (int i = 0; i < 17; i++)
-		{
-			zombie1_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-move_" + std::to_string(i))->texture));
-		}
-	
-
-		Animation::SpritesAnimation*zombie1_attack = new  Animation::SpritesAnimation(true, 0.1f, "skeleton_attack");
-		for (int i = 0; i < 9; i++)
-		{
-			zombie1_attack->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-attack_" + std::to_string(i))->texture));
-		}
-		
-
-		z1->spritesAnimations->addAnimation(zombie1_idle);
-	
-		z1->spritesAnimations->addAnimation(zombie1_move);
-		
-		z1->spritesAnimations->addAnimation(zombie1_attack);
-
-		z1->addRelation({ RelationType::Ally ,Player::Type() });
-		z1->Init();
-		z1->SetAnimation("skeleton_attack");*/
-		/*this->StateObjects->push_back(z1);*/
-
-		ammo_pickup_object*apo = new ammo_pickup_object({ static_cast<int>(AMMO_TYPE_SHOTGUN),1 },sf::Vector2f(0,0), sf::Sprite(),10,20, 0);
+		ammo_pickup_object*apo = new ammo_pickup_object({ static_cast<int>(AMMO_TYPE_SHOTGUN),1 },sf::Vector2f(0,0), sf::Sprite(context->game->Resources->getTextureResourceDataByName("shotgun_ammopack_big")->texture),32,20, 0);
 		apo->OnCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 		{
 			apo->onCollision(object, fixtureA, fixtureB,this->context,this->Name);
@@ -1270,7 +1183,7 @@ public:
 
 
 
-		Weapon*w1 = new Weapon("pstol -  the slowest pistol in world. takes to much of screen? sowwy", 0.00002f, 15.f);
+		Weapon*w1 = new Weapon("Pistol", 1.2f, 15.f);
 		w1->weaponType = WEAPON_TYPE_TAD_PISTOL;
 		w1->ammoPerClip = 17;
 		w1->ammoInTheClip = w1->ammoPerClip;
@@ -2199,7 +2112,7 @@ public:
 							FMOD_VECTOR pos;
 							pos.z = 0;
 							pos.x = player->body->GetPosition().x;
-							pos.y = -player->body->GetPosition().y;
+							pos.y = player->body->GetPosition().y;
 							FMOD_RESULT r = context->game->Channels->at(player->reload_sound_channel_id)->set3DAttributes(&pos, 0, 0);
 							if (r != FMOD_OK)
 							{
@@ -2503,7 +2416,7 @@ public:
 						FMOD_VECTOR pos;
 						pos.z = 0;
 						pos.x = player->body->GetPosition().x;
-						pos.y = -player->body->GetPosition().y;
+						pos.y = player->body->GetPosition().y;
 						FMOD_RESULT r = context->game->Channels->at(player->footsteps_sound_channel_id)->set3DAttributes(&pos, 0, 0);
 						if (r != FMOD_OK)
 						{
@@ -2533,7 +2446,7 @@ public:
 					FMOD_VECTOR pos;
 					pos.z = 0;
 					pos.x = player->body->GetPosition().x;
-					pos.y = -player->body->GetPosition().y;
+					pos.y = player->body->GetPosition().y;
 					FMOD_RESULT r = context->game->Channels->at(player->footsteps_sound_channel_id)->set3DAttributes(&pos, 0, 0);
 					if (r != FMOD_OK)
 					{
@@ -2550,7 +2463,7 @@ public:
 				FMOD_VECTOR pos;
 				pos.z = 0;
 				pos.x = player->body->GetPosition().x;
-				pos.y = -player->body->GetPosition().y;
+				pos.y = player->body->GetPosition().y;
 				FMOD_RESULT r = context->game->Channels->at(player->footsteps_sound_channel_id)->set3DAttributes(&pos, 0, 0);
 				if (r != FMOD_OK)
 				{
@@ -2609,6 +2522,19 @@ public:
 				player->reload_sound_channel_id = -1;
 			}
 		}
+
+		FMOD_VECTOR playerPos;
+		playerPos.x = player->body->GetPosition().x;
+		playerPos.y = player->body->GetPosition().y;
+		playerPos.z = 0;
+		
+		int num = 0;
+		context->game->lowSoundSystem->get3DNumListeners(&num);
+		for (int i = 0; i <= num; i++)
+		{
+			context->game->lowSoundSystem->set3DListenerAttributes(i, &playerPos, 0, 0, 0);
+		}
+		
 
 		if (!player->shooting_sound_channel_ids->empty())
 		{
@@ -2699,13 +2625,23 @@ public:
 							{
 								PlaySound(pp->GetMaterialTypeMovementSoundName(), pp->StateSoundChannelId);
 							}
+
+							FMOD_VECTOR pos;
+							pos.z = 0;
+							pos.x = pp->body->GetPosition().x;
+							pos.y = pp->body->GetPosition().y;
+							FMOD_RESULT r = context->game->Channels->at(pp->StateSoundChannelId)->set3DAttributes(&pos, 0, 0);
+							if (r != FMOD_OK)
+							{
+								std::cout << FMOD_ErrorString(r) << std::endl;
+							}
 						}
 						else
 						{
 							FMOD_VECTOR pos;
 							pos.z = 0;
 							pos.x = pp->body->GetPosition().x;
-							pos.y = -pp->body->GetPosition().y;
+							pos.y = pp->body->GetPosition().y;
 							FMOD_RESULT r = context->game->Channels->at(pp->StateSoundChannelId)->set3DAttributes(&pos, 0, 0);
 							if (r != FMOD_OK)
 							{
@@ -3173,11 +3109,7 @@ filename = name + std::to_string(m_get_random_number(1, 4));
 		}
 		cursorParticles.update(dt);
 
-		FMOD_VECTOR playerPos;
-		playerPos.x = player->body->GetPosition().x;
-		playerPos.y = -player->body->GetPosition().y;
-		playerPos.z = 0;
-		context->game->lowSoundSystem->set3DListenerAttributes(0, &playerPos, 0, 0, 0);
+		
 
 		context->game->lowSoundSystem->update();
 
