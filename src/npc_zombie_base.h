@@ -20,6 +20,11 @@ protected:
 
 public:
 
+	//used for checking if zombie moans, panics or attack sounds are playing
+	//can only speak one thing at the time
+	//because that the way human work
+	int voice_sound_channel_id = -1;
+
 	//gets type of the object for the relations
 	static int Type() { return PAWN_BASIC_ZOMBIE; }
 
@@ -29,6 +34,9 @@ public:
 
 	float Health = 100.f;
 
+	//sound channel that is going to be used for playing zombie footstep sounds
+	//they are usally played with usual footstep sounds
+	int zombie_footstep_sound_channel_id = -1;
 
 	//sound type of surface that player is stepping on
 	int footstep_sound_type = MAT_SOUND_TYPE_CONCRETE;

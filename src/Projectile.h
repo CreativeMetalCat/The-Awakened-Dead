@@ -60,11 +60,25 @@ public:
 
 		if (PropPhysics*pp = dynamic_cast<PropPhysics*>(object))
 		{
-			int channel_id = 0;
+			int channel_id = -1;
 
 			if (pp->getMaterialTypeImpactSoundName() != "")
 			{
-				context->game->PlaySound(pp->getMaterialTypeImpactSoundName());
+				context->game->PlaySound(pp->getMaterialTypeImpactSoundName(), channel_id);
+				if (channel_id != -1)
+				{
+					bool isPlaying = false;
+					context->game->Channels->at(channel_id)->isPlaying(&isPlaying);
+					if (isPlaying)
+					{
+						FMOD_VECTOR pos;
+						pos.z = 0;
+						pos.x = pp->GetObjectPosition().x;
+						pos.y = pp->GetObjectPosition().y;
+
+						context->game->Channels->at(channel_id)->set3DAttributes(&pos, 0);
+					}
+				}
 			}
 
 			//mass1 - mass 2(m=minus)

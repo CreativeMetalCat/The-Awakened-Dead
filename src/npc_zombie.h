@@ -53,10 +53,7 @@ public:
 	//MUST RETURN THE SAME TYPE AS TYPE() METHOD
 	virtual int getType()const { return PAWN_ZOMBIE_TAD; }
 
-	//used for checking if zombie moans, panics or attack sounds are playing
-	//can only speak one thing at the time
-	//because that the way human work
-	int voice_sound_channel_id = -1;
+	
 
 	//body used for attacking
 	b2Body* attackBody;
