@@ -45,7 +45,7 @@
 #endif // !MAX_SOUND_CHANNELS_COUNT
 
 
-bool DEBUG_DRAWCOLLISION = true;
+bool DEBUG_DRAWCOLLISION = false;
 
 bool DEBUG_DRAWREVERB = false;
 
@@ -2116,7 +2116,7 @@ public:
 							FMOD_RESULT r = context->game->Channels->at(player->reload_sound_channel_id)->set3DAttributes(&pos, 0, 0);
 							if (r != FMOD_OK)
 							{
-								std::cout << FMOD_ErrorString(r) << " -\"Reload\" Sound 3D positioning" << std::endl;
+								std::cout << FMOD_ErrorString(r) << " -\"Reload\" Sound 3D positioning on Handle Event" << std::endl;
 							}
 						}
 					}
@@ -2520,7 +2520,7 @@ public:
 					}
 					else
 					{
-						player->currentWeapon->ammoInTheClip += player->currentWeapon->ammoPerClip;
+						player->currentWeapon->ammoInTheClip = player->currentWeapon->ammoPerClip;
 						player->is_reloading = false;
 					}
 
@@ -2533,15 +2533,20 @@ public:
 			{
 				player->_time_in_reload += dt.asSeconds();
 
-				FMOD_VECTOR pos;
-				pos.z = 0;
-				pos.x = player->body->GetPosition().x;
-				pos.y = -player->body->GetPosition().y;
-				FMOD_RESULT r = context->game->Channels->at(player->reload_sound_channel_id)->set3DAttributes(&pos, 0, 0);
-				if (r != FMOD_OK)
+				bool isPlaying = false;
+				context->game->Channels->at(player->reload_sound_channel_id)->isPlaying(&isPlaying);
+				if(isPlaying)
 				{
-					std::cout << FMOD_ErrorString(r) << " -\"Reload\" Sound 3D positioning" << std::endl;
-				}
+					FMOD_VECTOR pos;
+					pos.z = 0;
+					pos.x = player->body->GetPosition().x;
+					pos.y = -player->body->GetPosition().y;
+					FMOD_RESULT r = context->game->Channels->at(player->reload_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+					if (r != FMOD_OK)
+					{
+						std::cout << FMOD_ErrorString(r) << " -\"Reload\" Sound 3D positioning on Update" << std::endl;
+					}
+				}	
 			}
 		}
 		else
