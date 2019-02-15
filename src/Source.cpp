@@ -241,96 +241,6 @@ public:
 	}
 };
 
-//class npc_zombie :public MovingPawn
-//{
-//protected:
-//	size_t animIndex = 0;
-//public:
-//	std::vector<Animation::Animation> * animations = new std::vector<Animation::Animation>();
-//	Animation::SpriteSheetAnimation* Anim;
-//
-//	npc_zombie(float MovementSpeed, sf::Vector2f position, float rectWidth, float rectHeight, float FrameHeight, float FrameWidth, sf::Sprite sprite) :MovingPawn(MovementSpeed, position, rectWidth, rectHeight)
-//	{
-//		this->collision.width = rectWidth;
-//		this->collision.height = rectHeight;
-//
-//		Scale.x = rectWidth / FrameWidth;
-//		Scale.y = rectHeight / FrameHeight;
-//
-//		Anim = new Animation::SpriteSheetAnimation(0.1f, 1, sf::Vector2f(FrameWidth, FrameHeight), sprite);
-//		Anim->IsRepated = true;
-//	}
-//
-//	sf::Vector2f GetObjectPosition() override
-//	{
-//		return Anim->sprite.getPosition();
-//	}
-//
-//	void Init()override
-//	{
-//		this->Anim->sprite.setScale(this->Scale);
-//		this->Anim->sprite.setPosition(sf::Vector2f(collision.left, collision.top));
-//
-//		this->OnCollision = [this](Object*object)
-//		{
-//			sf::Vector2f diff;
-//			diff.x = object->body->GetPosition().x - this->GetObjectPosition().x;
-//			diff.y = object->body->GetPosition().y - this->GetObjectPosition().y;
-//
-//			float distance = sqrt((pow(static_cast<double>(diff.x), 2), pow(static_cast<double>(diff.y), 2)));
-//			this->Pattern->clear();
-//			this->AddMovement(MovementDirection(static_cast<float>(atan2(diff.y, diff.x)*(180 / M_PI)), distance));
-//			this->SetMovementDone(false);
-//		};
-//	}
-//	virtual void Draw(sf::RenderWindow*& window)
-//	{
-//		window->draw(Anim->sprite);
-//	}
-//	void Move(sf::Vector2f vec)override
-//	{
-//		collision.left += vec.x;
-//		collision.top += vec.y;
-//		Anim->sprite.move(vec);
-//	}
-//
-//	bool SetAnimation(std::string name)
-//	{
-//		if (!animations->empty())
-//		{
-//			for (size_t i = 0; i < animations->size(); i++)
-//			{
-//				if (animations->at(i).name == name)
-//				{
-//					animIndex = i;
-//					return true;
-//				}
-//			}
-//		}
-//		return false;
-//	}
-//	void Update(sf::Time dt)
-//	{
-//
-//		if (!animations->empty())
-//		{
-//			Anim->Time += dt.asSeconds();
-//			if (Anim->Time >= Anim->FrameDuration)
-//			{
-//				Anim->SetFrame(animations->at(animIndex).FrameIndexes->at(animations->at(animIndex).CurrentFrameIndex).ColumnIndex, animations->at(animIndex).FrameIndexes->at(animations->at(animIndex).CurrentFrameIndex).StripIndex);
-//				Anim->Time = 0;
-//				animations->at(animIndex).CurrentFrameIndex++;
-//				if (animations->at(animIndex).CurrentFrameIndex > animations->at(animIndex).FrameIndexes->size() - 1)
-//				{
-//					animations->at(animIndex).CurrentFrameIndex = 0;
-//				}
-//			}
-//		}
-//		this->UpdateMovement(dt);
-//		this->Anim->sprite.setPosition(sf::Vector2f(body->GetPosition().x, body->GetPosition().y));
-//	}
-//};
-
 
 namespace GUI
 {
@@ -436,15 +346,28 @@ int main(int argc, char** argv)
 	w2->projectile_texture_name = "proj";
 	w2->shoot_sound_name = "shotgun_fire6";
 	w2->empty_clip_sound = "shotgun_empty";
-	w2->reload_sound_name = "rifle_reload";
+	w2->reload_sound_name = "shotgun_reload1";
 	w2->weapon_ammo_type = AMMO_TYPE_SHOTGUN;
 	w2->sprite = sf::Sprite(letterT->texture);
+
+	Weapon*w3 = new Weapon("Knife", 1.f, 20.f);
+	w3->weaponType = WEAPON_TYPE_TAD_KNIFE;
+	w3->ammoPerClip = 0;
+	w3->ammoInTheClip = 0;
+	w3->inaccuracy = 0.f;
+	w3->bullets_per_shot = 0;
+	w3->shoot_sound_name = "shotgun_fire6";
+	w3->empty_clip_sound = "shotgun_empty";
+	w3->reload_sound_name = "shotgun_reload1";
+	w3->weapon_ammo_type = AMMO_TYPE_NULL;
+	w3->sprite = sf::Sprite(letterT->texture);
 	
 
 
 	player->weapons->push_back(w);
 	/*player->weapons->push_back(w1);*/
 	player->weapons->push_back(w2);
+	player->weapons->push_back(w3);
 	
 	ps.player = player;
 
@@ -517,6 +440,11 @@ int main(int argc, char** argv)
 
 	for (int i = 0; i < 20; i++)
 	{
+		game.Resources->AddTextureResource(new TextureResource("solder_rifle_idle_" + std::to_string(i), "./../textures/Top_Down_Survivor/rifle/idle/survivor-idle_rifle_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i < 20; i++)
+	{
 		game.Resources->AddTextureResource(new TextureResource("solder_rifle_reload_" + std::to_string(i), "./../textures/Top_Down_Survivor/rifle/reload/survivor-reload_rifle_" + std::to_string(i) + ".png", false, false));
 	}
 
@@ -532,6 +460,12 @@ int main(int argc, char** argv)
 
 	for (int i = 0; i < 20; i++)
 	{
+		game.Resources->AddTextureResource(new TextureResource("solder_pistol_idle_" + std::to_string(i), "./../textures/Top_Down_Survivor/handgun/idle/survivor-idle_handgun_" + std::to_string(i) + ".png", false, false));
+	}
+
+
+	for (int i = 0; i < 20; i++)
+	{
 		game.Resources->AddTextureResource(new TextureResource("solder_shotgun_reload_" + std::to_string(i), "./../textures/Top_Down_Survivor/shotgun/reload/survivor-reload_shotgun_" + std::to_string(i) + ".png", false, false));
 	}
 
@@ -539,6 +473,25 @@ int main(int argc, char** argv)
 	{
 		game.Resources->AddTextureResource(new TextureResource("solder_shotgun_move_" + std::to_string(i), "./../textures/Top_Down_Survivor/shotgun/move/survivor-move_shotgun_" + std::to_string(i) + ".png", false, false));
 	}
+	for (int i = 0; i < 20; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_shotgun_idle_" + std::to_string(i), "./../textures/Top_Down_Survivor/shotgun/idle/survivor-idle_shotgun_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i < 15; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_knife_attack_" + std::to_string(i), "./../textures/Top_Down_Survivor/knife/meleeattack/survivor-meleeattack_knife_" + std::to_string(i) + ".png", false, false));
+	}
+
+	for (int i = 0; i < 20; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_knife_move_" + std::to_string(i), "./../textures/Top_Down_Survivor/knife/move/survivor-move_knife_" + std::to_string(i) + ".png", false, false));
+	}
+	for (int i = 0; i < 20; i++)
+	{
+		game.Resources->AddTextureResource(new TextureResource("solder_knife_idle_" + std::to_string(i), "./../textures/Top_Down_Survivor/knife/idle/survivor-idle_knife_" + std::to_string(i) + ".png", false, false));
+	}
+
 
 	for (int i = 0; i < 17; i++)
 	{
@@ -571,6 +524,9 @@ int main(int argc, char** argv)
 	game.Resources->AddTextureResource(new TextureResource("zombie_head", "./../textures/zombie/zombie_head.png", false, false));
 	game.Resources->AddTextureResource(new TextureResource("meat_chunk", "./../textures/zombie/meat_chunk.png", false, false));
 	game.Resources->AddTextureResource(new TextureResource("letter", "./../textures/Letter.png", false, false));
+
+	game.Resources->AddTextureResource(new TextureResource("shotgun_ammopack_big", "./../textures/shotgun_ammopack_big.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("shotgun_ammopack_medium", "./../textures/shotgun_ammopack_medium.png", false, false));
 
 	game.Resources->AddSoundResource(new SoundResource("ambience_base", "./../sounds/ambience_base.wav"));
 	game.Resources->AddSoundResource(new SoundResource("pistol_fire2", "./../sounds/weapons/pistol/pistol_fire2.wav"));
