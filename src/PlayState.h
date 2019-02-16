@@ -19,6 +19,7 @@
 #include "ammo_object.h"
 #include "weapon_pickup_object.h"
 #include "ai_node.h"
+#include "knife_attack_projectile.h"
 
 #ifndef _RANDOM_
 #include <random>
@@ -1707,6 +1708,31 @@ public:
 		player->spritesAnimations->addAnimation(pistol_move);
 
 		//
+		Animation::SpritesAnimation*knife_move = new  Animation::SpritesAnimation(true, 0.2f, "solder_knife_move");
+		for (int i = 0; i < 20; i++)
+		{
+			knife_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_knife_move_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(knife_move);
+
+		//
+		Animation::SpritesAnimation*knife_idle = new  Animation::SpritesAnimation(true, 0.05f, "solder_knife_idle");
+		for (int i = 0; i < 20; i++)
+		{
+			knife_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_knife_idle_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(knife_idle);
+
+		//
+		Animation::SpritesAnimation*knife_attack = new  Animation::SpritesAnimation(false, 0.05f, "solder_knife_attack");
+		for (int i = 0; i <15; i++)
+		{
+			knife_attack->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_knife_attack_" + std::to_string(i))->texture));
+		}
+		knife_attack->ForceScale = true;
+		player->spritesAnimations->addAnimation(knife_attack);
+
+		//
 		Animation::SpritesAnimation*pistol_idle = new  Animation::SpritesAnimation(true, 0.05f, "solder_pistol_idle");
 		for (int i = 0; i < 20; i++)
 		{
@@ -2096,27 +2122,31 @@ public:
 
 			
 
-			if (player->currentWeapon->ammoInTheClip <= 0 && player->currentWeapon->clips > 0)
+			if (player->currentWeapon->weaponType != WEAPON_TYPE_TAD_KNIFE)
 			{
-				player->is_reloading = true;
-				if (player->reload_sound_channel_id == -1)
+				if (player->currentWeapon->ammoInTheClip <= 0 && player->currentWeapon->clips > 0)
 				{
-					this->PlaySound(player->currentWeapon->reload_sound_name, player->reload_sound_channel_id);
+					player->is_reloading = true;
 
-					if (player->reload_sound_channel_id != -1)
+					if (player->reload_sound_channel_id == -1)
 					{
-						bool isPlaying = false;
-						context->game->Channels->at(player->reload_sound_channel_id)->isPlaying(&isPlaying);
-						if (isPlaying)
+						this->PlaySound(player->currentWeapon->reload_sound_name, player->reload_sound_channel_id);
+
+						if (player->reload_sound_channel_id != -1)
 						{
-							FMOD_VECTOR pos;
-							pos.z = 0;
-							pos.x = player->body->GetPosition().x;
-							pos.y = player->body->GetPosition().y;
-							FMOD_RESULT r = context->game->Channels->at(player->reload_sound_channel_id)->set3DAttributes(&pos, 0, 0);
-							if (r != FMOD_OK)
+							bool isPlaying = false;
+							context->game->Channels->at(player->reload_sound_channel_id)->isPlaying(&isPlaying);
+							if (isPlaying)
 							{
-								std::cout << FMOD_ErrorString(r) << " -\"Reload\" Sound 3D positioning on Handle Event" << std::endl;
+								FMOD_VECTOR pos;
+								pos.z = 0;
+								pos.x = player->body->GetPosition().x;
+								pos.y = player->body->GetPosition().y;
+								FMOD_RESULT r = context->game->Channels->at(player->reload_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+								if (r != FMOD_OK)
+								{
+									std::cout << FMOD_ErrorString(r) << " -\"Reload\" Sound 3D positioning on Handle Event" << std::endl;
+								}
 							}
 						}
 					}
@@ -2128,7 +2158,47 @@ public:
 
 				if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_KNIFE)
 				{
+					//knifes hit is made by shooting projectile in the direction of the attack
+					//that's the sipliest way of doing that
+					
+					player->is_shooting = true;
 
+					sf::Transform tr;
+					tr.rotate(player->RotationAngle, 0, 0);
+
+					sf::Vector2f pointPos = player->GetChildByName("rifle_shoot_point")->GetObjectPosition();
+					pointPos = tr.transformPoint(pointPos);
+
+					pointPos += sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y);
+					/*diff.x = mousePos.x - pointPos.x;
+					diff.y = mousePos.y - pointPos.y;*/
+
+					//player can only hit few dm(meter/10) in front of him/her-self
+					knife_attack_projectile* bullet = new knife_attack_projectile(sf::Vector2f(0, 0), 5.f, 15.f, 15.0f, player->currentWeapon->projectileSpeed * 10);
+					bullet->owner = player;
+					bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						bullet->projectileOnCollision(object, this->context, "PlayState");
+					};
+					bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						bullet->projectileOnLeftCollision(object, this->context, "PlayState");
+					};
+
+					bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), pointPos/*sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y)*/, this->world, filter);
+					player->Projectiles->push_back(bullet);
+					/*player->currentWeapon->ammoInTheClip -= 1;*/
+
+					int channel_id = -1;
+					PlaySound(player->currentWeapon->shoot_sound_name, channel_id);
+
+					if (channel_id != -1)
+					{
+						if (channel_id != -1)
+						{
+							player->shooting_sound_channel_ids->push_back(channel_id);
+						}
+					}
 				}
 				if (!player->is_reloading)
 				{
