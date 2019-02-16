@@ -1420,7 +1420,7 @@ public:
 
 					z->spritesAnimations->addAnimation(zombie1_attack);
 
-					/*z->addRelation({ RelationType::Enemy ,Player::Type() });*/
+					z->addRelation({ RelationType::Noone ,npc_zombie::Type() });
 					z->Init();
 					z->SetAnimation("skeleton_attack");
 
@@ -2190,7 +2190,8 @@ public:
 					/*player->currentWeapon->ammoInTheClip -= 1;*/
 
 					int channel_id = -1;
-					PlaySound(player->currentWeapon->shoot_sound_name, channel_id);
+					int num = m_get_random_number(1, 3);
+					PlaySound(player->currentWeapon->shoot_sound_name + std::to_string(num), channel_id);
 
 					if (channel_id != -1)
 					{
