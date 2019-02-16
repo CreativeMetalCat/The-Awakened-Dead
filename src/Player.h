@@ -193,6 +193,36 @@ public:
 
 				//}
 			}
+			if (currentWeapon->weaponType == WEAPON_TYPE_TAD_KNIFE)
+			{
+				/*if (body->GetLinearVelocity().x > 0 || body->GetLinearVelocity().y > 0)
+				{*/
+				if (this->is_reloading)
+				{
+					SetAnimation("solder_knife_idle");
+				}
+				else if (is_shooting)
+				{
+					if (this->spritesAnimations->getAnimationByName("solder_knife_attack")->GetCurrentFrameIndex() >= this->spritesAnimations->getAnimationByName("solder_knife_attack")->Sprites->size()-1)
+					{
+						this->spritesAnimations->getAnimationByName("solder_knife_attack")->SetFrame(0);
+					}
+					SetAnimation("solder_knife_attack");
+				}
+				else
+				{
+					if (body->GetLinearVelocity().x > 0 || body->GetLinearVelocity().y > 0)
+					{
+						SetAnimation("solder_knife_move");
+					}
+					else
+					{
+						SetAnimation("solder_knife_idle");
+					}
+				}
+
+				//}
+			}
 			if (currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
 			{
 
@@ -347,6 +377,8 @@ public:
 		this->AttachChild(new PointObject(sf::Vector2f(70, 20),"rifle_shoot_point"));
 		this->AttachChild(new PointObject(sf::Vector2f(140, 70), "pistol_shoot_point"));
 
+		sf::Vector2f scale = { 1,1 };
+
 		if (!spritesAnimations->animations->empty())
 		{
 			for (size_t in = 0; in < spritesAnimations->animations->size(); in++)
@@ -355,9 +387,11 @@ public:
 				{
 					for (size_t i = 0; i < spritesAnimations->animations->at(in)->Sprites->size(); i++)
 					{
-						sf::Vector2f scale;
-						scale.x = collision.width / spritesAnimations->animations->at(in)->Sprites->at(i).getTexture()->getSize().x;
-						scale.y = collision.height / spritesAnimations->animations->at(in)->Sprites->at(i).getTexture()->getSize().y;
+						if (!spritesAnimations->animations->at(in)->ForceScale)
+						{
+							scale.x = collision.width / spritesAnimations->animations->at(in)->Sprites->at(i).getTexture()->getSize().x;
+							scale.y = collision.height / spritesAnimations->animations->at(in)->Sprites->at(i).getTexture()->getSize().y;
+						}
 
 						spritesAnimations->animations->at(in)->Sprites->at(i).setRotation(RotationAngle);
 						spritesAnimations->animations->at(in)->Sprites->at(i).setScale(scale);
