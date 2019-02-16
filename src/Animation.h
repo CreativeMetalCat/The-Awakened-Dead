@@ -160,6 +160,9 @@ namespace Animation
 		//index of current frame
 		int FrameIndex = 0;
 	public:
+		//used by other objects
+		bool ForceScale = false;
+
 		const int GetCurrentFrameIndex() { return FrameIndex; }
 		//name of the animation
 		//Neccessary for SpritesAnimationContainer
@@ -296,13 +299,13 @@ namespace Animation
 		std::vector<SpritesAnimation*>*animations = new std::vector<SpritesAnimation*>();
 
 		size_t AnimIndex = 0;
-		void addAnimation(SpritesAnimation*&anim)
+		void addAnimation(SpritesAnimation*anim)
 		{
 			animations->push_back(anim);
 		}
 		SpritesAnimation*getAnimationByName(std::string name)
 		{
-			if (name != "")
+			if (name == "")
 			{
 				throw(std::runtime_error("Name is empty"));
 			}
