@@ -2174,7 +2174,7 @@ public:
 					diff.y = mousePos.y - pointPos.y;*/
 
 					//player can only hit few dm(meter/10) in front of him/her-self
-					knife_attack_projectile* bullet = new knife_attack_projectile(sf::Vector2f(0, 0), 5.f, 15.f, 15.0f, player->currentWeapon->projectileSpeed * 10);
+					knife_attack_projectile* bullet = new knife_attack_projectile(sf::Vector2f(0, 0), 15.f, 15.f, 5.0f, player->currentWeapon->projectileSpeed * 10);
 					bullet->owner = player;
 					bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 					{
@@ -2198,6 +2198,21 @@ public:
 						if (channel_id != -1)
 						{
 							player->shooting_sound_channel_ids->push_back(channel_id);
+
+							bool isPlaying = false;
+
+							if (context->game->Channels->at(channel_id) != NULL)
+							{
+								context->game->Channels->at(channel_id)->isPlaying(&isPlaying);
+								if (isPlaying)
+								{
+									FMOD_VECTOR pos;
+									pos.z = 0;
+									pos.x = player->body->GetPosition().x;
+									pos.y = player->body->GetPosition().y;
+									context->game->Channels->at(channel_id)->set3DAttributes(&pos, 0);
+								}
+							}
 						}
 					}
 				}
@@ -2249,6 +2264,21 @@ public:
 									if (channel_id != -1)
 									{
 										player->shooting_sound_channel_ids->push_back(channel_id);
+
+										bool isPlaying = false;
+
+										if (context->game->Channels->at(channel_id) != NULL)
+										{
+											context->game->Channels->at(channel_id)->isPlaying(&isPlaying);
+											if (isPlaying)
+											{
+												FMOD_VECTOR pos;
+												pos.z = 0;
+												pos.x = player->body->GetPosition().x;
+												pos.y = player->body->GetPosition().y;
+												context->game->Channels->at(channel_id)->set3DAttributes(&pos, 0);
+											}
+										}
 									}
 								}
 
@@ -2301,6 +2331,21 @@ public:
 								if (channel_id != -1)
 								{
 									player->shooting_sound_channel_ids->push_back(channel_id);
+
+									bool isPlaying = false;
+
+									if (context->game->Channels->at(channel_id) != NULL)
+									{
+										context->game->Channels->at(channel_id)->isPlaying(&isPlaying);
+										if (isPlaying)
+										{
+											FMOD_VECTOR pos;
+											pos.z = 0;
+											pos.x = player->body->GetPosition().x;
+											pos.y = player->body->GetPosition().y;
+											context->game->Channels->at(channel_id)->set3DAttributes(&pos, 0);
+										}
+									}
 								}
 							}
 						}
@@ -2584,6 +2629,21 @@ public:
 							else
 							{
 								this->PlaySound(player->currentWeapon->reload_sound_name, player->reload_sound_channel_id);
+
+								bool isPlaying = false;
+								context->game->Channels->at(player->reload_sound_channel_id)->isPlaying(&isPlaying);
+								if (isPlaying)
+								{
+									FMOD_VECTOR pos;
+									pos.z = 0;
+									pos.x = player->body->GetPosition().x;
+									pos.y = player->body->GetPosition().y;
+									FMOD_RESULT r = context->game->Channels->at(player->reload_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+									if (r != FMOD_OK)
+									{
+										std::cout << FMOD_ErrorString(r) << " -\"Reload\" Sound 3D positioning on Update" << std::endl;
+									}
+								}
 							}
 							
 							
@@ -2611,7 +2671,7 @@ public:
 					FMOD_VECTOR pos;
 					pos.z = 0;
 					pos.x = player->body->GetPosition().x;
-					pos.y = -player->body->GetPosition().y;
+					pos.y = player->body->GetPosition().y;
 					FMOD_RESULT r = context->game->Channels->at(player->reload_sound_channel_id)->set3DAttributes(&pos, 0, 0);
 					if (r != FMOD_OK)
 					{
