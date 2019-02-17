@@ -2767,7 +2767,8 @@ public:
 		this->finishDestoy();
 		if (!StateObjects->empty())
 		{
-			for (size_t i = 0; i < StateObjects->size(); i++)
+			size_t objAmount = StateObjects->size();
+			for (size_t i = 0; i < objAmount; i++)
 			{
 				if (this->StateObjects->at(i)->physBodyInitialized)
 				{
@@ -2832,18 +2833,26 @@ public:
 
 				}
 
-				if (Decal*d = dynamic_cast<Decal*>(StateObjects->at(i)))
+				else if (Decal*d = dynamic_cast<Decal*>(StateObjects->at(i)))
 				{
 					if (d->IsDone())
 					{
 						if (std::find(StateObjects->begin(), StateObjects->end(), StateObjects->at(i)) != StateObjects->end())
 						{
 							StateObjects->erase(std::find(StateObjects->begin(), StateObjects->end(), StateObjects->at(i)));
+							if (objAmount > 0)
+							{
+								objAmount--;
+							}
+							else
+							{
+								break;
+							}
 						}
 					}
 				}
 
-				if (SoundSourceObject*sso = dynamic_cast<SoundSourceObject*>(StateObjects->at(i)))
+				else if (SoundSourceObject*sso = dynamic_cast<SoundSourceObject*>(StateObjects->at(i)))
 				{
 					if (sso->sound_is_active)
 					{
@@ -2892,7 +2901,7 @@ public:
 					}
 				}
 
-				if (npc_zombie_base*nz = dynamic_cast<npc_zombie_base*>(StateObjects->at(i)))
+				else if (npc_zombie_base*nz = dynamic_cast<npc_zombie_base*>(StateObjects->at(i)))
 				{
 					if (nz->isDead())
 					{
@@ -3260,6 +3269,8 @@ filename = name + std::to_string(m_get_random_number(1, 4));
 						}
 					}
 				}
+
+				if (i >= objAmount) { break; }
 			}
 		}
 		

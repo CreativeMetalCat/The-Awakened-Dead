@@ -109,44 +109,48 @@ public:
 
 	void Update(sf::Time dt) override
 	{
-		if (body != nullptr)
+		if (!mShouldBeDead)
 		{
-			if (!_impulseApplied)
+			if (body != nullptr)
 			{
-
-				b2Vec2 imp = b2Vec2(_impulse.x*dt.asMilliseconds(), _impulse.y*dt.asMilliseconds());
-				/*b2Vec2 p = body->GetWorldPoint(body->GetPosition());*/
-				body->ApplyLinearImpulse(imp, body->GetPosition(), true);
-				_impulseApplied = true;
-			}
-			if (!_velocitySet)
-			{
-				body->SetLinearVelocity(b2Vec2(_velocity));
-				_velocitySet = true;
-			}
-
-			this->Anim->sprite.setPosition(sf::Vector2f(body->GetPosition().x, body->GetPosition().y));
-		}
-
-		if (mLifeTime != -1.f)
-		{
-			mLivedTime += dt.asSeconds();
-			if (mLivedTime >= mLifeTime)
-			{
-				mShouldBeDead = true;
-			}
-		}
-		if (!animations->empty())
-		{
-			Anim->Time += dt.asSeconds();
-			if (Anim->Time >= Anim->FrameDuration)
-			{
-				Anim->SetFrame(animations->at(animIndex).FrameIndexes->at(animations->at(animIndex).CurrentFrameIndex).ColumnIndex, animations->at(animIndex).FrameIndexes->at(animations->at(animIndex).CurrentFrameIndex).StripIndex);
-				Anim->Time = 0;
-				animations->at(animIndex).CurrentFrameIndex++;
-				if ((animations->at(animIndex).CurrentFrameIndex > animations->at(animIndex).FrameIndexes->size() - 1) && Anim->IsRepated)
+				if (!_impulseApplied)
 				{
-					animations->at(animIndex).CurrentFrameIndex = 0;
+
+					b2Vec2 imp = b2Vec2(_impulse.x*dt.asMilliseconds(), _impulse.y*dt.asMilliseconds());
+					/*b2Vec2 p = body->GetWorldPoint(body->GetPosition());*/
+					body->ApplyLinearImpulse(imp, body->GetPosition(), true);
+					_impulseApplied = true;
+				}
+				if (!_velocitySet)
+				{
+					body->SetLinearVelocity(b2Vec2(_velocity));
+					_velocitySet = true;
+				}
+
+				this->Anim->sprite.setPosition(sf::Vector2f(body->GetPosition().x, body->GetPosition().y));
+			}
+
+			if (mLifeTime != -1.f)
+			{
+				mLivedTime += dt.asSeconds();
+				if (mLivedTime >= mLifeTime)
+				{
+					mShouldBeDead = true;
+				}
+			}
+			if (!animations->empty())
+			{
+				Anim->Time += dt.asSeconds();
+				if (Anim->Time >= Anim->FrameDuration)
+				{
+					Anim->SetFrame(animations->at(animIndex).FrameIndexes->at(animations->at(animIndex).CurrentFrameIndex).ColumnIndex, animations->at(animIndex).FrameIndexes->at(animations->at(animIndex).CurrentFrameIndex).StripIndex);
+					Anim->Time = 0;
+					animations->at(animIndex).CurrentFrameIndex++;
+					if ((animations->at(animIndex).CurrentFrameIndex > animations->at(animIndex).FrameIndexes->size() - 1) && Anim->IsRepated)
+					{
+						animations->at(animIndex).CurrentFrameIndex = 0;
+						
+					}
 				}
 			}
 		}
