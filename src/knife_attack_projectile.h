@@ -10,13 +10,33 @@ public:
 
 	}
 
-	void projectileOnCollision(Object*&object, Context*&context, std::string stateName) override
+	void projectileOnCollision(Object*&object, b2Fixture *fixtureA, b2Fixture *fixtureB, Context*&context, std::string stateName) override
 	{
 		if (object == owner)
 		{
 			return;
 		}
-		object->onDamage(20.f, this, context, stateName);
+
+		if (static_cast<projectile*>(fixtureA->GetBody()->GetUserData()) == this)
+		{
+			if (fixtureB->GetUserData() != NULL)
+			{
+				if (static_cast<FixtureData*>(fixtureB->GetUserData())->getActionType() != FixtureActionType::Sense)
+				{
+					object->onDamage(20.f, this, context, stateName);
+				}
+			}
+		}
+		else if (static_cast<projectile*>(fixtureB->GetBody()->GetUserData()) == this)
+		{
+			if (fixtureA->GetUserData() != NULL)
+			{
+				if (static_cast<FixtureData*>(fixtureA->GetUserData())->getActionType() != FixtureActionType::Sense)
+				{
+					object->onDamage(20.f, this, context, stateName);
+				}
+			}
+		}
 
 		if (PropPhysics*pp = dynamic_cast<PropPhysics*>(object))
 		{
