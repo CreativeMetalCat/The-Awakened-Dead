@@ -346,6 +346,9 @@ public:
 								if (cTileIdy > layerMaxHeight) { cTileIdy = 0; }
 							}
 						}
+
+						cTileIdx = 0;
+						cTileIdy = 0;
 					}
 				}
 
@@ -2178,7 +2181,7 @@ public:
 					bullet->owner = player;
 					bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 					{
-						bullet->projectileOnCollision(object, this->context, "PlayState");
+						bullet->projectileOnCollision(object,fixtureA,fixtureB, this->context, "PlayState");
 					};
 					bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 					{
@@ -2245,7 +2248,7 @@ public:
 								bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 								{
 
-									bullet->projectileOnCollision(object, this->context, "PlayState");
+									bullet->projectileOnCollision(object,fixtureA,fixtureB, this->context, "PlayState");
 								};
 								bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 								{
@@ -2312,7 +2315,7 @@ public:
 							bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 							{
 
-								bullet->projectileOnCollision(object, this->context, "PlayState");
+								bullet->projectileOnCollision(object,fixtureA,fixtureB, this->context, "PlayState");
 							};
 							bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 							{
