@@ -59,6 +59,11 @@ namespace GUI
 		virtual void DeActivate() = 0;
 
 		virtual void Draw(sf::RenderWindow*& window) = 0;
+
+		~Component()
+		{
+
+		}
 	};
 
 	class Container
@@ -84,6 +89,17 @@ namespace GUI
 		void SetIsActive(bool flag)
 		{
 
+		}
+
+		~Container()
+		{
+			if (!Components->empty())
+			{
+				for (int i = 0; i < Components->size(); i++)
+				{
+					delete Components->at(i);
+				}
+			}
 		}
 	};
 
@@ -121,6 +137,11 @@ namespace GUI
 		void Draw(sf::RenderWindow*& window) override;
 		void Init()override;
 		sf::Vector2<float> GetPosition()override;
+
+		~Label()
+		{
+			
+		}
 	};
 
 	//base class for buttons
