@@ -197,7 +197,7 @@ public:
 		this->TileDataContainer->push_back(tileData);
 	}
 
-	//gets firts resource with this name
+	//gets first resource with this name
 	TextureResource* getTextureResourceDataByName(std::string name)
 	{
 		//name MUST be longer then 0
@@ -218,7 +218,7 @@ public:
 	}
 
 
-	//gets firts resource with this name of that type
+	//gets first resource with this name of that type
 	FontResource* getFontResourceDataByName(std::string name)
 	{
 		//name MUST be longer then 0
@@ -238,7 +238,7 @@ public:
 		}
 	}
 
-	//gets firts resource with this name
+	//gets first resource with this name
 	SoundResource* getSoundResourceDataByName(std::string name)
 	{
 		//name MUST be longer then 0
@@ -258,7 +258,26 @@ public:
 		}
 	}
 
+	//gets first resource with this path
+	//used for checking to prevent multiple loading in the memory of the same file
+	std::string getSoundResourceNameByFilePath(std::string path)
+	{
+		//name MUST be longer then 0
+		if (path == "") { throw(std::runtime_error("path is null (\"\")")); }
 
+		if (SoundData->empty())
+		{
+			throw(std::runtime_error("No resources avalable"));
+		}
+		else
+		{
+			for (size_t i = 0; i < SoundData->size(); i++)
+			{
+				if (SoundData->at(i)->filename == path) { return SoundData->at(i)->name; }
+			}
+			throw(std::runtime_error("Unable to find resorce. Path to file : " + path));
+		}
+	}
 
 	void AddTextureResource(TextureResource*r)
 	{

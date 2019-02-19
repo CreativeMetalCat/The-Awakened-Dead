@@ -486,7 +486,7 @@ public:
 										
 
 										FMOD_RESULT res;
-										res = context->game->lowSoundSystem->createSound(sr->filename.c_str(), FMOD_2D, 0, &sr->sound);
+										res = context->game->lowSoundSystem->createSound(sr->filename.c_str(), FMOD_3D_LINEARROLLOFF, 0, &sr->sound);
 										if (res != FMOD_OK)
 										{
 											std::cout << "Error creating sound. Name: " << sr->name.c_str() << "Filename: " << sr->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
