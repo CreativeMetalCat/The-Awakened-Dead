@@ -29,7 +29,23 @@ protected:
 	int ID = 0;
 public:
 
+	Object* GetObjectByName(std::string name)
+	{
+		if (!StateObjects->empty())
+		{
+			for (size_t i = 0; i < StateObjects->size(); i++)
+			{
+				if (StateObjects->at(i)->name == name) { return StateObjects->at(i); }
+			}
+		}
+		else
+		{
+			return NULL;
+		}
+	}
+
 	std::string current_map = "";
+	bool _map_is_loaded = false;
 
 	bool worldIsPaused = false;
 
@@ -142,7 +158,7 @@ public:
 	//Plays sound using one of the channels
 	virtual void PlaySound(std::string name)
 	{
-
+		
 	}
 
 	
@@ -151,16 +167,23 @@ public:
 	//channel_id - id of channel that was used for this sound 
 	virtual void PlaySound(std::string name, int &channel_id)
 	{
-
+		
 	}
 	//creates physical body for object using given data
 	//Data HAS to be created before calling
 	virtual void CreatePhysicsObject(Object*object, b2BodyDef bodyDef, b2FixtureDef fixture, bool addToStateObjectContainer, float mass = 1.f)
 	{
 
+		b2MassData propMass;
+		propMass.mass = mass;
+		propMass.center = b2Vec2(object->GetObjectRectangle().left + object->GetObjectRectangle().width / 2, object->GetObjectRectangle().top + object->GetObjectRectangle().height / 2);
+
+		world.Step(0, 0, 0);
+
 		object->Init();
 		object->body = world.CreateBody(&bodyDef);
 
+		object->body->SetMassData(&propMass);
 		object->body->CreateFixture(&fixture);
 
 		object->body->SetUserData(object);

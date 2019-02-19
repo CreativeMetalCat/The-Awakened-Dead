@@ -20,6 +20,7 @@
 #include "weapon_pickup_object.h"
 #include "ai_node.h"
 #include "knife_attack_projectile.h"
+#include "trigger_change_level.h"
 
 #ifndef _RANDOM_
 #include <random>
@@ -75,7 +76,7 @@ public:
 
 	
 
-	bool _map_is_loaded = false;
+	
 	int test = 0;
 	int Current_area_id = 0;
 	GUI::Container*PlayerUI = new GUI::Container();
@@ -668,6 +669,52 @@ public:
 									float posY = obj->FindAttribute("y")->FloatValue();
 									this->player->SetObjectPosition(sf::Vector2f(posX, posY));
 								}
+								else if (type == "TriggerChangeLevel")
+								{
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+
+									float width = 0;
+									float height = 0;
+
+									if (obj->FindAttribute("y") != NULL)
+									{
+										width = obj->FindAttribute("width")->FloatValue();
+									}
+									else
+									{
+										width = objData->FindAttribute("width")->FloatValue();
+									}
+									if (obj->FindAttribute("x") != NULL)
+									{
+										height = obj->FindAttribute("height")->FloatValue();
+									}
+									else
+									{
+										height=objData->FindAttribute("height")->FloatValue();
+									}
+									std::string lvl_name = "";
+
+									XMLElement*props = obj->FirstChildElement("properties");
+
+									if (props != NULL)
+									{
+										for (tinyxml2::XMLElement* prop = props->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+										{
+
+											if (prop->FindAttribute("name") != NULL)
+											{
+												std::string f = prop->FindAttribute("name")->Value();
+												if (f == "level_name")
+												{
+													lvl_name = prop->FindAttribute("value")->Value();
+												}
+											}
+										}
+									}
+
+									this->StateObjects->push_back(new TriggerChangeLevel({ posX,posY }, lvl_name + ".tmx", width, height, layer_area_id));
+								}
 								if (type == "npc_zombie")
 								{
 									float posX = obj->FindAttribute("x")->FloatValue();
@@ -697,43 +744,6 @@ public:
 											}
 										}
 									}
-
-									
-									/*z->Init();
-									z->OnCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-									{
-										z->onCollision(object, fixtureA, fixtureB, this->context, "PlayState");
-									};
-
-									z->LeftCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-									{
-										z->leftCollision(object, fixtureA, fixtureB, this->context, "PlayState");
-									};
-
-									Animation::SpritesAnimation*zombie_idle = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_idle");
-									for (int i = 0; i < 17; i++)
-									{
-										zombie_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-idle_" + std::to_string(i))->texture));
-									}
-									z->spritesAnimations->addAnimation(zombie_idle);
-
-									Animation::SpritesAnimation*zombie_move = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_move");
-									for (int i = 0; i < 17; i++)
-									{
-										zombie_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-move_" + std::to_string(i))->texture));
-									}
-									z->spritesAnimations->addAnimation(zombie_move);
-
-									Animation::SpritesAnimation*zombie_attack = new  Animation::SpritesAnimation(true, 0.1f, "skeleton_attack");
-									for (int i = 0; i < 9; i++)
-									{
-										zombie_attack->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-attack_" + std::to_string(i))->texture));
-									}
-									z->spritesAnimations->addAnimation(zombie_attack);
-
-									z->addRelation({ RelationType::Enemy,Player::Type() });
-									z->Init();
-									z->SetAnimation("skeleton_idle");*/
 									this->StateObjects->push_back(new npc_zombie(sf::Vector2f(posX, posY), speed, 100, 100,layer_area_id));
 
 
@@ -1312,6 +1322,39 @@ public:
 						sso->leftCollision(object,fixtureA,fixtureB);
 					};
 
+				}
+				else if (TriggerChangeLevel*tcl = dynamic_cast<TriggerChangeLevel*>(StateObjects->at(i)))
+				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_staticBody;
+
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					StateObjects->at(i)->OnCollision = [this, tcl](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						tcl->onCollision(object, fixtureA, fixtureB,this->context,this->Name);
+					};
+
+					StateObjects->at(i)->LeftCollision = [this, tcl](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						tcl->leftCollision(object, fixtureA, fixtureB);
+					};
 				}
 				else if (trigger_change_area_id* tcai = dynamic_cast<trigger_change_area_id*>(StateObjects->at(i)))
 				{
@@ -2096,6 +2139,14 @@ public:
 		if (event.key.code == sf::Keyboard::I&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			player->AddAmmo({ static_cast<int>(player->currentWeapon->weapon_ammo_type),5 });
+		}
+		if (event.key.code == sf::Keyboard::P&&event.type == sf::Event::EventType::KeyPressed)
+		{
+			std::cout << player->body->GetPosition().x << std::endl;
+			std::cout << player->body->GetPosition().y << std::endl;
+			std::cout<< std::endl;
+			std::cout << this->current_map << std::endl;
+			std::cout << std::endl;
 		}
 		if (event.mouseButton.button == sf::Mouse::Left&&event.type == sf::Event::EventType::MouseButtonPressed)
 		{
