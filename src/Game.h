@@ -189,7 +189,7 @@ public:
 			for (size_t i = 0; i < Resources->SoundData->size(); i++)
 			{
 				FMOD_RESULT res;
-				res = this->lowSoundSystem->createSound(Resources->SoundData->at(i)->filename.c_str(),FMOD_3D_LINEARROLLOFF, 0, &Resources->SoundData->at(i)->sound);
+				res = this->lowSoundSystem->createSound(Resources->SoundData->at(i)->filename.c_str(), Resources->SoundData->at(i)->soundMode, 0, &Resources->SoundData->at(i)->sound);
 				float min = 0;
 				float max = 2000;
 				Resources->SoundData->at(i)->sound->set3DMinMaxDistance(min, max);
@@ -200,7 +200,7 @@ public:
 				}
 				else
 				{
-
+					
 				}
 			}
 		}

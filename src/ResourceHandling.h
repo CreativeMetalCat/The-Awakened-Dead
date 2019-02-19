@@ -115,9 +115,11 @@ private:
 	//sound is created by it
 	void CreateResourceFromFile()override {}
 public:
+
+	FMOD_MODE soundMode = FMOD_2D;
 	FMOD::Sound * sound;
 
-	SoundResource(std::string name, std::string filename, int Type = RESOURCE_SOUND) :Resource(name, filename, Type)
+	SoundResource(std::string name, std::string filename, FMOD_MODE soundMode=FMOD_3D_LINEARROLLOFF, int Type = RESOURCE_SOUND) :Resource(name, filename, Type),soundMode(soundMode)
 	{
 
 	}

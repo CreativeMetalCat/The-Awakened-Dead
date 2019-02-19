@@ -275,7 +275,7 @@ int main(int argc, char** argv)
 {
 	/*sf::RenderWindow renderWindow(sf::VideoMode(640, 480), "Hello SFML");*/
 
-	Game game("SFML", sf::VideoMode(SCREENWIDTH, SCREENHEIGHT));
+	Game game("TAD Engine Tech Demo v.03", sf::VideoMode(SCREENWIDTH, SCREENHEIGHT));
 
 	
 
@@ -356,7 +356,7 @@ int main(int argc, char** argv)
 	w3->ammoInTheClip = 0;
 	w3->inaccuracy = 0.f;
 	w3->bullets_per_shot = 0;
-	w3->shoot_sound_name = "shotgun_fire6";
+	w3->shoot_sound_name = "melee_swing";
 	w3->empty_clip_sound = "shotgun_empty";
 	w3->reload_sound_name = "shotgun_reload1";
 	w3->weapon_ammo_type = AMMO_TYPE_NULL;
@@ -516,7 +516,8 @@ int main(int argc, char** argv)
 	game.Resources->AddTextureResource(new TextureResource("blood_splat_1", "./../textures/blood/blood_splat_1.png", false, false));
 
 	game.Resources->AddTextureResource(new TextureResource("blood_yellow_1", "./../textures/blood/blood_yellow_b_0001.png", false, false));
-	game.Resources->AddTextureResource(new TextureResource("blood_a_anim", "./../textures/blood/blood_a_anim.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("blood_1_anim", "./../textures/blood/blood_1_anim.png", false, false));
+	game.Resources->AddTextureResource(new TextureResource("blood_2_anim", "./../textures/blood/blood_2_anim.png", false, false));
 	game.Resources->AddTextureResource(new TextureResource("solder_rifle", "./../textures/survivor-move_rifle_0.png", false, false));
 	game.Resources->AddTextureResource(new TextureResource("officer_walk", "./../textures/bk_officer/officer_walk_strip.png", false, false));
 	game.Resources->AddTextureResource(new TextureResource("zombie_right_hand", "./../textures/zombie/zombie_right_hand.png", false, false));
@@ -528,10 +529,19 @@ int main(int argc, char** argv)
 	game.Resources->AddTextureResource(new TextureResource("shotgun_ammopack_big", "./../textures/shotgun_ammopack_big.png", false, false));
 	game.Resources->AddTextureResource(new TextureResource("shotgun_ammopack_medium", "./../textures/shotgun_ammopack_medium.png", false, false));
 
+	game.Resources->AddSoundResource(new SoundResource("buttonrollover", "./../sounds/ui/buttonrollover.wav", FMOD_2D));
+	game.Resources->AddSoundResource(new SoundResource("buttonclick", "./../sounds/ui/buttonclick.wav",FMOD_2D));
+	game.Resources->AddSoundResource(new SoundResource("buttonclickrelease", "./../sounds/ui/buttonclickrelease.wav", FMOD_2D));
+
 	game.Resources->AddSoundResource(new SoundResource("ambience_base", "./../sounds/ambience_base.wav"));
+	
 	game.Resources->AddSoundResource(new SoundResource("pistol_fire2", "./../sounds/weapons/pistol/pistol_fire2.wav"));
 	game.Resources->AddSoundResource(new SoundResource("rifle_single1", "./../sounds/weapons/m4/single1.wav"));
 	game.Resources->AddSoundResource(new SoundResource("shotgun_fire6", "./../sounds/weapons/shotgun/shotgun_fire6.wav"));
+
+	game.Resources->AddSoundResource(new SoundResource("melee_swing1", "./../sounds/weapons/crowbar/melee_miss1.wav"));
+	game.Resources->AddSoundResource(new SoundResource("melee_swing2", "./../sounds/weapons/crowbar/melee_miss2.wav"));
+	game.Resources->AddSoundResource(new SoundResource("melee_swing3", "./../sounds/weapons/crowbar/melee_miss3.wav"));
 
 	game.Resources->AddSoundResource(new SoundResource("pistol_empty", "./../sounds/weapons/pistol/pistol_empty.wav"));
 	game.Resources->AddSoundResource(new SoundResource("rifle_empty", "./../sounds/weapons/mp5/empty.wav"));
