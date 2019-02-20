@@ -549,4 +549,19 @@ public:
 		}
 		return filename;
 	}
+
+	~Player()
+	{
+		ammoData->clear();
+		delete ammoData;
+
+		weapons->clear();
+		delete weapons;
+
+		Projectiles->clear();
+		delete Projectiles;
+
+		currentAnimation->~SpritesAnimation();
+		spritesAnimations->~SpritesAnimationsContainer();
+	}
 };
