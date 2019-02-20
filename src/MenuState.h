@@ -203,11 +203,12 @@ public:
 	{
 		if (event.type == sf::Event::Closed)
 		{
-			context->window->close();
+			context->game->close();
+			return;
 		}
 		
 
-		if (!map_loading_menu->Components->empty() && map_loading_menu->IsActive)
+		else if (!map_loading_menu->Components->empty() && map_loading_menu->IsActive)
 		{
 			if (event.type == sf::Event::EventType::MouseMoved)
 			{
@@ -458,7 +459,8 @@ public:
 		cursorParticles.update(dt);
 	}
 
-	~MenuState()
+	//can be used instead of ~
+	virtual void release()
 	{
 		if (!StateObjects->empty())
 		{
@@ -470,8 +472,24 @@ public:
 		StateObjects->~vector();
 		delete container;
 		delete map_loading_menu;
-		world.~b2World();
+		/*world.~b2World();*/
 		current_map.~basic_string();
+	}
+
+	~MenuState()
+	{
+		/*if (!StateObjects->empty())
+		{
+			for (size_t i = 0; i < StateObjects->size(); i++)
+			{
+				StateObjects->at(i)->~Object();
+			}
+		}
+		StateObjects->~vector();
+		delete container;
+		delete map_loading_menu;
+		world.~b2World();
+		current_map.~basic_string();*/
 		
 	}
 };
