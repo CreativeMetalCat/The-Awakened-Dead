@@ -398,7 +398,7 @@ public:
 							float height = obj->FindAttribute("height")->FloatValue();
 							this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height,layer_area_id));
 						}
-
+						
 						if (type == "trigger_change_area")
 						{
 							float posX = obj->FindAttribute("x")->FloatValue();
@@ -597,6 +597,7 @@ public:
 						XMLElement*objData = root->FirstChildElement("object");
 						if (objData != NULL)
 						{
+						
 							if (objData->FindAttribute("type") != NULL)
 							{
 								std::string type = objData->FindAttribute("type")->Value();
@@ -715,6 +716,63 @@ public:
 									}
 
 									this->StateObjects->push_back(new TriggerChangeLevel({ posX,posY }, lvl_name + ".tmx", width, height, layer_area_id));
+								}
+								if (type == "AmmoObject")
+								{
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+
+									float width = 0;
+									float height = 0;
+
+									if (obj->FindAttribute("width") == NULL)
+									{
+										width = objData->FindAttribute("width")->FloatValue();
+									}
+									else
+									{
+										width = obj->FindAttribute("width")->FloatValue();
+									}
+
+									if (obj->FindAttribute("height") == NULL)
+									{
+										height = objData->FindAttribute("height")->FloatValue();
+									}
+									else
+									{
+										height = obj->FindAttribute("height")->FloatValue();
+									}
+
+									XMLElement*props = objData->FirstChildElement("properties");
+
+									int ammoType = 0;
+									int Amount = 0;
+									std::string next_name = "";
+
+									if (props != NULL)
+									{
+										for (tinyxml2::XMLElement* prop = props->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+										{
+
+											if (prop->FindAttribute("name") != NULL)
+											{
+												std::string f = prop->FindAttribute("name")->Value();
+												if (f == "Ammo_Type")
+												{
+													ammoType = prop->FindAttribute("value")->IntValue();
+												}
+												if (f == "Amount")
+												{
+													Amount = prop->FindAttribute("value")->IntValue();
+												}
+											}
+										}
+									}
+
+
+
+									this->StateObjects->push_back(new ammo_pickup_object({ ammoType,Amount }, sf::Vector2f(posX, posY), sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture), width, height, layer_area_id));
+
 								}
 								if (type == "npc_zombie")
 								{
@@ -891,9 +949,9 @@ public:
 
 										}
 									}
-									ReverbObject *Reverb = new ReverbObject(sf::Vector3f(posX + width / 2, -posY - height / 2, 0), width, width + width / 10.f, props);
+									ReverbObject *Reverb = new ReverbObject(sf::Vector3f(posX + width / 2, posY + height / 2, 0), width, width + width / 10.f, props);
 									Reverb->createReverb(context->game->lowSoundSystem);
-									reverbs->push_back(Reverb->reverb);
+									reverbs->push_back(Reverb->reverb);									
 								}
 								if (type == "SoundReverb")
 								{
@@ -1183,18 +1241,10 @@ public:
 		filter.categoryBits = 0x1;
 
 
-		ammo_pickup_object*apo = new ammo_pickup_object({ static_cast<int>(AMMO_TYPE_SHOTGUN),8 },sf::Vector2f(0,0), sf::Sprite(context->game->Resources->getTextureResourceDataByName("shotgun_ammopack_big")->texture),32,20, 0);
-		apo->OnCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-		{
-			apo->onCollision(object, fixtureA, fixtureB,this->context,this->Name);
-		};
+		
+		
 
-		apo->LeftCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-		{
-			apo->leftCollision(object, fixtureA, fixtureB, this->context, this->Name);
-		};
-
-		this->StateObjects->push_back(apo);
+		
 
 
 
@@ -1289,7 +1339,6 @@ public:
 				{
 
 				}
-
 				else if (SoundSourceObject*sso = dynamic_cast<SoundSourceObject*>(StateObjects->at(i)))
 				{
 					b2BodyDef def;
@@ -1527,6 +1576,18 @@ public:
 
 					StateObjects->at(i)->physBodyInitialized = true;
 					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+
+					apo->OnCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						apo->onCollision(object, fixtureA, fixtureB, this->context, this->Name);
+					};
+
+					apo->LeftCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						apo->leftCollision(object, fixtureA, fixtureB, this->context, this->Name);
+					};
+
 
 					StateObjects->at(i)->Init();
 				}
@@ -3364,6 +3425,15 @@ filename = name + std::to_string(m_get_random_number(1, 4));
 				delete StateObjects->at(i);
 			}
 		}
+		/*if (!reverbs->empty())
+		{
+			for (size_t i = 0; i < reverbs->size(); i++)
+			{
+				reverbs->at(i)->release();
+			}
+			reverbs->clear();
+		}*/
+
 		//delete StateObjects;
 		delete player;
 		/*world.~b2World();*/
