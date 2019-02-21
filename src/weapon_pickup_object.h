@@ -47,7 +47,7 @@ public:
 				if (!p->weapons->empty())
 				{
 					//check if player already has weapon of this type
-					for (size_t i = 0; i < i < p->weapons->size(); i++)
+					for (size_t i = 0; i < p->weapons->size(); i++)
 					{
 						if (p->weapons->at(i)->weaponType == this->weapon->weaponType)
 						{
@@ -75,5 +75,17 @@ public:
 		{
 			context->game->GetStateByName(stateName)->objectsToDestroy->push_back(this);
 		}
+	}
+	void Draw(sf::RenderWindow*&window)
+	{
+		window->draw(weapon->sprite);
+	}
+	void Draw(sf::RenderWindow&window)
+	{
+		window.draw(weapon->sprite);
+	}
+	~weapon_pickup_object()
+	{
+		weapon->release();
 	}
 };

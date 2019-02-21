@@ -1069,6 +1069,206 @@ public:
 									float height = objData->FindAttribute("height")->FloatValue();
 									this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height,layer_area_id));
 								}
+								if (type == "WeaponPickupObject")
+								{
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+
+									float width = 0;
+									float height = 0;
+
+									if (obj->FindAttribute("width") != NULL)
+									{
+										width = obj->FindAttribute("width")->FloatValue();
+									}
+									else
+									{
+										width = objData->FindAttribute("width")->FloatValue();
+									}
+									if (obj->FindAttribute("height") != NULL)
+									{
+										height = obj->FindAttribute("height")->FloatValue();
+									}
+									else
+									{
+										height = objData->FindAttribute("height")->FloatValue();
+									}
+									bool forcePick = false;
+									
+									XMLElement*props = objData->FirstChildElement("properties");
+
+									Weapon*w1 = new Weapon("Pistol", 1.2f, 15.f);
+									w1->weaponType = WEAPON_TYPE_NONE;
+									w1->ammoPerClip = 0;
+									w1->ammoInTheClip = 0;
+									w1->projectile_texture_name = "proj";
+									w1->shoot_sound_name = "pistol_fire2";
+									w1->empty_clip_sound = "pistol_empty";
+									w1->weapon_ammo_type = AMMO_TYPE_NULL;
+									w1->sprite = sf::Sprite();
+									w1->reload_sound_name = "pistol_reload";
+
+									std::string ShootSoundPath = "";
+									std::string ReloadSoundPath = "";
+									std::string EmptySoundPath = "";
+
+									for (tinyxml2::XMLElement* prop = props->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+									{
+
+										if (prop->FindAttribute("name") != NULL)
+										{
+											std::string f = prop->FindAttribute("name")->Value();
+											if (f == "AmmoInTheClip")
+											{
+												w1->ammoInTheClip = prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "AmmoPerClip")
+											{
+												w1->ammoPerClip = prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "AmmoType")
+											{
+												w1->weapon_ammo_type = prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "ProjectileSpeed")
+											{
+												w1->projectileSpeed = prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "ProjectileDamage")
+											{
+												w1->projectileDamage = prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "WeaponType")
+											{
+												w1->weaponType = prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "ForceToPickup")
+											{
+												forcePick = prop->FindAttribute("value")->BoolValue();
+											}
+											if (f == "Name")
+											{
+												w1->name = prop->FindAttribute("value")->Value();
+											}
+											if (f == "EmptySoundName")
+											{
+												w1->empty_clip_sound = prop->FindAttribute("value")->Value();;
+											}
+											if (f == "ShootSoundName")
+											{
+												w1->shoot_sound_name = prop->FindAttribute("value")->Value();;
+											}
+											if (f == "ReloadSoundName")
+											{
+												w1->reload_sound_name = prop->FindAttribute("value")->Value();;
+											}
+											if (f == "EmptySound")
+											{
+												EmptySoundPath = prop->FindAttribute("value")->Value();;
+											}
+											if (f == "ShootSound")
+											{
+												ShootSoundPath = prop->FindAttribute("value")->Value();;
+											}
+											if (f == "ReloadSound")
+											{
+												ReloadSoundPath = prop->FindAttribute("value")->Value();;
+											}
+										}
+									}
+
+									if (w1->empty_clip_sound != "")
+									{
+										try
+										{
+											context->game->Resources->getSoundResourceDataByName(w1->empty_clip_sound);
+										}
+										catch (std::runtime_error e)
+										{
+											if (w1->empty_clip_sound != "")
+											{
+
+												SoundResource* sr = new SoundResource(w1->empty_clip_sound, "./" + EmptySoundPath);
+
+
+
+												FMOD_RESULT res;
+												res = context->game->lowSoundSystem->createSound(sr->filename.c_str(), FMOD_3D_LINEARROLLOFF, 0, &sr->sound);
+												if (res != FMOD_OK)
+												{
+													std::cout << "Error creating sound. Name: " << sr->name.c_str() << "Filename: " << sr->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
+												}
+												else
+												{
+													context->game->Resources->AddSoundResource(sr);
+												}
+											}
+										}
+
+									}
+
+									if (w1->reload_sound_name != "")
+									{
+										try
+										{
+											context->game->Resources->getSoundResourceDataByName(w1->reload_sound_name);
+										}
+										catch (std::runtime_error e)
+										{
+											if (w1->reload_sound_name != "")
+											{
+
+												SoundResource* sr = new SoundResource(w1->reload_sound_name, "./" + ReloadSoundPath);
+
+
+
+												FMOD_RESULT res;
+												res = context->game->lowSoundSystem->createSound(sr->filename.c_str(), FMOD_3D_LINEARROLLOFF, 0, &sr->sound);
+												if (res != FMOD_OK)
+												{
+													std::cout << "Error creating sound. Name: " << sr->name.c_str() << "Filename: " << sr->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
+												}
+												else
+												{
+													context->game->Resources->AddSoundResource(sr);
+												}
+											}
+										}
+
+									}
+
+									if (w1->shoot_sound_name != "")
+									{
+										try
+										{
+											context->game->Resources->getSoundResourceDataByName(w1->shoot_sound_name);
+										}
+										catch (std::runtime_error e)
+										{
+											if (w1->shoot_sound_name != "")
+											{
+
+												SoundResource* sr = new SoundResource(w1->shoot_sound_name, "./" + ShootSoundPath);
+
+
+
+												FMOD_RESULT res;
+												res = context->game->lowSoundSystem->createSound(sr->filename.c_str(), FMOD_3D_LINEARROLLOFF, 0, &sr->sound);
+												if (res != FMOD_OK)
+												{
+													std::cout << "Error creating sound. Name: " << sr->name.c_str() << "Filename: " << sr->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
+												}
+												else
+												{
+													context->game->Resources->AddSoundResource(sr);
+												}
+											}
+										}
+
+									}
+
+									this->StateObjects->push_back(new weapon_pickup_object(w1, sf::Vector2f(posX, posY), sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture), width, height, forcePick, layer_area_id));
+								}
 								if (type == "PropPhysics")
 								{
 									float posX = obj->FindAttribute("x")->FloatValue();
@@ -1259,18 +1459,9 @@ public:
 		w1->sprite = sf::Sprite();
 		w1->reload_sound_name = "pistol_reload";
 
-		weapon_pickup_object*wpo= new weapon_pickup_object(w1, sf::Vector2f(100, 100), sf::Sprite(), 50, 10,true,0);
-		wpo->OnCollision = [this, wpo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-		{
-			wpo->onCollision(object, fixtureA, fixtureB, this->context, this->Name);
-		};
-
-		wpo->LeftCollision = [this, wpo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-		{
-			wpo->leftCollision(object, fixtureA, fixtureB, this->context, this->Name);
-		};
-
-		this->StateObjects->push_back(wpo);
+		/*weapon_pickup_object*wpo= new weapon_pickup_object(w1, sf::Vector2f(100, 100), sf::Sprite(), 50, 10,true,0);
+		
+		this->StateObjects->push_back(wpo);*/
 
 		if (!StateObjects->empty())
 		{
@@ -1592,7 +1783,7 @@ public:
 					StateObjects->at(i)->Init();
 				}
 
-				else if (weapon_pickup_object*apo = dynamic_cast<weapon_pickup_object*>(StateObjects->at(i)))
+				else if (weapon_pickup_object*wpo = dynamic_cast<weapon_pickup_object*>(StateObjects->at(i)))
 				{
 					b2BodyDef def;
 					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
@@ -1614,6 +1805,17 @@ public:
 
 					StateObjects->at(i)->physBodyInitialized = true;
 					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					wpo->OnCollision = [this, wpo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						wpo->onCollision(object, fixtureA, fixtureB, this->context, this->Name);
+					};
+
+					wpo->LeftCollision = [this, wpo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						wpo->leftCollision(object, fixtureA, fixtureB, this->context, this->Name);
+					};
+
 
 					StateObjects->at(i)->Init();
 				}
@@ -2289,7 +2491,7 @@ public:
 					pointPos += sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y);
 					/*diff.x = mousePos.x - pointPos.x;
 					diff.y = mousePos.y - pointPos.y;*/
-
+					
 					//player can only hit few dm(meter/10) in front of him/her-self
 					knife_attack_projectile* bullet = new knife_attack_projectile(sf::Vector2f(0, 0), 15.f, 15.f, 5.0f, player->currentWeapon->projectileSpeed * 10);
 					bullet->owner = player;
@@ -2332,8 +2534,10 @@ public:
 							}
 						}
 					}
+
+					
 				}
-				if (!player->is_reloading)
+				else if (!player->is_reloading)
 				{
 					player->is_shooting = true;
 					if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
@@ -2469,6 +2673,7 @@ public:
 					}
 
 				}
+				int k = 0;
 			}
 		}
 		else if (event.mouseButton.button == sf::Mouse::Right&&event.type == sf::Event::EventType::MouseButtonPressed)
@@ -2599,7 +2804,7 @@ public:
 
 		}
 
-
+		
 
 	}
 
@@ -2854,8 +3059,27 @@ public:
 
 		if (player->currentWeapon != NULL)
 		{
-			dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("ammo_in_clip"))->text.setString(std::to_string(player->currentWeapon->ammoInTheClip)+"/");
-			dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("clips"))->text.setString(std::to_string(player->currentWeapon->clips));
+			if (player->currentWeapon->weaponType != WEAPON_TYPE_TAD_KNIFE)
+			{
+				PlayerUI->GetComponentByName("ammo_in_clip")->IsVisible = true;
+				PlayerUI->GetComponentByName("clips")->IsVisible = true;
+
+				if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
+				{
+					dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("ammo_in_clip"))->text.setString(std::to_string(player->currentWeapon->ammoInTheClip) + "/");
+					dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("clips"))->text.setString(std::to_string(player->currentWeapon->clips));
+				}
+				else
+				{
+					dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("ammo_in_clip"))->text.setString(std::to_string(player->currentWeapon->ammoInTheClip) + "/");
+					dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("clips"))->text.setString(std::to_string(player->currentWeapon->clips*player->currentWeapon->ammoPerClip));
+				}
+			}
+			else
+			{
+				PlayerUI->GetComponentByName("ammo_in_clip")->IsVisible = false;
+				PlayerUI->GetComponentByName("clips")->IsVisible = false;
+			}
 		}
 		
 		if (!PlayerUI->Components->empty())
