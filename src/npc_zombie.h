@@ -55,8 +55,8 @@ public:
 
 	
 
-	//body used for attacking
-	b2Body* attackBody;
+	////body used for attacking
+	//b2Body* attackBody;
 
 	//test object 
 	//object that npc will follow
@@ -152,7 +152,8 @@ public:
 			blood_anim.FrameIndexes->push_back(Animation::CellIndex(0, 4));
 			blood_anim.FrameIndexes->push_back(Animation::CellIndex(0, 5));
 
-			Decal*blood = new Decal(sf::Vector2f(object->body->GetPosition().x, object->body->GetPosition().y), 0.05f, true, 0.3f, 512, 512, sf::Sprite(context->game->Resources->getTextureResourceDataByName("blood_a_anim")->texture), 150, 100);
+			
+			Decal*blood = new Decal(sf::Vector2f(object->body->GetPosition().x, object->body->GetPosition().y), 0.05f, true, 0.3f, 512, 512, sf::Sprite(context->game->Resources->getTextureResourceDataByName("blood_" + std::to_string(m_get_random_number(1, 2)) + "_anim")->texture), 150, 100);
 			blood->animations->push_back(blood_anim);
 			blood->SetAnimation("blood_spray");
 			
@@ -161,7 +162,7 @@ public:
 			diff.x = object->GetObjectPosition().x - this->GetObjectPosition().x;
 			diff.y = object->GetObjectPosition().y - this->GetObjectPosition().x;
 
-			blood->SetObjectRotation((atan2(diff.y, diff.x)*(180 / M_PI)));
+			blood->SetObjectRotation(-(atan2(diff.y, diff.x)*(180 / M_PI)));
 			blood->Init();
 			context->game->GetStateByName(stateName)->StateObjects->push_back(blood);
 		}
@@ -645,4 +646,11 @@ public:
 
 	
 	}
+
+	~npc_zombie()
+	{
+		currentAnimation->~SpritesAnimation();
+		spritesAnimations->~SpritesAnimationsContainer();
+	}
+
 };

@@ -36,6 +36,18 @@ public:
 	Resource(std::string name, std::string filename, int Type = RESOURCE_NULL) { this->name = name; this->filename = filename; this->fileExtension = fileExtension; this->Type = Type; }
 	//fileExt - file extension
 	virtual void CreateResourceFromFile() {};
+
+	~Resource()
+	{
+		name.~basic_string();
+		filename.~basic_string();
+	}
+
+	virtual void release()
+	{
+		name.~basic_string();
+		filename.~basic_string();
+	}
 };
 
 
@@ -88,6 +100,14 @@ public:
 	~TextureResource()
 	{
 		texture.~Texture();
+
+		this->name.~basic_string();
+	}
+
+	void release()override
+	{
+		texture.~Texture();
+
 		this->name.~basic_string();
 	}
 };
@@ -123,6 +143,21 @@ public:
 	{
 
 	}
+
+	~SoundResource()
+	{
+		/*sound->release();
+		delete sound;*/
+	}
+
+	void release()override
+	{
+		;
+		FMOD_RESULT r = sound->release();
+		
+		soundMode = NULL;
+		;
+	}
 };
 
 class TileData
@@ -141,7 +176,7 @@ class ResourceContainer
 {
 private:
 	//gets firts resource with this name of that type
-	Resource* getResourceDataByName(std::string name, int Type)
+	/*Resource* getResourceDataByName(std::string name, int Type)
 	{
 		//name MUST be longer then 0
 		if (name == "") { throw(std::runtime_error("Texture name is null (\"\")")); }
@@ -158,10 +193,10 @@ private:
 			}
 			throw(std::runtime_error("Unable to find resorce"));
 		}
-	}
+	}*/
 protected:
 	//all data for vector specific operations
-	std::vector<Resource*>*ResourceData = new std::vector<Resource*>();
+	//std::vector<Resource*>*ResourceData = new std::vector<Resource*>();
 public:
 	std::vector<TextureResource*>*TextureData = new std::vector<TextureResource*>();
 	std::vector<FontResource*>*FontData = new std::vector<FontResource*>();
@@ -169,13 +204,13 @@ public:
 
 	std::vector<TileData>*TileDataContainer = new std::vector<TileData>();
 
-	void addAnimationData(Resource* textureResource) { ResourceData->push_back(textureResource); }
+	//void addAnimationData(Resource* textureResource) { ResourceData->push_back(textureResource); }
 
 	TileData getTileDataById(int id)
 	{
 		if (!TileDataContainer->empty())
 		{
-			for (size_t i = 0;i < TileDataContainer->size(); i++)
+			for (size_t i = 0; i < TileDataContainer->size(); i++)
 			{
 				if (TileDataContainer->at(i).ResourceId == id)
 				{
@@ -312,5 +347,43 @@ public:
 
 	}
 
+	~ResourceContainer()
+	{
+		
+	}
 
+	virtual void releaseResources()
+	{
+		if (!FontData->empty())
+		{
+			for (size_t i = 0; i < FontData->size(); i++)
+			{
+				FontData->at(i)->release();
+			}
+		}
+		delete FontData;
+
+		if (!SoundData->empty())
+		{
+			for (size_t i = 0; i < SoundData->size(); i++)
+			{
+				SoundData->at(i)->release();
+			}
+		}
+		delete SoundData;
+
+		if (!TextureData->empty())
+		{
+			for (size_t i = 0; i < TextureData->size(); i++)
+			{
+				TextureData->at(i)->release();
+			}
+		}
+		delete TextureData;
+
+		
+
+
+		delete TileDataContainer;
+	}
 };

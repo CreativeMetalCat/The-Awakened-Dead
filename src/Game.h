@@ -11,6 +11,8 @@
 //class that manages work of the game's bones and musles
 class Game
 {
+private:
+	
 protected:
 	void ProccessEvents()
 	{
@@ -84,6 +86,9 @@ protected:
 
 
 public:
+
+
+	bool isCleared = false;
 
 	//channels used to play sounds
 	std::vector<FMOD::Channel*>*Channels = new std::vector<FMOD::Channel*>(MAX_SOUND_CHANNELS_COUNT);
@@ -333,5 +338,61 @@ public:
 			}
 		}
 		throw(std::range_error("No states with given name: " + name + " were found"));
+	}
+
+	~Game()
+	{
+		if (!isCleared)
+		{
+			Resources->releaseResources();
+
+			lowSoundSystem->release();
+			window.~RenderWindow();
+
+			if (!States->empty())
+			{
+				for (size_t i = 0; i < States->size(); i++)
+				{
+					States->at(i)->release();
+				}
+			}
+			States->clear();
+			/*States->~vector();*/
+
+			isCleared = true;
+		}
+		
+	}
+	virtual void close()
+	{
+		window.close();
+		release();
+		
+	}
+	//cleans-up all resources
+	//Use that after the game cycle is completed
+	//Acts as alternative to ~Game(){...}
+	virtual void release()
+	{
+
+		if (!isCleared)
+		{
+			Resources->releaseResources();
+
+			lowSoundSystem->release();
+			window.~RenderWindow();
+
+			if (!States->empty())
+			{
+				for (size_t i = 0; i < States->size(); i++)
+				{
+					States->at(i)->release();
+				}
+			}
+			States->clear();
+			/*States->~vector();*/
+
+			isCleared = true;
+		}
 	}
 };

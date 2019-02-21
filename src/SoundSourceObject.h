@@ -69,4 +69,12 @@ public:
 			sound_is_active = false;
 		}
 	}
+
+	~SoundSourceObject()
+	{
+		if (sound != NULL)
+		{
+			sound->release();
+		}
+	}
 };

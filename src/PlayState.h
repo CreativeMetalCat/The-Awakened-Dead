@@ -196,6 +196,7 @@ public:
 			{
 				StateObjects->at(i)->body->GetWorld()->DestroyBody(StateObjects->at(i)->body);
 			}
+			delete StateObjects->at(i);
 		}
 
 		StateObjects->clear();
@@ -2102,9 +2103,10 @@ public:
 
 		if (event.type == sf::Event::EventType::Closed)
 		{
-			context->window->close();
+			context->game->close();
+			return;
 		}
-		if (event.key.code == sf::Keyboard::Tab&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::Tab&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			if (!player->weapons->empty())
 			{
@@ -2122,33 +2124,33 @@ public:
 			}
 
 		}
-		if (event.key.code == sf::Keyboard::Num1&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::Num1&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			LoadMap("td_free_tv.tmx");
 		}
-		
-		if (event.key.code == sf::Keyboard::Num2&&event.type == sf::Event::EventType::KeyPressed)
+
+		else if (event.key.code == sf::Keyboard::Num2&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			LoadMap("t_t1.tmx");
 		}
 
-		if (event.key.code == sf::Keyboard::Num3&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::Num3&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			LoadMap("ai_zombie_test.tmx");
 		}
-		if (event.key.code == sf::Keyboard::I&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::I&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			player->AddAmmo({ static_cast<int>(player->currentWeapon->weapon_ammo_type),5 });
 		}
-		if (event.key.code == sf::Keyboard::P&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::P&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			std::cout << player->body->GetPosition().x << std::endl;
 			std::cout << player->body->GetPosition().y << std::endl;
-			std::cout<< std::endl;
+			std::cout << std::endl;
 			std::cout << this->current_map << std::endl;
 			std::cout << std::endl;
 		}
-		if (event.mouseButton.button == sf::Mouse::Left&&event.type == sf::Event::EventType::MouseButtonPressed)
+		else if (event.mouseButton.button == sf::Mouse::Left&&event.type == sf::Event::EventType::MouseButtonPressed)
 		{
 			if (player->items->isActive&&player->items->isEmpty())
 			{
@@ -2161,7 +2163,7 @@ public:
 				}
 			}
 
-			
+
 			this->world;
 			this->context->game->GetStateByName("PlayState")->world;
 			Animation::Animation blood_a = context->game->animationsData->getAnimationDataByName("blood_a");
@@ -2174,7 +2176,7 @@ public:
 			diff.x = mousePos.x - player->GetObjectPosition().x;
 			diff.y = mousePos.y - player->GetObjectPosition().y;
 
-			
+
 
 			if (player->currentWeapon->weaponType != WEAPON_TYPE_TAD_KNIFE)
 			{
@@ -2214,7 +2216,7 @@ public:
 				{
 					//knifes hit is made by shooting projectile in the direction of the attack
 					//that's the sipliest way of doing that
-					
+
 					player->is_shooting = true;
 
 					sf::Transform tr;
@@ -2232,7 +2234,7 @@ public:
 					bullet->owner = player;
 					bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 					{
-						bullet->projectileOnCollision(object,fixtureA,fixtureB, this->context, "PlayState");
+						bullet->projectileOnCollision(object, fixtureA, fixtureB, this->context, "PlayState");
 					};
 					bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 					{
@@ -2299,7 +2301,7 @@ public:
 								bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 								{
 
-									bullet->projectileOnCollision(object,fixtureA,fixtureB, this->context, "PlayState");
+									bullet->projectileOnCollision(object, fixtureA, fixtureB, this->context, "PlayState");
 								};
 								bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 								{
@@ -2350,7 +2352,7 @@ public:
 								break;
 							}
 
-							
+
 							sf::Transform tr;
 							tr.rotate(player->RotationAngle, 0, 0);
 
@@ -2366,7 +2368,7 @@ public:
 							bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 							{
 
-								bullet->projectileOnCollision(object,fixtureA,fixtureB, this->context, "PlayState");
+								bullet->projectileOnCollision(object, fixtureA, fixtureB, this->context, "PlayState");
 							};
 							bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
 							{
@@ -2404,22 +2406,22 @@ public:
 							}
 						}
 					}
-					
+
 				}
 			}
 		}
-		if (event.mouseButton.button == sf::Mouse::Right&&event.type == sf::Event::EventType::MouseButtonPressed)
+		else if (event.mouseButton.button == sf::Mouse::Right&&event.type == sf::Event::EventType::MouseButtonPressed)
 		{
-			
+
 			for (size_t i = 0; i < StateObjects->size(); i++)
 			{
 				if (dynamic_cast<PropPhysics*>(StateObjects->at(i)))
 				{
 					StateObjects->at(i)->applyImpulse(b2Vec2(100, 100));
 				}
-			}		
+			}
 		}
-		if (event.type == sf::Event::EventType::MouseWheelScrolled)
+		else if (event.type == sf::Event::EventType::MouseWheelScrolled)
 		{
 			int wid = player->weapon_id;
 			if ((wid + event.mouseWheel.delta) < 0)
@@ -2437,7 +2439,7 @@ public:
 			}
 
 		}
-		if (event.type == sf::Event::EventType::MouseMoved)
+		else if (event.type == sf::Event::EventType::MouseMoved)
 		{
 			sf::Vector2f mousePos = sf::Vector2f(event.mouseMove.x + player->GetObjectPosition().x - (SCREENWIDTH / 2), event.mouseMove.y + player->GetObjectPosition().y - (SCREENHEIGHT / 2));
 			sf::Vector2f diff;
@@ -2449,42 +2451,42 @@ public:
 		/*	player->Anim->sprite.setRotation((atan2(diff.y, diff.x)*(180 / M_PI)));*/
 			player->RotationAngle = (atan2(diff.y, diff.x)*(180 / M_PI));
 		}
-		if (event.key.code == sf::Keyboard::Left&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::Left&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			WalkLeft = true;
 		}
-		if (event.key.code == sf::Keyboard::Right&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::Right&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			WalkRight = true;
 		}
-		if (event.key.code == sf::Keyboard::Up&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::Up&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			WalkUp = true;
 		}
-		if (event.key.code == sf::Keyboard::Down&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::Down&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			WalkDown = true;
 		}
 
 
-		if (event.key.code == sf::Keyboard::Left&&event.type == sf::Event::EventType::KeyReleased)
+		else if (event.key.code == sf::Keyboard::Left&&event.type == sf::Event::EventType::KeyReleased)
 		{
 			WalkLeft = false;
 		}
-		if (event.key.code == sf::Keyboard::Right&&event.type == sf::Event::EventType::KeyReleased)
+		else if (event.key.code == sf::Keyboard::Right&&event.type == sf::Event::EventType::KeyReleased)
 		{
 			WalkRight = false;
 		}
-		if (event.key.code == sf::Keyboard::Up&&event.type == sf::Event::EventType::KeyReleased)
+		else if (event.key.code == sf::Keyboard::Up&&event.type == sf::Event::EventType::KeyReleased)
 		{
 			WalkUp = false;
 		}
-		if (event.key.code == sf::Keyboard::Down&&event.type == sf::Event::EventType::KeyReleased)
+		else if (event.key.code == sf::Keyboard::Down&&event.type == sf::Event::EventType::KeyReleased)
 		{
 			WalkDown = false;
 		}
 
-		
+
 
 		if (WalkLeft)
 		{
@@ -2502,7 +2504,7 @@ public:
 			}
 
 		}
-		else if (!WalkRight && !WalkLeft)
+		if (!WalkRight && !WalkLeft)
 		{
 			if (player->Velocity.x > 0.f) {
 				player->AddVelocity(sf::Vector2f(-(player->accel), 0.f));
@@ -2807,18 +2809,12 @@ public:
 		view.setSize(SCREENWIDTH, SCREENHEIGHT);
 		view.setCenter(player->GetObjectPosition());;
 		context->window->setView(view);
-		/*CheckPlayerCollision();
-		if (!StateObjects->empty())
-		{
-			for (size_t i = 0; i < StateObjects->size(); i++)
-			{
-				CheckObjectCollision(StateObjects->at(i));
-			}
-		}*/
-		/*dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->Update(dt);
-		dynamic_cast<npc_test_turret*>(StateObjects->at(2))->Update(dt);*/
+	
 		this->Current_area_id = player->area_id;
+
+		//do before updating to avoid pointless updates
 		this->finishDestoy();
+
 		if (!StateObjects->empty())
 		{
 			size_t objAmount = StateObjects->size();
@@ -3327,12 +3323,7 @@ filename = name + std::to_string(m_get_random_number(1, 4));
 				if (i >= objAmount) { break; }
 			}
 		}
-		
-		/*if (dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->dirIndex == dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->Pattern->size() - 1)
-		{
-			cursorParticles.Stop();
-		}*/
-		/*	cursorParticles.setEmitter(dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->GetObjectPosition());*/
+	
 		for (size_t i = 0; i < pixelParticleSystems->size(); i++)
 		{
 			pixelParticleSystems->at(i).update(dt);
@@ -3363,15 +3354,31 @@ filename = name + std::to_string(m_get_random_number(1, 4));
 		}*/
 	}
 
-	~PlayState()
+	//can be used instead of ~
+	virtual void release()
 	{
 		if (!StateObjects->empty())
 		{
 			for (size_t i = 0; i < StateObjects->size(); i++)
 			{
-				StateObjects->at(i)->~Object();
+				delete StateObjects->at(i);
+			}
+		}
+		//delete StateObjects;
+		delete player;
+		/*world.~b2World();*/
+		current_map.~basic_string();
+	}
+	~PlayState()
+	{
+		/*if (!StateObjects->empty())
+		{
+			for (size_t i = 0; i < StateObjects->size(); i++)
+			{
+				delete StateObjects->at(i);
 			}
 		}
 		StateObjects->~vector();
+		delete player;*/
 	}
 };
