@@ -609,6 +609,73 @@ public:
 									gid = objData->FindAttribute("gid")->IntValue();
 								}
 								gid--;
+								if (type == "solid_object")
+								{
+									float width = 0;
+									float height = 0;
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+									if (obj->FindAttribute("width") == NULL)
+									{
+										width = objData->FindAttribute("width")->FloatValue();
+									}
+									else
+									{
+										width = obj->FindAttribute("width")->FloatValue();
+									}
+
+									if (obj->FindAttribute("height") == NULL)
+									{
+										height = objData->FindAttribute("height")->FloatValue();
+									}
+									else
+									{
+										height = obj->FindAttribute("height")->FloatValue();
+									}
+
+									XMLElement*Objprops = obj->FirstChildElement("properties");
+									
+									int mat_type = 47;
+									
+									if (Objprops != NULL)
+									{
+										for (tinyxml2::XMLElement* prop = Objprops->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+										{
+
+											if (prop->FindAttribute("name") != NULL)
+											{
+												std::string f = prop->FindAttribute("name")->Value();
+												if (f == "MaterialType")
+												{
+													mat_type = prop->FindAttribute("value")->IntValue();
+												}
+
+											}
+
+										}
+
+									}
+									else
+									{
+										/*XMLElement*props = objData->FirstChildElement("properties");
+										for (tinyxml2::XMLElement* prop = props->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+										{
+
+											if (prop->FindAttribute("name") != NULL)
+											{
+												std::string f = prop->FindAttribute("name")->Value();
+												if (f == "mat_type")
+												{
+													mat_type = prop->FindAttribute("value")->IntValue();
+												}
+
+											}
+
+										}*/
+									}
+
+									this->StateObjects->push_back(new SolidObject({ posX,posY }, sf::Sprite(), width, height, mat_type, layer_area_id));
+								}
 								if (type == "ai_node")
 								{
 									float width = 0;

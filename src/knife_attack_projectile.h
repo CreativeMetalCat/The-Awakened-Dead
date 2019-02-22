@@ -74,6 +74,42 @@ public:
 
 			this->IsDone = true;
 		}
+		if (SolidObject*pp = dynamic_cast<SolidObject*>(object))
+		{
+			int channel_id = -1;
+
+			if (pp->getMaterialTypeImpactSoundName() != "")
+			{
+				context->game->PlaySound(pp->getMaterialTypeImpactSoundName(), channel_id);
+				if (channel_id != -1)
+				{
+					bool isPlaying = false;
+					context->game->Channels->at(channel_id)->isPlaying(&isPlaying);
+					if (isPlaying)
+					{
+						FMOD_VECTOR pos;
+						pos.z = 0;
+						pos.x = pp->GetObjectPosition().x;
+						pos.y = pp->GetObjectPosition().y;
+
+						context->game->Channels->at(channel_id)->set3DAttributes(&pos, 0);
+					}
+				}
+			}
+
+			//mass1 - mass 2(m=minus)
+			//big name. but that's physics what can i do
+			b2Vec2 m1mm2bythisVelandDividedBym1plusm2 = b2Vec2
+			(
+				((object->body->GetMass() - this->body->GetMass())*object->body->GetLinearVelocity()).x* (object->body->GetMass() + this->body->GetMass()),
+				((object->body->GetMass() - this->body->GetMass())*object->body->GetLinearVelocity()).y* (object->body->GetMass() + this->body->GetMass())
+			);
+			b2Vec2 impulse = object->body->GetMass()*m1mm2bythisVelandDividedBym1plusm2;
+
+			object->applyImpulse(impulse);
+
+			this->IsDone = true;
+		}
 		if (npc_test_turret* ntt = dynamic_cast<npc_test_turret*>(object))
 		{
 			ntt->apllyDamage(1.f, this, context, stateName);
