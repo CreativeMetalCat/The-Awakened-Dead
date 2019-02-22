@@ -104,6 +104,8 @@
 #include "MenuState.h"
 #include "PlayState.h"
 
+#include "weapon_knife.h"
+
 
 #include <iostream>
 #include <vector>
@@ -350,7 +352,7 @@ int main(int argc, char** argv)
 	w2->weapon_ammo_type = AMMO_TYPE_SHOTGUN;
 	w2->sprite = sf::Sprite(letterT->texture);
 
-	Weapon*w3 = new Weapon("Knife", 1.f, 20.f);
+	weapon_knife*w3 = new weapon_knife("Knife", 1.f, 20.f);
 	w3->weaponType = WEAPON_TYPE_TAD_KNIFE;
 	w3->ammoPerClip = 0;
 	w3->ammoInTheClip = 0;
@@ -529,11 +531,14 @@ int main(int argc, char** argv)
 	game.Resources->AddTextureResource(new TextureResource("shotgun_ammopack_big", "./../textures/shotgun_ammopack_big.png", false, false));
 	game.Resources->AddTextureResource(new TextureResource("shotgun_ammopack_medium", "./../textures/shotgun_ammopack_medium.png", false, false));
 
+
+	game.Resources->AddSoundResource(new SoundResource("ambience_base", "./../sounds/ambience_base.wav"));
+
 	game.Resources->AddSoundResource(new SoundResource("buttonrollover", "./../sounds/ui/buttonrollover.wav", FMOD_2D));
 	game.Resources->AddSoundResource(new SoundResource("buttonclick", "./../sounds/ui/buttonclick.wav",FMOD_2D));
 	game.Resources->AddSoundResource(new SoundResource("buttonclickrelease", "./../sounds/ui/buttonclickrelease.wav", FMOD_2D));
 
-	game.Resources->AddSoundResource(new SoundResource("ambience_base", "./../sounds/ambience_base.wav"));
+	
 	
 	game.Resources->AddSoundResource(new SoundResource("pistol_fire2", "./../sounds/weapons/pistol/pistol_fire2.wav"));
 	game.Resources->AddSoundResource(new SoundResource("rifle_single1", "./../sounds/weapons/m4/single1.wav"));
@@ -590,10 +595,62 @@ int main(int argc, char** argv)
 		game.Resources->AddSoundResource(new SoundResource(std::string(MAT_TYPE_PLASTIC_BARREL_IMPACT_BULLET_SOUND_NAME) + std::to_string(i), "./../sounds/physics/plastic/plastic_barrel_impact_bullet" + std::to_string(i) + ".wav"));
 	}
 
+	//metal bullet impacts
+	for (int i = 1; i < 4; i++)
+	{
+		game.Resources->AddSoundResource(new SoundResource(std::string(MAT_TYPE_METAL_IMPACT_BULLET_SOUND_NAME) + std::to_string(i), "./../sounds/physics/metal/metal_solid_impact_bullet" + std::to_string(i) + ".wav"));
+	}
 
+	for (int i = 1; i < 3; i++)
+	{
+		game.Resources->AddSoundResource(new SoundResource(std::string(MAT_TYPE_METAL_SHEET_IMPACT_BULLET_SOUND_NAME) + std::to_string(i), "./../sounds/physics/metal/metal_sheet_impact_bullet" + std::to_string(i) + ".wav"));
+	}
+
+	for (int i = 1; i < 4; i++)
+	{
+		game.Resources->AddSoundResource(new SoundResource(std::string(MAT_TYPE_METAL_COMPUTER_IMPACT_BULLET_SOUND_NAME) + std::to_string(i), "./../sounds/physics/metal/metal_computer_impact_bullet" + std::to_string(i) + ".wav"));
+	}
+
+	for (int i = 1; i < 4; i++)
+	{
+		game.Resources->AddSoundResource(new SoundResource(std::string(MAT_TYPE_METAL_BOX_IMPACT_BULLET_SOUND_NAME) + std::to_string(i), "./../sounds/physics/metal/metal_box_impact_bullet" + std::to_string(i) + ".wav"));
+	}
+
+	for (int i = 1; i < 4; i++)
+	{
+		game.Resources->AddSoundResource(new SoundResource(std::string(MAT_TYPE_METAL_CHAINLINK_IMPACT_BULLET_SOUND_NAME) + std::to_string(i), "./../sounds/physics/metal/metal_chainlink_impact_hard" + std::to_string(i) + ".wav"));
+	}
+	//concrete bullet impacts
+
+	for (int i = 1; i < 5; i++)
+	{
+		game.Resources->AddSoundResource(new SoundResource(std::string(MAT_TYPE_CONCRETE_IMPACT_BULLET_SOUND_NAME) + std::to_string(i), "./../sounds/physics/concrete/concrete_impact_bullet" + std::to_string(i) + ".wav"));
+	}
+
+	//path of the sounds can be changed but name should be left the same
+	//or create sound for each type(most of them use same name)
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_rough_loop1", "./../sounds/physics/metal/metal_box_scrape_rough_loop1.wav"));
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_rough_loop2", "./../sounds/physics/metal/metal_box_scrape_rough_loop2.wav"));
 	game.Resources->AddSoundResource(new SoundResource("metal_box_scrape_smooth_loop1", "./../sounds/physics/metal/metal_box_scrape_smooth_loop1.wav"));
+
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_CANISTER_LIGHT_NAME, "./../sounds/physics/metal/metal_box_scrape_smooth_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_CANISTER_HARD_NAME, "./../sounds/physics/metal/metal_box_scrape_rough_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_CHAINLINK_HARD_NAME, "./../sounds/physics/metal/metal_chainlink_scrape_rough_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_COMPUTER_LIGHT_NAME, "./../sounds/physics/metal/metal_box_scrape_smooth_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_COMPUTER_HARD_NAME, "./../sounds/physics/metal/metal_box_scrape_rough_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_GRATE_LIGHT_NAME, "./../sounds/physics/metal/metal_box_scrape_smooth_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_GRATE_HARD_NAME, "./../sounds/physics/metal/metal_box_scrape_rough_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_GRENADE_LIGHT_NAME, "./../sounds/physics/metal/metal_grenade_scrape_smooth_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_GRENADE_HARD_NAME, "./../sounds/physics/metal/metal_grenade_scrape_rough_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_SHEET_LIGHT_NAME, "./../sounds/physics/metal/metal_box_scrape_smooth_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_SHEET_HARD_NAME, "./../sounds/physics/metal/metal_box_scrape_rough_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_SODA_CAN_LIGHT_NAME, "./../sounds/physics/metal/soda_can_scrape_rough_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_BARREL_LIGHT_NAME, "./../sounds/physics/metal/metal_box_scrape_smooth_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_METAL_BARREL_HARD_NAME, "./../sounds/physics/metal/metal_box_scrape_rough_loop1.wav"));
+
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_ROCK_NAME, "./../sounds/physics/concrete/rock_scrape_rough_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_CONCRETE_BLOCK_NAME, "./../sounds/physics/concrete/concrete_block_scrape_rough_loop1.wav"));
+	game.Resources->AddSoundResource(new SoundResource(MAT_TYPE_CONCRETE_NAME, "./../sounds/physics/concrete/concrete_scrape_smooth_loop1.wav"));
 
 	game.Resources->AddSoundResource(new SoundResource("zombie_pain", "./../sounds/zo_pain1.wav"));
 	game.Resources->AddSoundResource(new SoundResource("zombie_attack1", "./../sounds/zo_attack1.wav"));
@@ -756,6 +813,11 @@ int main(int argc, char** argv)
 	{
 		std::cout << e.what() << std::endl;
 	}
-
+	if (!game.isCleared)
+	{
+		game.release();
+	}
+	
+	return 0;
 }
 #endif // COMPILE

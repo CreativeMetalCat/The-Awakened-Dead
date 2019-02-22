@@ -255,6 +255,151 @@ public:
 			}
 		}
 
+		else if (MaterialType == MAT_TYPE_METAL_CANISTER)
+		{
+			if (this->SoundDependsOnMass)
+			{
+				if (mass >= 100.f)
+				{
+					return MAT_TYPE_METAL_CANISTER_HARD_NAME;
+				}
+				else
+				{
+					return MAT_TYPE_METAL_CANISTER_LIGHT_NAME;
+				}
+			}
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_CANISTER)
+		{
+			if (this->SoundDependsOnMass)
+			{
+				if (mass >= 100.f)
+				{
+					return MAT_TYPE_METAL_CANISTER_HARD_NAME;
+				}
+				else
+				{
+					return MAT_TYPE_METAL_CANISTER_LIGHT_NAME;
+				}
+			}
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_CHAINLINK)
+		{
+			return MAT_TYPE_METAL_CHAINLINK_HARD_NAME;
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_COMPUTER)
+		{
+			if (this->SoundDependsOnMass)
+			{
+				if (mass >= 100.f)
+				{
+					return MAT_TYPE_METAL_COMPUTER_HARD_NAME;
+				}
+				else
+				{
+					return MAT_TYPE_METAL_COMPUTER_LIGHT_NAME;
+				}
+			}
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_GRATE)
+		{
+			if (this->SoundDependsOnMass)
+			{
+				if (mass >= 100.f)
+				{
+					return MAT_TYPE_METAL_GRATE_HARD_NAME;
+				}
+				else
+				{
+					return MAT_TYPE_METAL_GRATE_LIGHT_NAME;
+				}
+			}
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_GRENADE)
+		{
+			if (this->SoundDependsOnMass)
+			{
+				if (mass >= 100.f)
+				{
+					return MAT_TYPE_METAL_GRENADE_HARD_NAME;
+				}
+				else
+				{
+					return MAT_TYPE_METAL_GRENADE_LIGHT_NAME;
+				}
+			}
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_SHEET)
+		{
+			if (this->SoundDependsOnMass)
+			{
+				if (mass >= 100.f)
+				{
+					return MAT_TYPE_METAL_SHEET_HARD_NAME;
+				}
+				else
+				{
+					return MAT_TYPE_METAL_SHEET_LIGHT_NAME;
+				}
+			}
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_SODA_CAN)
+		{
+			return MAT_TYPE_METAL_SODA_CAN_LIGHT_NAME;
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_BARREL)
+		{
+			if (this->SoundDependsOnMass)
+			{
+				if (mass >= 100.f)
+				{
+					return MAT_TYPE_METAL_BARREL_HARD_NAME;
+				}
+				else
+				{
+					return MAT_TYPE_METAL_BARREL_LIGHT_NAME;
+				}
+			}
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_BOX)
+		{
+			if (this->SoundDependsOnMass)
+			{
+				if (mass >= 100.f)
+				{
+					return MAT_TYPE_METAL_BOX_HARD_NAME;
+				}
+				else
+				{
+					return MAT_TYPE_METAL_BOX_LIGHT_NAME;
+				}
+			}
+		}
+
+		else if (MaterialType == MAT_TYPE_CONCRETE)
+		{
+			return MAT_TYPE_CONCRETE_NAME;
+		}
+
+		else if (MaterialType == MAT_TYPE_ROCK)
+		{
+			return MAT_TYPE_ROCK_NAME;
+		}
+
+		else if (MaterialType == MAT_TYPE_CONCRETE_BLOCK)
+		{
+			return MAT_TYPE_CONCRETE_BLOCK_NAME;
+		}
+
 		else
 		{
 			std::cout << "Warning: Physics object doesn't have material type set. Bug are known to appear" << std::endl;
@@ -295,6 +440,60 @@ public:
 		else if (MaterialType == MAT_TYPE_WOOD_BOX)
 		{
 			std::string name = MAT_TYPE_WOOD_BOX_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 4));
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_CANISTER)
+		{
+			std::string name = MAT_TYPE_METAL_BOX_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 3));
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_CHAINLINK)
+		{
+			std::string name = MAT_TYPE_METAL_CHAINLINK_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 3));
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_COMPUTER)
+		{
+			std::string name = MAT_TYPE_METAL_COMPUTER_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 3));
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_GRATE)
+		{
+			std::string name = MAT_TYPE_METAL_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 3));
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_SHEET)
+		{
+			std::string name = MAT_TYPE_METAL_SHEET_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 2));
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_SODA_CAN)
+		{
+			std::string name = MAT_TYPE_METAL_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 3));
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_BARREL)
+		{
+			std::string name = MAT_TYPE_METAL_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 3));
+		}
+
+		else if (MaterialType == MAT_TYPE_METAL_BOX)
+		{
+			std::string name = MAT_TYPE_METAL_BOX_IMPACT_BULLET_SOUND_NAME;
+			filename = name + std::to_string(m_get_random_number(1, 3));
+		}
+
+		else if (MaterialType == MAT_TYPE_ROCK|| MaterialType == MAT_TYPE_CONCRETE|| MaterialType == MAT_TYPE_CONCRETE_BLOCK)
+		{
+			std::string name = MAT_TYPE_CONCRETE_IMPACT_BULLET_SOUND_NAME;
 			filename = name + std::to_string(m_get_random_number(1, 4));
 		}
 
