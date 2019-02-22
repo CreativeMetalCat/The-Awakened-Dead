@@ -78,11 +78,11 @@ public:
 	}
 	void Draw(sf::RenderWindow*&window)
 	{
-		window->draw(weapon->sprite);
+		window->draw(sprite);
 	}
 	void Draw(sf::RenderWindow&window)
 	{
-		window.draw(weapon->sprite);
+		window.draw(sprite);
 	}
 	~weapon_pickup_object()
 	{
