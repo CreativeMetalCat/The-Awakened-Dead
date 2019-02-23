@@ -2579,7 +2579,7 @@ public:
 		else if (event.key.code == sf::Keyboard::Num4&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			std::string text = "test msg";
-			AddMessage(new GUI::Message(sf::Vector2f(SCREENWIDTH - text.size() * 40, 0),text, sf::Color::White, context->game->Resources->getFontResourceDataByName("calibri")->font, 40, context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture,5.f), sf::Vector2f(SCREENWIDTH - text.size() * 40, 300));
+			AddMessage(new GUI::Message(sf::Vector2f(text.size() * 40, 0),text, sf::Color::White, context->game->Resources->getFontResourceDataByName("calibri")->font, 40, context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture,5.f), sf::Vector2f( text.size() * 10, 300));
 		}
 		else if (event.key.code == sf::Keyboard::I&&event.type == sf::Event::EventType::KeyPressed)
 		{
@@ -3298,7 +3298,7 @@ public:
 		if (!PlayerUI->Components->empty())
 		{
 			int size = PlayerUI->Components->size();
-			int msgCount = 0;
+			int msgCount = 2;
 			for (size_t i = 0; i < PlayerUI->Components->size(); i++)
 			{
 				PlayerUI->Components->at(i)->SetPosition(sf::Vector2f(50 + PlayerUI->Components->at(i)->GetOriginalPosition().x + player->GetObjectPosition().x - (SCREENWIDTH / 2), PlayerUI->Components->at(i)->GetOriginalPosition().y + player->GetObjectPosition().y - (SCREENHEIGHT / 2)));
@@ -3322,11 +3322,11 @@ public:
 					}
 					else
 					{
-						
+
 						PlayerUI->Components->at(i)->SetPosition(sf::Vector2f(50 + PlayerUI->Components->at(i)->GetOriginalPosition().x + player->GetObjectPosition().x - (SCREENWIDTH / 2), PlayerUI->Components->at(i)->GetOriginalPosition().y + player->GetObjectPosition().y + msg->text.getCharacterSize()*msgCount - SCREENHEIGHT));
+
 						msgCount++;
 					}
-
 				}
 				
 			}

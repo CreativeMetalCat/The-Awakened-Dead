@@ -41,7 +41,16 @@ public:
 
 		if (Player*p = dynamic_cast<Player*>(object))
 		{
+
 			p->AddAmmo(Data);
+			std::string text;
+			if (Data.ammo_type == AMMO_TYPE_PISTOL) { text = "+ " + std::to_string(Data.clip_amount) + " Pistol Clip"; }
+			if (Data.ammo_type == AMMO_TYPE_RIFLE) { text = "+ " + std::to_string(Data.clip_amount) + " Rifle Clip"; }
+			if (Data.ammo_type == AMMO_TYPE_SHOTGUN) { text = "+ " + std::to_string(Data.clip_amount) + " Shotgun Ammo"; }
+
+
+			context->game->GetStateByName(stateName)->AddMessage(new GUI::Message(sf::Vector2f(150, 300), text, sf::Color::White, context->game->Resources->getFontResourceDataByName("calibri")->font, 40, context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture, 5.f), sf::Vector2f( 150, 300));
+			context->game->GetStateByName(stateName)->objectsToDestroy->push_back(this);
 		}
 
 	}
@@ -50,7 +59,7 @@ public:
 	{
 		if (Player*p = dynamic_cast<Player*>(object))
 		{
-			context->game->GetStateByName(stateName)->objectsToDestroy->push_back(this);
+			
 		}
 	}
 };
