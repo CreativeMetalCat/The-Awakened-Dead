@@ -1550,6 +1550,40 @@ public:
 
 					StateObjects->at(i)->physBodyInitialized = true;
 					StateObjects->at(i)->bodyIsSensor = false;
+
+					//this way was used due to the fact that including State.h or Projectile.h in the SolidObject.h can crash the project
+					//Old way is not as useless as was thought in the beggining
+					StateObjects->at(i)->OnCollision = [this, obj](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						if (object->getType() == CLASS_PROJECTILE)
+						{
+
+							int channel_id = -1;
+
+							if (obj->getMaterialTypeImpactSoundName() != "")
+							{
+								context->game->PlaySound(obj->getMaterialTypeImpactSoundName(), channel_id);
+								if (channel_id != -1)
+								{
+									bool isPlaying = false;
+									context->game->Channels->at(channel_id)->isPlaying(&isPlaying);
+									if (isPlaying)
+									{
+										FMOD_VECTOR pos;
+										pos.z = 0;
+										pos.x = obj->GetObjectPosition().x;
+										pos.y = obj->GetObjectPosition().y;
+
+										context->game->Channels->at(channel_id)->set3DAttributes(&pos, 0);
+									}
+								}
+							}
+						}
+					};
+
+					StateObjects->at(i)->Init();
+
+
 				}
 				else if (SceneTile*obj = dynamic_cast<SceneTile*>(StateObjects->at(i)))
 				{
