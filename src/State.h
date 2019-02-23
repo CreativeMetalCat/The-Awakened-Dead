@@ -4,6 +4,9 @@
 #include <fmod.hpp>
 #include <fmod_errors.h>
 
+const int SCREENWIDTH = 1080;
+const int SCREENHEIGHT = 720;
+
 class Game;
 
 //Way of passing resources between states
@@ -64,6 +67,8 @@ public:
 	//but can also be used for evry object that can be deleted only on update
 	std::vector<Object*>*objectsToDestroy = new std::vector<Object*>();
 
+	GUI::Container*MessageContainer = new GUI::Container();
+
 	virtual void HandleEvent(sf::Event& event) = 0;
 	virtual void Draw() = 0;
 	virtual void Update(sf::Time dt) = 0;
@@ -83,6 +88,13 @@ public:
 			}
 			objectsToDestroy->clear();
 		}
+	}
+
+	virtual void AddMessage(GUI::Message*msg, sf::Vector2f pos)
+	{
+		msg->Init();
+		msg->SetPosition(pos);
+		MessageContainer->Components->push_back(msg);
 	}
 
 	//basic function
@@ -142,6 +154,8 @@ public:
 
 				//just in case
 				StateObjects->at(index)->physBodyInitialized = false;
+
+				delete StateObjects->at(index);
 			}
 			StateObjects->erase(it);
 
@@ -236,5 +250,20 @@ public:
 			StateObjects->push_back(object);
 		}
 
+	}
+
+	~State()
+	{
+		/*world.~b2World();
+		current_map.~basic_string();
+		delete context;*/
+	}
+
+	//can be used instead of ~
+	virtual void release()
+	{
+		/*world.~b2World();*/
+		current_map.~basic_string();
+		delete context;
 	}
 };

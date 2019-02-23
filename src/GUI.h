@@ -60,6 +60,8 @@ namespace GUI
 
 		virtual void Draw(sf::RenderWindow*& window) = 0;
 
+		virtual void Update(sf::Time dt) = 0;
+
 		~Component()
 		{
 
@@ -136,12 +138,38 @@ namespace GUI
 		void SetPosition(sf::Vector2f pos)override;
 		void Draw(sf::RenderWindow*& window) override;
 		void Init()override;
+		void Update(sf::Time dt);
 		sf::Vector2<float> GetPosition()override;
+
 
 		~Label()
 		{
-			
+		
 		}
+	};
+
+	//Message is the text that dissapears over the time
+	class Message :public Label
+	{
+	protected:
+		std::string txt;
+	public:
+		//in seconds
+		float LivedTime = 0.f;
+		//in seconds
+		float LifeTime = 0.f;
+
+		Message(sf::Vector2f pos, std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, float lifeTime = 0.f);
+		Message(sf::Vector2f pos, std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, sf::IntRect SpriteRect, float lifeTime = 0.f);
+
+		Message(sf::Vector2f pos, std::string name, std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, float lifeTime = 0.f);
+		Message(sf::Vector2f pos, std::string name, std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, sf::IntRect SpriteRect, float lifeTime = 0.f);
+
+		void Update(sf::Time dt);
+
+		void Init();
+
+		void Draw(sf::RenderWindow*& window);
 	};
 
 	//base class for buttons
@@ -177,6 +205,8 @@ namespace GUI
 		//Disabled 
 		//If you need to make your one just override it 
 		virtual void DeActivate() override;
+
+		void Update(sf::Time dt);
 
 		void Draw(sf::RenderWindow*& window) override;
 	};

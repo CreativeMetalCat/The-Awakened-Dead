@@ -146,6 +146,8 @@ namespace GUI
 		this->text.setFillColor(color);
 		this->text.setOutlineColor(color);
 	}
+
+	void Label::Update(sf::Time dt){}
 	sf::Vector2<float> Label::GetPosition()
 	{
 		sf::Vector2f vec;
@@ -235,4 +237,71 @@ namespace GUI
 			window->draw(text);
 		}
 	}
+
+	void Button::Update(sf::Time dt) {}
+
+
+	Message::Message(sf::Vector2f pos, std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture,float lifeTime) : Label(text,textColor,font,textSize,texture),LifeTime(lifeTime)
+	{
+		this->ComponentRectangle.left = pos.x;
+		this->ComponentRectangle.top = pos.y;
+		txt = text;
+	}
+
+	Message::Message(sf::Vector2f pos, std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, sf::IntRect SpriteRect, float lifeTime) : Label(text, textColor, font, textSize, texture,SpriteRect), LifeTime(lifeTime)
+	{
+		this->ComponentRectangle.left = pos.x;
+		this->ComponentRectangle.top = pos.y;
+		txt = text;
+	}
+
+	Message::Message(sf::Vector2f pos, std::string name, std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, float lifeTime) :Label(name,text, textColor, font, textSize, texture), LifeTime(lifeTime)
+	{
+		this->ComponentRectangle.left = pos.x;
+		this->ComponentRectangle.top = pos.y;
+		txt = text;
+	}
+
+	Message::Message(sf::Vector2f pos, std::string name, std::string text, sf::Color textColor, sf::Font &font, int textSize, sf::Texture&texture, sf::IntRect SpriteRect, float lifeTime) :Label(name, text, textColor, font, textSize, texture, SpriteRect), LifeTime(lifeTime)
+	{
+		this->ComponentRectangle.left = pos.x;
+		this->ComponentRectangle.top = pos.y;
+		txt = text;
+	}
+
+	void Message::Update(sf::Time dt) {}
+
+	void Message::Init() 
+	{
+		_originalPos = this->text.getPosition();
+
+		sf::Vector2f pos;
+		pos.x = this->ComponentRectangle.left;
+		pos.y = this->ComponentRectangle.top;
+
+		text.setPosition(pos);
+		Sprite.setPosition(pos);
+
+		ComponentRectangle.width = this->text.getLocalBounds().width;
+		ComponentRectangle.height = this->text.getLocalBounds().height;
+		Scale.x = this->text.getLocalBounds().width / Sprite.getTexture()->getSize().x;
+		Scale.y = this->text.getLocalBounds().height / Sprite.getTexture()->getSize().y;
+		this->Sprite.setScale(Scale);
+		this->Sprite.setPosition(sf::Vector2f((this->ComponentRectangle.left), (this->ComponentRectangle.top + this->text.getLocalBounds().height / 2)));
+		this->text.setPosition(sf::Vector2f(this->ComponentRectangle.left, this->ComponentRectangle.top));
+		this->text.setFillColor(color);
+		this->text.setOutlineColor(color);
+	}
+
+	void Message::Draw(sf::RenderWindow*& window)
+	{
+		if (IsVisible)
+		{
+			window->draw(Sprite);
+			window->draw(text);
+		}
+	}
 }
+
+
+

@@ -51,8 +51,7 @@ bool DEBUG_DRAWCOLLISION = false;
 
 bool DEBUG_DRAWREVERB = false;
 
-const int SCREENWIDTH = 1080;
-const int SCREENHEIGHT = 720;
+
 
 //state(mode) when player & everything is moves
 class PlayState :public State
@@ -150,6 +149,14 @@ public:
 	{
 		 context->game->PlaySound(name,channel_id);
 	}
+
+	 void AddMessage(GUI::Message*msg, sf::Vector2f pos)
+	 {
+		 msg->SetPosition(pos);
+		 msg->Init();
+		 
+		 PlayerUI->Components->push_back(msg);
+	 }
 
 	//creates physical body for object using given data
 	//Data HAS to be created before calling
@@ -1902,7 +1909,7 @@ public:
 					StateObjects->at(i)->bodyIsSensor = false;
 
 					StateObjects->at(i)->body->SetMassData(&propMass);
-					StateObjects->at(i)->Init();
+					pp->Init();
 				}
 
 				else if (ammo_pickup_object*apo = dynamic_cast<ammo_pickup_object*>(StateObjects->at(i)))
@@ -2502,6 +2509,14 @@ public:
 			}
 		}
 
+		if (!MessageContainer->Components->empty())
+		{
+			for (size_t i = 0; i < MessageContainer->Components->size(); i++)
+			{
+				MessageContainer->Components->at(i)->Draw(context->window);
+			}
+		}
+
 
 		if (!player->items->isEmpty() && player->items->isVisible)
 		{
@@ -2560,6 +2575,11 @@ public:
 		else if (event.key.code == sf::Keyboard::Num3&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			LoadMap("ai_zombie_test.tmx");
+		}
+		else if (event.key.code == sf::Keyboard::Num4&&event.type == sf::Event::EventType::KeyPressed)
+		{
+			std::string text = "test msg";
+			AddMessage(new GUI::Message(sf::Vector2f(SCREENWIDTH - text.size() * 40, 0),text, sf::Color::White, context->game->Resources->getFontResourceDataByName("calibri")->font, 40, context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture,5.f), sf::Vector2f(SCREENWIDTH - text.size() * 40, 300));
 		}
 		else if (event.key.code == sf::Keyboard::I&&event.type == sf::Event::EventType::KeyPressed)
 		{
@@ -2979,6 +2999,39 @@ public:
 		}
 		context->game->lowSoundSystem->update();
 
+		if (!MessageContainer->Components->empty())
+		{
+			int size = MessageContainer->Components->size();
+			int msgCount = 0;
+			for (size_t i = 0; i < MessageContainer->Components->size(); i++)
+			{
+				
+				if (GUI::Message*msg = dynamic_cast<GUI::Message*>(MessageContainer->Components->at(i)))
+				{
+					msg->LivedTime += dt.asSeconds();
+					if (msg->LivedTime >= msg->LifeTime)
+					{
+						if (std::find(MessageContainer->Components->begin(), MessageContainer->Components->end(), MessageContainer->Components->at(i)) != MessageContainer->Components->end())
+						{
+							MessageContainer->Components->erase(std::find(MessageContainer->Components->begin(), MessageContainer->Components->end(), MessageContainer->Components->at(i)));
+							if (size > 0)
+							{
+								size--;
+							}
+							else
+							{
+								break;
+							}
+						}
+					}
+					else
+					{
+
+					}
+
+				}
+			}
+		}
 		if (!player->items->isEmpty() && player->items->isActive)
 		{
 			if (player->items->currentItemId != -1)
@@ -3244,10 +3297,41 @@ public:
 		
 		if (!PlayerUI->Components->empty())
 		{
+			int size = PlayerUI->Components->size();
+			int msgCount = 0;
 			for (size_t i = 0; i < PlayerUI->Components->size(); i++)
 			{
 				PlayerUI->Components->at(i)->SetPosition(sf::Vector2f(50 + PlayerUI->Components->at(i)->GetOriginalPosition().x + player->GetObjectPosition().x - (SCREENWIDTH / 2), PlayerUI->Components->at(i)->GetOriginalPosition().y + player->GetObjectPosition().y - (SCREENHEIGHT / 2)));
+				if (GUI::Message*msg = dynamic_cast<GUI::Message*>(PlayerUI->Components->at(i)))
+				{
+					msg->LivedTime += dt.asSeconds();
+					if (msg->LivedTime >= msg->LifeTime)
+					{
+						if (std::find(PlayerUI->Components->begin(), PlayerUI->Components->end(), PlayerUI->Components->at(i)) != PlayerUI->Components->end())
+						{
+							PlayerUI->Components->erase(std::find(PlayerUI->Components->begin(), PlayerUI->Components->end(), PlayerUI->Components->at(i)));
+							if (size > 0)
+							{
+								size--;
+							}
+							else
+							{
+								break;
+							}
+						}
+					}
+					else
+					{
+						
+						PlayerUI->Components->at(i)->SetPosition(sf::Vector2f(50 + PlayerUI->Components->at(i)->GetOriginalPosition().x + player->GetObjectPosition().x - (SCREENWIDTH / 2), PlayerUI->Components->at(i)->GetOriginalPosition().y + player->GetObjectPosition().y + msg->text.getCharacterSize()*msgCount - SCREENHEIGHT));
+						msgCount++;
+					}
+
+				}
+				
 			}
+
+			
 		}
 
 		sf::View view;
