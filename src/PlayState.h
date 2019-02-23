@@ -676,6 +676,73 @@ public:
 
 									this->StateObjects->push_back(new SolidObject({ posX,posY }, sf::Sprite(), width, height, mat_type, layer_area_id));
 								}
+								if (type == "PropStatic")
+								{
+									float width = 0;
+									float height = 0;
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+									if (obj->FindAttribute("width") == NULL)
+									{
+										width = objData->FindAttribute("width")->FloatValue();
+									}
+									else
+									{
+										width = obj->FindAttribute("width")->FloatValue();
+									}
+
+									if (obj->FindAttribute("height") == NULL)
+									{
+										height = objData->FindAttribute("height")->FloatValue();
+									}
+									else
+									{
+										height = obj->FindAttribute("height")->FloatValue();
+									}
+
+									XMLElement*Objprops = obj->FirstChildElement("properties");
+
+									int mat_type = 47;
+
+									if (Objprops != NULL)
+									{
+										for (tinyxml2::XMLElement* prop = Objprops->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+										{
+
+											if (prop->FindAttribute("name") != NULL)
+											{
+												std::string f = prop->FindAttribute("name")->Value();
+												if (f == "MaterialType")
+												{
+													mat_type = prop->FindAttribute("value")->IntValue();
+												}
+
+											}
+
+										}
+
+									}
+									else
+									{
+										XMLElement*props = objData->FirstChildElement("properties");
+										for (tinyxml2::XMLElement* prop = props->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+										{
+
+											if (prop->FindAttribute("name") != NULL)
+											{
+												std::string f = prop->FindAttribute("name")->Value();
+												if (f == "mat_type")
+												{
+													mat_type = prop->FindAttribute("value")->IntValue();
+												}
+
+											}
+
+										}
+									}
+
+									this->StateObjects->push_back(new SolidObject({ posX,posY }, sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture), width, height, mat_type, layer_area_id));
+								}
 								if (type == "ai_node")
 								{
 									float width = 0;
@@ -1127,14 +1194,6 @@ public:
 									ReverbObject *Reverb = new ReverbObject(sf::Vector3f(posX + width / 2, -posY - height / 2, 0), width, width + width / 10.f, { decay,earlyDly,latedly,hfref,hfdecay,Diffus,Densty,lofreg,logain,hicut,elmix,wetlvl });
 									Reverb->createReverb(context->game->lowSoundSystem);
 									reverbs->push_back(Reverb->reverb);
-								}
-								if (type == "solid_object")
-								{
-									float posX = obj->FindAttribute("x")->FloatValue();
-									float posY = obj->FindAttribute("y")->FloatValue();
-									float width = objData->FindAttribute("width")->FloatValue();
-									float height = objData->FindAttribute("height")->FloatValue();
-									this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height,layer_area_id));
 								}
 								if (type == "WeaponPickupObject")
 								{
