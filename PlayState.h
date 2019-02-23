@@ -14,10 +14,18 @@
 #include "TestProjectile.h"
 #include "SolidObject.h"
 #include "TextObject.h"
+#include "SoundSourceObject.h"
+#include "trigger_change_area_id.h"
+#include "ammo_object.h"
+#include "weapon_pickup_object.h"
+#include "ai_node.h"
+#include "knife_attack_projectile.h"
+#include "trigger_change_level.h"
 
 #ifndef _RANDOM_
 #include <random>
 #endif // !_RANDOM_
+
 
 
 #ifndef TINYXML2_INCLUDED
@@ -37,6 +45,7 @@
 #ifndef MAX_SOUND_CHANNELS_COUNT
 #define MAX_SOUND_CHANNELS_COUNT 1024
 #endif // !MAX_SOUND_CHANNELS_COUNT
+
 
 bool DEBUG_DRAWCOLLISION = false;
 
@@ -58,13 +67,16 @@ protected:
 	{
 		std::random_device rd; // obtain a random number from hardware
 		std::mt19937 eng(rd()); // seed the generator
-		std::uniform_int_distribution<> distr(min,max); // define the range
+		std::uniform_int_distribution<> distr(min, max); // define the range
 
 		return distr(eng);
 	}
 
 public:
-	bool _map_is_loaded = false;
+
+	
+
+	
 	int test = 0;
 	int Current_area_id = 0;
 	GUI::Container*PlayerUI = new GUI::Container();
@@ -92,7 +104,7 @@ public:
 
 	b2World world;
 	/*FMOD::Channel *channel;*/
-	std::vector<FMOD::Channel*>*Channels = new std::vector<FMOD::Channel*>(MAX_SOUND_CHANNELS_COUNT);
+	/*std::vector<FMOD::Channel*>*Channels = new std::vector<FMOD::Channel*>(MAX_SOUND_CHANNELS_COUNT);*/
 	std::vector<PixelParticleSystemObject>*pixelParticleSystems = new std::vector<PixelParticleSystemObject>();
 
 	std::vector<FMOD::Reverb3D*>*reverbs = new std::vector<FMOD::Reverb3D*>();
@@ -117,57 +129,26 @@ public:
 
 		object->body->SetUserData(object);
 
+		object->physBodyInitialized = true;
+
 		if (addToStateObjectContainer)
 		{
 			StateObjects->push_back(object);
 		}
-
 	}
 
-	//Plays sound using one of the channels
+	//uses Game::PlaySound
 	void PlaySound(std::string name)override
 	{
-		for (size_t i = 0; i < Channels->size(); i++)
-		{
-			bool res;
-			Channels->at(i)->isPlaying(&res);
-			if (Channels->at(i) == NULL)
-			{
-				context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
-
-				break;
-			}
-			else if (res == false)
-			{
-				context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
-
-				break;
-			}
-		}
+		context->game->PlaySound(name);
 	}
 
-	//Plays sound using one of the channels and sound from game->resourses->SoundData
+	//uses Game::PlaySound
 	//@param
 	//channel_id - id of channel that was used for this sound 
 	 void PlaySound(std::string name, int &channel_id) override
 	{
-		 for (size_t i = 0; i < Channels->size(); i++)
-		 {
-			 bool res;
-			 Channels->at(i)->isPlaying(&res);
-			 if (Channels->at(i) == NULL)
-			 {
-				 context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
-				 channel_id = i;
-				 break;
-			 }
-			 else if (res == false)
-			 {
-				 context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(name)->sound, 0, false, &Channels->at(i));
-				 channel_id = i;
-				 break;
-			 }
-		 }
+		 context->game->PlaySound(name,channel_id);
 	}
 
 	//creates physical body for object using given data
@@ -196,6 +177,7 @@ public:
 
 	void LoadMap(std::string name)
 	{
+		context->window->setFramerateLimit(100);
 
 		world.Step(0, 0, 0);
 
@@ -214,6 +196,7 @@ public:
 			{
 				StateObjects->at(i)->body->GetWorld()->DestroyBody(StateObjects->at(i)->body);
 			}
+			delete StateObjects->at(i);
 		}
 
 		StateObjects->clear();
@@ -286,6 +269,17 @@ public:
 								gid = tile->FindAttribute("gid")->IntValue();
 								gid--;
 
+								int mat_sound_type_id = 0;
+								try
+								{
+									TileData td = context->game->Resources->getTileDataById(gid);
+									mat_sound_type_id = td.MatSoundtype;
+								}
+								catch (std::runtime_error e)
+								{
+
+								}
+
 								sf::Vector2f pos = sf::Vector2f(64 * cTileIdx, 64 * cTileIdy);
 
 								SceneTile*ta = new SceneTile
@@ -294,7 +288,8 @@ public:
 									sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture),
 									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().x,
 									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().y,
-									layer_area_id
+									layer_area_id,
+									mat_sound_type_id
 								);
 								ta->Init();
 								StateObjects->push_back(ta);
@@ -320,6 +315,18 @@ public:
 								gid = tile->FindAttribute("gid")->IntValue();
 								gid--;
 
+								int mat_sound_type_id = 0;
+								try
+								{
+									TileData td = context->game->Resources->getTileDataById(gid);
+									mat_sound_type_id = td.MatSoundtype;
+								}
+								catch (std::runtime_error e)
+								{
+
+								}
+
+
 								sf::Vector2f pos = sf::Vector2f(64 * cTileIdx, 64 * cTileIdy);
 								SceneTile*ta = new SceneTile
 								(
@@ -327,7 +334,8 @@ public:
 									sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture),
 									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().x,
 									context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture.getSize().y,
-									layer_area_id
+									layer_area_id,
+									mat_sound_type_id
 								);
 								ta->Init();
 								StateObjects->push_back(ta);
@@ -340,6 +348,9 @@ public:
 								if (cTileIdy > layerMaxHeight) { cTileIdy = 0; }
 							}
 						}
+
+						cTileIdx = 0;
+						cTileIdy = 0;
 					}
 				}
 
@@ -386,6 +397,112 @@ public:
 							float width = obj->FindAttribute("width")->FloatValue();
 							float height = obj->FindAttribute("height")->FloatValue();
 							this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height,layer_area_id));
+						}
+						
+						if (type == "trigger_change_area")
+						{
+							float posX = obj->FindAttribute("x")->FloatValue();
+							float posY = obj->FindAttribute("y")->FloatValue();
+							float width = obj->FindAttribute("width")->FloatValue();
+							float height = obj->FindAttribute("height")->FloatValue();
+
+							int area_to_change_to = 0;
+							XMLElement*objProps = obj->FirstChildElement("properties");
+
+							if (objProps != NULL)
+							{
+								for (tinyxml2::XMLElement* Prop = objProps->FirstChildElement(); Prop != NULL; Prop = Prop->NextSiblingElement())
+								{
+									if (Prop->FindAttribute("name") != NULL)
+									{
+										std::string f = Prop->FindAttribute("name")->Value();
+										if (f == "area_to_change_to")
+										{
+											area_to_change_to = Prop->FindAttribute("value")->IntValue();
+										}
+									}
+								}
+							}
+							this->StateObjects->push_back(new trigger_change_area_id(sf::Vector2f(posX,posY),width,height,area_to_change_to,layer_area_id));
+						}
+						if (type == "SoundSource")
+						{
+							float posX = obj->FindAttribute("x")->FloatValue();
+							float posY = obj->FindAttribute("y")->FloatValue();
+
+							int min = 100;
+							int max = 1000;
+
+							std::string sound_filename = "";
+							std::string sound_name = "";
+
+							bool is_looped = false;
+
+							XMLElement*objProps = obj->FirstChildElement("properties");
+
+							if (objProps != NULL)
+							{
+								for (tinyxml2::XMLElement* Prop = objProps->FirstChildElement(); Prop != NULL; Prop = Prop->NextSiblingElement())
+								{
+									if (Prop->FindAttribute("name") != NULL)
+									{
+										std::string f = Prop->FindAttribute("name")->Value();
+										if (f == "MaxDistance")
+										{
+											max = Prop->FindAttribute("value")->IntValue();
+										}
+										if (f == "MinDistance")
+										{
+											min = Prop->FindAttribute("value")->IntValue();
+										}
+										if (f == "SoundFile")
+										{
+											sound_filename = Prop->FindAttribute("value")->Value();
+										}
+										if (f == "SoundName")
+										{
+											sound_name = Prop->FindAttribute("value")->Value();
+										}
+										if (f == "Looped")
+										{
+											is_looped = Prop->FindAttribute("value")->BoolValue();
+										}
+										
+									}
+								}
+							}
+
+							if (sound_name != "")
+							{
+								try
+								{
+									context->game->Resources->getSoundResourceDataByName(sound_name);
+								}
+								catch (std::runtime_error e)
+								{
+									if (sound_filename != "")
+									{
+
+										SoundResource* sr = new SoundResource(sound_name, "./" + sound_filename);
+
+										
+
+										FMOD_RESULT res;
+										res = context->game->lowSoundSystem->createSound(sr->filename.c_str(), FMOD_3D_LINEARROLLOFF, 0, &sr->sound);
+										if (res != FMOD_OK)
+										{
+											std::cout << "Error creating sound. Name: " << sr->name.c_str() << "Filename: " << sr->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
+										}
+										else
+										{
+											context->game->Resources->AddSoundResource(sr);
+										}
+									}
+								}
+								
+							}
+							
+							this->StateObjects->push_back(new SoundSourceObject(sf::Vector2f(posX,posY),sound_name, is_looped,max,min,layer_area_id));
 						}
 						if (type == "TextObject")
 						{
@@ -480,6 +597,7 @@ public:
 						XMLElement*objData = root->FirstChildElement("object");
 						if (objData != NULL)
 						{
+						
 							if (objData->FindAttribute("type") != NULL)
 							{
 								std::string type = objData->FindAttribute("type")->Value();
@@ -491,11 +609,271 @@ public:
 									gid = objData->FindAttribute("gid")->IntValue();
 								}
 								gid--;
+								if (type == "solid_object")
+								{
+									float width = 0;
+									float height = 0;
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+									if (obj->FindAttribute("width") == NULL)
+									{
+										width = objData->FindAttribute("width")->FloatValue();
+									}
+									else
+									{
+										width = obj->FindAttribute("width")->FloatValue();
+									}
+
+									if (obj->FindAttribute("height") == NULL)
+									{
+										height = objData->FindAttribute("height")->FloatValue();
+									}
+									else
+									{
+										height = obj->FindAttribute("height")->FloatValue();
+									}
+
+									XMLElement*Objprops = obj->FirstChildElement("properties");
+									
+									int mat_type = 47;
+									
+									if (Objprops != NULL)
+									{
+										for (tinyxml2::XMLElement* prop = Objprops->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+										{
+
+											if (prop->FindAttribute("name") != NULL)
+											{
+												std::string f = prop->FindAttribute("name")->Value();
+												if (f == "MaterialType")
+												{
+													mat_type = prop->FindAttribute("value")->IntValue();
+												}
+
+											}
+
+										}
+
+									}
+									else
+									{
+										/*XMLElement*props = objData->FirstChildElement("properties");
+										for (tinyxml2::XMLElement* prop = props->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+										{
+
+											if (prop->FindAttribute("name") != NULL)
+											{
+												std::string f = prop->FindAttribute("name")->Value();
+												if (f == "mat_type")
+												{
+													mat_type = prop->FindAttribute("value")->IntValue();
+												}
+
+											}
+
+										}*/
+									}
+
+									this->StateObjects->push_back(new SolidObject({ posX,posY }, sf::Sprite(), width, height, mat_type, layer_area_id));
+								}
+								if (type == "ai_node")
+								{
+									float width = 0;
+									float height = 0;
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+									if (obj->FindAttribute("width") == NULL)
+									{
+										width = objData->FindAttribute("width")->FloatValue();
+									}
+									else
+									{
+										width = obj->FindAttribute("width")->FloatValue();
+									}
+
+									if (obj->FindAttribute("height") == NULL)
+									{
+										height = objData->FindAttribute("height")->FloatValue();
+									}
+									else
+									{
+										height = obj->FindAttribute("height")->FloatValue();
+									}
+
+									std::string name = obj->FindAttribute("name")->Value();
+									XMLElement*props = obj->FirstChildElement("properties");
+
+									std::string next_name ="";
+
+									if (props != NULL)
+									{
+										for (tinyxml2::XMLElement* prop = props->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+										{
+
+											if (prop->FindAttribute("name") != NULL)
+											{
+												std::string f = prop->FindAttribute("name")->Value();
+												if (f == "Next")
+												{
+													next_name = prop->FindAttribute("value")->Value();
+												}
+											}
+										}
+									}
+
+
+									
+
+									ai_node*n = new ai_node({ posX,posY }, name, 50.f, 50.f, width, height, layer_area_id);
+
+									if (next_name != "")
+									{
+										n->next_name = next_name;
+									}
+									this->StateObjects->push_back(n);
+								}
 								if (type == "info_player_start")
 								{
 									float posX = obj->FindAttribute("x")->FloatValue();
 									float posY = obj->FindAttribute("y")->FloatValue();
 									this->player->SetObjectPosition(sf::Vector2f(posX, posY));
+								}
+								else if (type == "TriggerChangeLevel")
+								{
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+
+									float width = 0;
+									float height = 0;
+
+									if (obj->FindAttribute("y") != NULL)
+									{
+										width = obj->FindAttribute("width")->FloatValue();
+									}
+									else
+									{
+										width = objData->FindAttribute("width")->FloatValue();
+									}
+									if (obj->FindAttribute("x") != NULL)
+									{
+										height = obj->FindAttribute("height")->FloatValue();
+									}
+									else
+									{
+										height=objData->FindAttribute("height")->FloatValue();
+									}
+									std::string lvl_name = "";
+
+									XMLElement*props = obj->FirstChildElement("properties");
+
+									if (props != NULL)
+									{
+										for (tinyxml2::XMLElement* prop = props->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+										{
+
+											if (prop->FindAttribute("name") != NULL)
+											{
+												std::string f = prop->FindAttribute("name")->Value();
+												if (f == "level_name")
+												{
+													lvl_name = prop->FindAttribute("value")->Value();
+												}
+											}
+										}
+									}
+
+									this->StateObjects->push_back(new TriggerChangeLevel({ posX,posY }, lvl_name + ".tmx", width, height, layer_area_id));
+								}
+								if (type == "AmmoObject")
+								{
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+
+									float width = 0;
+									float height = 0;
+
+									if (obj->FindAttribute("width") == NULL)
+									{
+										width = objData->FindAttribute("width")->FloatValue();
+									}
+									else
+									{
+										width = obj->FindAttribute("width")->FloatValue();
+									}
+
+									if (obj->FindAttribute("height") == NULL)
+									{
+										height = objData->FindAttribute("height")->FloatValue();
+									}
+									else
+									{
+										height = obj->FindAttribute("height")->FloatValue();
+									}
+
+									XMLElement*props = objData->FirstChildElement("properties");
+
+									int ammoType = 0;
+									int Amount = 0;
+									std::string next_name = "";
+
+									if (props != NULL)
+									{
+										for (tinyxml2::XMLElement* prop = props->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+										{
+
+											if (prop->FindAttribute("name") != NULL)
+											{
+												std::string f = prop->FindAttribute("name")->Value();
+												if (f == "Ammo_Type")
+												{
+													ammoType = prop->FindAttribute("value")->IntValue();
+												}
+												if (f == "Amount")
+												{
+													Amount = prop->FindAttribute("value")->IntValue();
+												}
+											}
+										}
+									}
+
+
+
+									this->StateObjects->push_back(new ammo_pickup_object({ ammoType,Amount }, sf::Vector2f(posX, posY), sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture), width, height, layer_area_id));
+
+								}
+								if (type == "npc_zombie")
+								{
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+
+									float health = 100.f;
+									float speed = 0.01f;
+
+									XMLElement*objProps = objData->FirstChildElement("properties");
+
+									if (objProps != NULL)
+									{
+										for (tinyxml2::XMLElement* Prop = objProps->FirstChildElement(); Prop != NULL; Prop = Prop->NextSiblingElement())
+										{
+
+											if (Prop->FindAttribute("name") != NULL)
+											{
+												std::string f = Prop->FindAttribute("name")->Value();
+												if (f == "health")
+												{
+													health = Prop->FindAttribute("value")->FloatValue();
+												}
+												else if (f == "speed")
+												{
+													speed = Prop->FindAttribute("value")->FloatValue();
+												}
+											}
+										}
+									}
+									this->StateObjects->push_back(new npc_zombie(sf::Vector2f(posX, posY), speed, 100, 100,layer_area_id));
+
+
+
 								}
 								if (type == "SoundReverbPreset")
 								{
@@ -638,9 +1016,9 @@ public:
 
 										}
 									}
-									ReverbObject *Reverb = new ReverbObject(sf::Vector3f(posX + width / 2, -posY - height / 2, 0), width, width + width / 10.f, props);
+									ReverbObject *Reverb = new ReverbObject(sf::Vector3f(posX + width / 2, posY + height / 2, 0), width, width + width / 10.f, props);
 									Reverb->createReverb(context->game->lowSoundSystem);
-									reverbs->push_back(Reverb->reverb);
+									reverbs->push_back(Reverb->reverb);									
 								}
 								if (type == "SoundReverb")
 								{
@@ -757,6 +1135,206 @@ public:
 									float width = objData->FindAttribute("width")->FloatValue();
 									float height = objData->FindAttribute("height")->FloatValue();
 									this->StateObjects->push_back(new SolidObject(sf::Vector2f(posX, posY), sf::Sprite(), width, height,layer_area_id));
+								}
+								if (type == "WeaponPickupObject")
+								{
+									float posX = obj->FindAttribute("x")->FloatValue();
+									float posY = obj->FindAttribute("y")->FloatValue();
+
+									float width = 0;
+									float height = 0;
+
+									if (obj->FindAttribute("width") != NULL)
+									{
+										width = obj->FindAttribute("width")->FloatValue();
+									}
+									else
+									{
+										width = objData->FindAttribute("width")->FloatValue();
+									}
+									if (obj->FindAttribute("height") != NULL)
+									{
+										height = obj->FindAttribute("height")->FloatValue();
+									}
+									else
+									{
+										height = objData->FindAttribute("height")->FloatValue();
+									}
+									bool forcePick = false;
+									
+									XMLElement*props = objData->FirstChildElement("properties");
+
+									Weapon*w1 = new Weapon("Pistol", 1.2f, 15.f);
+									w1->weaponType = WEAPON_TYPE_NONE;
+									w1->ammoPerClip = 0;
+									w1->ammoInTheClip = 0;
+									w1->projectile_texture_name = "proj";
+									w1->shoot_sound_name = "pistol_fire2";
+									w1->empty_clip_sound = "pistol_empty";
+									w1->weapon_ammo_type = AMMO_TYPE_NULL;
+									w1->sprite = sf::Sprite();
+									w1->reload_sound_name = "pistol_reload";
+
+									std::string ShootSoundPath = "";
+									std::string ReloadSoundPath = "";
+									std::string EmptySoundPath = "";
+
+									for (tinyxml2::XMLElement* prop = props->FirstChildElement(); prop != NULL; prop = prop->NextSiblingElement())
+									{
+
+										if (prop->FindAttribute("name") != NULL)
+										{
+											std::string f = prop->FindAttribute("name")->Value();
+											if (f == "AmmoInTheClip")
+											{
+												w1->ammoInTheClip = prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "AmmoPerClip")
+											{
+												w1->ammoPerClip = prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "AmmoType")
+											{
+												w1->weapon_ammo_type = prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "ProjectileSpeed")
+											{
+												w1->projectileSpeed = prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "ProjectileDamage")
+											{
+												w1->projectileDamage = prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "WeaponType")
+											{
+												w1->weaponType = prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "ForceToPickup")
+											{
+												forcePick = prop->FindAttribute("value")->BoolValue();
+											}
+											if (f == "Name")
+											{
+												w1->name = prop->FindAttribute("value")->Value();
+											}
+											if (f == "EmptySoundName")
+											{
+												w1->empty_clip_sound = prop->FindAttribute("value")->Value();;
+											}
+											if (f == "ShootSoundName")
+											{
+												w1->shoot_sound_name = prop->FindAttribute("value")->Value();;
+											}
+											if (f == "ReloadSoundName")
+											{
+												w1->reload_sound_name = prop->FindAttribute("value")->Value();;
+											}
+											if (f == "EmptySound")
+											{
+												EmptySoundPath = prop->FindAttribute("value")->Value();;
+											}
+											if (f == "ShootSound")
+											{
+												ShootSoundPath = prop->FindAttribute("value")->Value();;
+											}
+											if (f == "ReloadSound")
+											{
+												ReloadSoundPath = prop->FindAttribute("value")->Value();;
+											}
+										}
+									}
+
+									if (w1->empty_clip_sound != "")
+									{
+										try
+										{
+											context->game->Resources->getSoundResourceDataByName(w1->empty_clip_sound);
+										}
+										catch (std::runtime_error e)
+										{
+											if (w1->empty_clip_sound != "")
+											{
+
+												SoundResource* sr = new SoundResource(w1->empty_clip_sound, "./" + EmptySoundPath);
+
+
+
+												FMOD_RESULT res;
+												res = context->game->lowSoundSystem->createSound(sr->filename.c_str(), FMOD_3D_LINEARROLLOFF, 0, &sr->sound);
+												if (res != FMOD_OK)
+												{
+													std::cout << "Error creating sound. Name: " << sr->name.c_str() << "Filename: " << sr->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
+												}
+												else
+												{
+													context->game->Resources->AddSoundResource(sr);
+												}
+											}
+										}
+
+									}
+
+									if (w1->reload_sound_name != "")
+									{
+										try
+										{
+											context->game->Resources->getSoundResourceDataByName(w1->reload_sound_name);
+										}
+										catch (std::runtime_error e)
+										{
+											if (w1->reload_sound_name != "")
+											{
+
+												SoundResource* sr = new SoundResource(w1->reload_sound_name, "./" + ReloadSoundPath);
+
+
+
+												FMOD_RESULT res;
+												res = context->game->lowSoundSystem->createSound(sr->filename.c_str(), FMOD_3D_LINEARROLLOFF, 0, &sr->sound);
+												if (res != FMOD_OK)
+												{
+													std::cout << "Error creating sound. Name: " << sr->name.c_str() << "Filename: " << sr->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
+												}
+												else
+												{
+													context->game->Resources->AddSoundResource(sr);
+												}
+											}
+										}
+
+									}
+
+									if (w1->shoot_sound_name != "")
+									{
+										try
+										{
+											context->game->Resources->getSoundResourceDataByName(w1->shoot_sound_name);
+										}
+										catch (std::runtime_error e)
+										{
+											if (w1->shoot_sound_name != "")
+											{
+
+												SoundResource* sr = new SoundResource(w1->shoot_sound_name, "./" + ShootSoundPath);
+
+
+
+												FMOD_RESULT res;
+												res = context->game->lowSoundSystem->createSound(sr->filename.c_str(), FMOD_3D_LINEARROLLOFF, 0, &sr->sound);
+												if (res != FMOD_OK)
+												{
+													std::cout << "Error creating sound. Name: " << sr->name.c_str() << "Filename: " << sr->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
+												}
+												else
+												{
+													context->game->Resources->AddSoundResource(sr);
+												}
+											}
+										}
+
+									}
+
+									this->StateObjects->push_back(new weapon_pickup_object(w1, sf::Vector2f(posX, posY), sf::Sprite(context->game->Resources->getTextureResourceDataByName(std::to_string(gid))->texture), width, height, forcePick, layer_area_id));
 								}
 								if (type == "PropPhysics")
 								{
@@ -891,31 +1469,31 @@ public:
 									{
 										for (tinyxml2::XMLElement* Prop = objProps->FirstChildElement(); Prop != NULL; Prop = Prop->NextSiblingElement())
 										{
-											if (Prop->FindAttribute("name") != NULL)
+										if (Prop->FindAttribute("name") != NULL)
+										{
+											std::string f = Prop->FindAttribute("name")->Value();
+											if (f == "Red")
 											{
-												std::string f = Prop->FindAttribute("name")->Value();
-												if (f == "Red")
-												{
-													r = Prop->FindAttribute("value")->IntValue();
-												}
-												if (f == "Green")
-												{
-													g = Prop->FindAttribute("value")->IntValue();
-												}
-												if (f == "Blue")
-												{
-													b = Prop->FindAttribute("value")->IntValue();
-												}
-												if (f == "Alpha")
-												{
-													a = Prop->FindAttribute("value")->IntValue();
-												}
+												r = Prop->FindAttribute("value")->IntValue();
 											}
+											if (f == "Green")
+											{
+												g = Prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "Blue")
+											{
+												b = Prop->FindAttribute("value")->IntValue();
+											}
+											if (f == "Alpha")
+											{
+												a = Prop->FindAttribute("value")->IntValue();
+											}
+										}
 										}
 									}
 
 									color = sf::Color(r, g, b, a);
-									this->StateObjects->push_back(new TextObject(sf::Vector2f(posX, posY), text, color, sf::Text(text, context->game->Resources->getFontResourceDataByName(fontName)->font, pixelSize),true,layer_area_id));
+									this->StateObjects->push_back(new TextObject(sf::Vector2f(posX, posY), text, color, sf::Text(text, context->game->Resources->getFontResourceDataByName(fontName)->font, pixelSize), true, layer_area_id));
 								}
 							}
 						}
@@ -928,6 +1506,29 @@ public:
 
 		b2Filter filter;
 		filter.categoryBits = 0x1;
+
+
+		
+		
+
+		
+
+
+
+		Weapon*w1 = new Weapon("Pistol", 1.2f, 15.f);
+		w1->weaponType = WEAPON_TYPE_TAD_PISTOL;
+		w1->ammoPerClip = 17;
+		w1->ammoInTheClip = w1->ammoPerClip;
+		w1->projectile_texture_name = "proj";
+		w1->shoot_sound_name = "pistol_fire2";
+		w1->empty_clip_sound = "pistol_empty";
+		w1->weapon_ammo_type = AMMO_TYPE_PISTOL;
+		w1->sprite = sf::Sprite();
+		w1->reload_sound_name = "pistol_reload";
+
+		/*weapon_pickup_object*wpo= new weapon_pickup_object(w1, sf::Vector2f(100, 100), sf::Sprite(), 50, 10,true,0);
+		
+		this->StateObjects->push_back(wpo);*/
 
 		if (!StateObjects->empty())
 		{
@@ -949,15 +1550,188 @@ public:
 
 					StateObjects->at(i)->physBodyInitialized = true;
 					StateObjects->at(i)->bodyIsSensor = false;
+
+					//this way was used due to the fact that including State.h or Projectile.h in the SolidObject.h can crash the project
+					//Old way is not as useless as was thought in the beggining
+					StateObjects->at(i)->OnCollision = [this, obj](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						if (object->getType() == CLASS_PROJECTILE)
+						{
+
+							int channel_id = -1;
+
+							if (obj->getMaterialTypeImpactSoundName() != "")
+							{
+								context->game->PlaySound(obj->getMaterialTypeImpactSoundName(), channel_id);
+								if (channel_id != -1)
+								{
+									bool isPlaying = false;
+									context->game->Channels->at(channel_id)->isPlaying(&isPlaying);
+									if (isPlaying)
+									{
+										FMOD_VECTOR pos;
+										pos.z = 0;
+										pos.x = obj->GetObjectPosition().x;
+										pos.y = obj->GetObjectPosition().y;
+
+										context->game->Channels->at(channel_id)->set3DAttributes(&pos, 0);
+									}
+								}
+							}
+						}
+					};
+
+					StateObjects->at(i)->Init();
+
+
 				}
 				else if (SceneTile*obj = dynamic_cast<SceneTile*>(StateObjects->at(i)))
 				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_staticBody;
 
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					obj->OnCollision = [this, obj](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						if (Player*p = dynamic_cast<Player*>(object))
+						{
+							if (p->footstep_sound_type != obj->mat_sound_type_id)
+							{
+								p->footstep_sound_type = obj->mat_sound_type_id;
+							}
+						}
+
+						if (npc_zombie_base*p = dynamic_cast<npc_zombie_base*>(object))
+						{
+							if (p->footstep_sound_type != obj->mat_sound_type_id)
+							{
+								p->footstep_sound_type = obj->mat_sound_type_id;
+							}
+						}
+					};
 				}
 				else if (dynamic_cast<TextObject*>(StateObjects->at(i)))
 				{
 
 				}
+				else if (SoundSourceObject*sso = dynamic_cast<SoundSourceObject*>(StateObjects->at(i)))
+				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_staticBody;
+
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(sso->max_distance , sso->max_distance );
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					StateObjects->at(i)->OnCollision = [this,sso](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						sso->onCollision(object, fixtureA, fixtureB);
+					};
+
+					StateObjects->at(i)->LeftCollision = [this,sso](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						sso->leftCollision(object,fixtureA,fixtureB);
+					};
+
+				}
+				else if (TriggerChangeLevel*tcl = dynamic_cast<TriggerChangeLevel*>(StateObjects->at(i)))
+				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_staticBody;
+
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					StateObjects->at(i)->OnCollision = [this, tcl](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						tcl->onCollision(object, fixtureA, fixtureB,this->context,this->Name);
+					};
+
+					StateObjects->at(i)->LeftCollision = [this, tcl](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						tcl->leftCollision(object, fixtureA, fixtureB);
+					};
+				}
+				else if (trigger_change_area_id* tcai = dynamic_cast<trigger_change_area_id*>(StateObjects->at(i)))
+				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_staticBody;
+
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					StateObjects->at(i)->OnCollision = [this, tcai](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						tcai->onCollision(object, fixtureA, fixtureB);
+					};
+
+					StateObjects->at(i)->LeftCollision = [this, tcai](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						tcai->leftCollision(object, fixtureA, fixtureB);
+					};
+				}
+
 				else if (npc_zombie*z = dynamic_cast<npc_zombie*>(StateObjects->at(i)))
 				{
 					b2BodyDef def;
@@ -969,19 +1743,22 @@ public:
 					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
 
 					b2PolygonShape senseShape;
-					senseShape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width, StateObjects->at(i)->GetObjectRectangle().height);
+					senseShape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width*2, StateObjects->at(i)->GetObjectRectangle().height*2);
 
 					b2FixtureDef TriggerFixture;
 					TriggerFixture.filter = filter;
 					TriggerFixture.density = 0.f;
 					TriggerFixture.shape = &shape;
 					TriggerFixture.isSensor = 0;
+					TriggerFixture.userData = new FixtureData(FixtureActionType::Collision);
+					
 
 					b2FixtureDef senceFixture;
 					senceFixture.filter = filter;
 					senceFixture.density = 0.f;
 					senceFixture.shape = &senseShape;
 					senceFixture.isSensor = 1;
+					senceFixture.userData = new FixtureData(FixtureActionType::Sense);
 
 					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
 					StateObjects->at(i)->body->CreateFixture(&senceFixture);
@@ -990,6 +1767,51 @@ public:
 					StateObjects->at(i)->physBodyInitialized = true;
 					//is set by main fixture and/or purpose of the object itself
 					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					
+
+					z->OnCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						z->onCollision(object, fixtureA, fixtureB, this->context, "PlayState");
+					};
+
+					z->LeftCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						z->leftCollision(object, fixtureA, fixtureB, this->context, "PlayState");
+					};
+
+
+					Animation::SpritesAnimation*zombie1_idle = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_idle");
+					for (int i = 0; i < 17; i++)
+					{
+						zombie1_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-idle_" + std::to_string(i))->texture));
+					}
+
+
+					Animation::SpritesAnimation*zombie1_move = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_move");
+					for (int i = 0; i < 17; i++)
+					{
+						zombie1_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-move_" + std::to_string(i))->texture));
+					}
+
+
+					Animation::SpritesAnimation*zombie1_attack = new  Animation::SpritesAnimation(true, 0.1f, "skeleton_attack");
+					for (int i = 0; i < 9; i++)
+					{
+						zombie1_attack->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-attack_" + std::to_string(i))->texture));
+					}
+
+
+					z->spritesAnimations->addAnimation(zombie1_idle);
+
+					z->spritesAnimations->addAnimation(zombie1_move);
+
+					z->spritesAnimations->addAnimation(zombie1_attack);
+
+					z->addRelation({ RelationType::Noone ,npc_zombie::Type() });
+					z->Init();
+					z->SetAnimation("skeleton_attack");
+
 				}
 				else if (PropPhysics*pp = dynamic_cast<PropPhysics*>(StateObjects->at(i)))
 				{
@@ -1023,6 +1845,138 @@ public:
 					StateObjects->at(i)->body->SetMassData(&propMass);
 					StateObjects->at(i)->Init();
 				}
+
+				else if (ammo_pickup_object*apo = dynamic_cast<ammo_pickup_object*>(StateObjects->at(i)))
+				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_dynamicBody;
+
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+
+					apo->OnCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						apo->onCollision(object, fixtureA, fixtureB, this->context, this->Name);
+					};
+
+					apo->LeftCollision = [this, apo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						apo->leftCollision(object, fixtureA, fixtureB, this->context, this->Name);
+					};
+
+
+					StateObjects->at(i)->Init();
+				}
+
+				else if (weapon_pickup_object*wpo = dynamic_cast<weapon_pickup_object*>(StateObjects->at(i)))
+				{
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_dynamicBody;
+
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					StateObjects->at(i)->bodyIsSensor = TriggerFixture.isSensor;
+
+					wpo->OnCollision = [this, wpo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						wpo->onCollision(object, fixtureA, fixtureB, this->context, this->Name);
+					};
+
+					wpo->LeftCollision = [this, wpo](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						wpo->leftCollision(object, fixtureA, fixtureB, this->context, this->Name);
+					};
+
+
+					StateObjects->at(i)->Init();
+				}
+
+				else if (ai_node*ain = dynamic_cast<ai_node*>(StateObjects->at(i)))
+				{
+					if (this->GetObjectByName(ain->next_name) != NULL && ain->next_name.c_str() != "")
+					{
+						ain->next = dynamic_cast<ai_node*>(this->GetObjectByName(ain->next_name));
+					}
+
+					b2BodyDef def;
+					def.position.Set(StateObjects->at(i)->GetObjectPosition().x + StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectPosition().y + StateObjects->at(i)->GetObjectRectangle().height / 2);
+					def.type = b2BodyType::b2_staticBody;
+					StateObjects->at(i)->body = world.CreateBody(&def);
+
+					b2PolygonShape shape;
+					shape.SetAsBox(StateObjects->at(i)->GetObjectRectangle().width / 2, StateObjects->at(i)->GetObjectRectangle().height / 2);
+
+					b2PolygonShape Actshape;
+					Actshape.SetAsBox(ain->actionRectWidth / 2, ain->actionRectHeight / 2);
+
+					b2FixtureDef actionFixture;
+					actionFixture.filter = filter;
+					actionFixture.density = 0.f;
+					actionFixture.shape = &Actshape;
+					actionFixture.isSensor = 1;
+					actionFixture.userData = new FixtureData(FixtureActionType::AI_Node_Action);
+
+					b2FixtureDef TriggerFixture;
+					TriggerFixture.filter = filter;
+					TriggerFixture.density = 0.f;
+					TriggerFixture.shape = &shape;
+					TriggerFixture.isSensor = 1;
+					TriggerFixture.userData = new FixtureData(FixtureActionType::Trigger);
+
+
+
+					StateObjects->at(i)->body->CreateFixture(&actionFixture);
+					StateObjects->at(i)->body->CreateFixture(&TriggerFixture);
+
+					StateObjects->at(i)->body->SetUserData(StateObjects->at(i));
+
+					StateObjects->at(i)->physBodyInitialized = true;
+					//ai_nodes can not have collision of the solid object
+					StateObjects->at(i)->bodyIsSensor = true;
+
+					ain->OnCollision = [this, ain](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						ain->onCollision(object, fixtureA, fixtureB, this->context, "PlayState");
+					};
+
+					ain->LeftCollision = [this, ain](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						ain->leftCollision(object, fixtureA, fixtureB, this->context, "PlayState");
+					};
+
+
+				}
+
 				else
 				{
 
@@ -1090,8 +2044,6 @@ public:
 
 	void Init()override
 	{
-
-
 		context->window->setFramerateLimit(300);
 
 		Animation::SpritesAnimation*rifle_move = new  Animation::SpritesAnimation(true, 0.2f, "solder_rifle_move");
@@ -1100,40 +2052,136 @@ public:
 			rifle_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_rifle_move_" + std::to_string(i))->texture));
 		}
 		player->spritesAnimations->addAnimation(rifle_move);
+
+		Animation::SpritesAnimation*rifle_reload = new  Animation::SpritesAnimation(true, 0.05f, "solder_rifle_reload");
+		for (int i = 0; i < 20; i++)
+		{
+			rifle_reload->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_rifle_reload_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(rifle_reload);
+
+		Animation::SpritesAnimation*pistol_reload = new  Animation::SpritesAnimation(true, 0.06f, "solder_pistol_reload");
+		for (int i = 0; i < 15; i++)
+		{
+			pistol_reload->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_pistol_reload_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(pistol_reload);
+
+		//
+		Animation::SpritesAnimation*pistol_shoot = new  Animation::SpritesAnimation(false, 0.3f, "solder_pistol_shoot");
+		for (int i = 0; i < 3; i++)
+		{
+			pistol_shoot->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_pistol_shoot_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(pistol_shoot);
+
+		//
+		Animation::SpritesAnimation*rifle_shoot = new  Animation::SpritesAnimation(false, 0.3f, "solder_rifle_shoot");
+		for (int i = 0; i < 3; i++)
+		{
+			rifle_shoot->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_rifle_shoot_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(rifle_shoot);
+
+
+		//
+		Animation::SpritesAnimation*shotgun_shoot = new  Animation::SpritesAnimation(false, 0.3f, "solder_shotgun_shoot");
+		for (int i = 0; i < 3; i++)
+		{
+			shotgun_shoot->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_shotgun_shoot_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(shotgun_shoot);
+
+
+
+		//
+		Animation::SpritesAnimation*shotgun_reload = new  Animation::SpritesAnimation(true, 0.05f, "solder_shotgun_reload");
+		for (int i = 0; i < 20; i++)
+		{
+			shotgun_reload->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_shotgun_reload_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(shotgun_reload);
+
+		//
+		Animation::SpritesAnimation*shotgun_move = new  Animation::SpritesAnimation(true, 0.05f, "solder_shotgun_move");
+		for (int i = 0; i < 20; i++)
+		{
+			shotgun_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_shotgun_move_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(shotgun_move);
+
+
 		Animation::SpritesAnimation*pistol_move = new  Animation::SpritesAnimation(true, 0.2f, "solder_pistol_move");
 		for (int i = 0; i < 20; i++)
 		{
 			pistol_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_pistol_move_" + std::to_string(i))->texture));
 		}
 		player->spritesAnimations->addAnimation(pistol_move);
-		player->Init();
 
-		npc_zombie*z = new npc_zombie(sf::Vector2f(500, 500), 1.f, 100, 100);
-		z->Init();
-		z->OnCollision = [this, z](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+		//
+		Animation::SpritesAnimation*knife_move = new  Animation::SpritesAnimation(true, 0.2f, "solder_knife_move");
+		for (int i = 0; i < 20; i++)
 		{
-			z->onCollision(object, this->context, "PlayState");
-		};
+			knife_move->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_knife_move_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(knife_move);
 
+		//
+		Animation::SpritesAnimation*knife_idle = new  Animation::SpritesAnimation(true, 0.05f, "solder_knife_idle");
+		for (int i = 0; i < 20; i++)
+		{
+			knife_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_knife_idle_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(knife_idle);
 
+		//
+		Animation::SpritesAnimation*knife_attack = new  Animation::SpritesAnimation(false, 0.05f, "solder_knife_attack");
+		for (int i = 0; i <15; i++)
+		{
+			knife_attack->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_knife_attack_" + std::to_string(i))->texture));
+		}
+		knife_attack->ForceScale = true;
+		player->spritesAnimations->addAnimation(knife_attack);
+
+		//
+		Animation::SpritesAnimation*pistol_idle = new  Animation::SpritesAnimation(true, 0.05f, "solder_pistol_idle");
+		for (int i = 0; i < 20; i++)
+		{
+			pistol_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_pistol_idle_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(pistol_idle);
+
+		//
+		Animation::SpritesAnimation*rifle_idle = new  Animation::SpritesAnimation(true, 0.05f, "solder_rifle_idle");
+		for (int i = 0; i < 20; i++)
+		{
+			rifle_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_rifle_idle_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(rifle_idle);
+
+		//
+		Animation::SpritesAnimation*shotgun_idle = new  Animation::SpritesAnimation(true, 0.05f, "solder_shotgun_idle");
+		for (int i = 0; i < 20; i++)
+		{
+			shotgun_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("solder_shotgun_idle_" + std::to_string(i))->texture));
+		}
+		player->spritesAnimations->addAnimation(shotgun_idle);
+
+		player->Init();
 
 
 		projObj = new projectile(sf::Vector2f(0, 0), 100.f, 100.f, 50.0f, 2.0f, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
 
 
-		Animation::SpritesAnimation*zombie_idle = new  Animation::SpritesAnimation(true, 0.2f, "skeleton_idle");
-		for (int i = 0; i < 17; i++)
-		{
-			zombie_idle->AddFrame(sf::Sprite(context->game->Resources->getTextureResourceDataByName("skeleton-idle_" + std::to_string(i))->texture));
-		}
-		z->spritesAnimations->addAnimation(zombie_idle);
-		z->Init();
-		z->SetAnimation("skeleton_idle");
+		
 
 
+		player->AddAmmo({ AMMO_TYPE_PISTOL,5});
+		player->AddAmmo({ AMMO_TYPE_RIFLE,5 });
+		player->AddAmmo({ AMMO_TYPE_SHOTGUN,5 });
+		player->AddAmmo({ AMMO_TYPE_SHOTGUN,1 });
 
 
-		this->StateObjects->push_back(z);
 
 
 
@@ -1148,6 +2196,16 @@ public:
 		l2->SetPosition(sf::Vector2f(10, SCREENHEIGHT - 200));
 		l2->Init();
 		this->PlayerUI->Components->push_back(l2);
+
+		GUI::Label*l_ammo = new GUI::Label("ammo_in_clip", "9999", sf::Color::Red, context->game->Resources->getFontResourceDataByName("calibri")->font, 80, context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture);
+		l_ammo->SetPosition(sf::Vector2f(SCREENWIDTH-400, SCREENHEIGHT - 200));
+		l_ammo->Init();
+		this->PlayerUI->Components->push_back(l_ammo);
+
+		GUI::Label*l_clips = new GUI::Label("clips", "9999", sf::Color::Red, context->game->Resources->getFontResourceDataByName("calibri")->font, 80, context->game->Resources->getTextureResourceDataByName("textBoxTexture1")->texture);
+		l_clips->SetPosition(sf::Vector2f(SCREENWIDTH - 220, SCREENHEIGHT - 200));
+		l_clips->Init();
+		this->PlayerUI->Components->push_back(l_clips);
 
 
 		cursorParticles.Stop();
@@ -1209,7 +2267,7 @@ public:
 	}
 	virtual void Draw() override
 	{
-
+		
 		if (!this->StateObjects->empty())
 		{
 			for (size_t i = 0; i < this->StateObjects->size(); i++)
@@ -1224,58 +2282,60 @@ public:
 				}
 				if (DEBUG_DRAWCOLLISION)
 				{
-					if (this->StateObjects->at(i)->physBodyInitialized == true)
-					{
 
-						if (this->StateObjects->at(i)->body->GetFixtureList() != NULL)
+					if (!dynamic_cast<SceneTile*>(StateObjects->at(i)))
+					{
+					
+						if (this->StateObjects->at(i)->physBodyInitialized == true)
 						{
 
-
-
-							for (b2Fixture*fix = this->StateObjects->at(i)->body->GetFixtureList(); fix != NULL; fix = fix->GetNext())
+							if (this->StateObjects->at(i)->body->GetFixtureList() != NULL)
 							{
-								if (fix->GetType() == b2Shape::Type::e_circle)
+								for (b2Fixture*fix = this->StateObjects->at(i)->body->GetFixtureList(); fix != NULL; fix = fix->GetNext())
 								{
-									b2CircleShape*coll = dynamic_cast<b2CircleShape*>(fix->GetShape());
+									if (fix->GetType() == b2Shape::Type::e_circle)
+									{
+										b2CircleShape*coll = dynamic_cast<b2CircleShape*>(fix->GetShape());
+										sf::CircleShape cs = sf::CircleShape(coll->m_radius);
+										cs.setPosition(sf::Vector2f(this->StateObjects->at(i)->body->GetPosition().x, this->StateObjects->at(i)->body->GetPosition().y));
+										context->window->draw(cs);
+									}
+									if (fix->GetType() == b2Shape::Type::e_polygon)
+									{
+										b2PolygonShape*coll = dynamic_cast<b2PolygonShape*>(fix->GetShape());
+
+										sf::VertexArray va = sf::VertexArray(sf::PrimitiveType::LineStrip);
+
+										for (int ind = 0; ind < coll->m_count; ind++)
+										{
+											va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[ind].x + this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[ind].y + this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
+										}
+										va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[0].x + this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[0].y + this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
+										context->window->draw(va);
+									}
+								}
+								/*if (this->StateObjects->at(i)->body->GetFixtureList()->GetType() == b2Shape::Type::e_circle)
+								{
+									b2CircleShape*coll = dynamic_cast<b2CircleShape*>(this->StateObjects->at(i)->body->GetFixtureList()->GetShape());
 									sf::CircleShape cs = sf::CircleShape(coll->m_radius);
 									cs.setPosition(sf::Vector2f(this->StateObjects->at(i)->body->GetPosition().x, this->StateObjects->at(i)->body->GetPosition().y));
 									context->window->draw(cs);
 								}
-								if (fix->GetType() == b2Shape::Type::e_polygon)
+								if (this->StateObjects->at(i)->body->GetFixtureList()->GetType() == b2Shape::Type::e_polygon)
 								{
-									b2PolygonShape*coll = dynamic_cast<b2PolygonShape*>(fix->GetShape());
+									b2PolygonShape*coll = dynamic_cast<b2PolygonShape*>(this->StateObjects->at(i)->body->GetFixtureList()->GetShape());
 
 									sf::VertexArray va = sf::VertexArray(sf::PrimitiveType::LineStrip);
 
 									for (int ind = 0; ind < coll->m_count; ind++)
 									{
-										va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[ind].x + this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[ind].y + this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
+											va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[ind].x+ this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[ind].y +this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
 									}
-									va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[0].x + this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[0].y + this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
 									context->window->draw(va);
-								}
+								}*/
 							}
-							/*if (this->StateObjects->at(i)->body->GetFixtureList()->GetType() == b2Shape::Type::e_circle)
-							{
-								b2CircleShape*coll = dynamic_cast<b2CircleShape*>(this->StateObjects->at(i)->body->GetFixtureList()->GetShape());
-								sf::CircleShape cs = sf::CircleShape(coll->m_radius);
-								cs.setPosition(sf::Vector2f(this->StateObjects->at(i)->body->GetPosition().x, this->StateObjects->at(i)->body->GetPosition().y));
-								context->window->draw(cs);
-							}
-							if (this->StateObjects->at(i)->body->GetFixtureList()->GetType() == b2Shape::Type::e_polygon)
-							{
-								b2PolygonShape*coll = dynamic_cast<b2PolygonShape*>(this->StateObjects->at(i)->body->GetFixtureList()->GetShape());
 
-								sf::VertexArray va = sf::VertexArray(sf::PrimitiveType::LineStrip);
-
-								for (int ind = 0; ind < coll->m_count; ind++)
-								{
-										va.append(sf::Vertex(sf::Vector2f(coll->m_vertices[ind].x+ this->StateObjects->at(i)->GetObjectPosition().x, coll->m_vertices[ind].y +this->StateObjects->at(i)->GetObjectPosition().y), sf::Color::Red));
-								}
-								context->window->draw(va);
-							}*/
 						}
-
 					}
 				}
 				if (DEBUG_DRAWREVERB)
@@ -1316,6 +2376,21 @@ public:
 
 		}
 		player->Draw(context->window);
+
+		sf::Transform tr;
+		tr.rotate(player->RotationAngle, 0, 0);
+
+		sf::Vector2f pointPos = player->GetChildByName("rifle_shoot_point")->GetObjectPosition();
+		pointPos = tr.transformPoint(pointPos);
+		/*pointPos = RotatePoint(pointPos, player->RotationAngle*(180 / M_PI), { 0,0 });*/
+		
+		pointPos += sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y)/*{player->GetObjectPosition().x - player->GetObjectRectangle().width, player->GetObjectPosition().y - player->GetObjectRectangle().height}*/;
+		sf::Vertex p[2];
+		p[0] = sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y);
+		p[1]= pointPos;
+		
+		
+		context->window->draw(p, 2, sf::PrimitiveType::Lines);
 		if (DEBUG_DRAWCOLLISION)
 		{
 			if (player->body->GetFixtureList() != NULL)
@@ -1392,9 +2467,10 @@ public:
 
 		if (event.type == sf::Event::EventType::Closed)
 		{
-			context->window->close();
+			context->game->close();
+			return;
 		}
-		if (event.key.code == sf::Keyboard::Tab&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::Tab&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			if (!player->weapons->empty())
 			{
@@ -1412,15 +2488,33 @@ public:
 			}
 
 		}
-		if (event.key.code == sf::Keyboard::Num1&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::Num1&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			LoadMap("td_free_tv.tmx");
 		}
-		if (event.key.code == sf::Keyboard::Num2&&event.type == sf::Event::EventType::KeyPressed)
+
+		else if (event.key.code == sf::Keyboard::Num2&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			LoadMap("t_t1.tmx");
 		}
-		if (event.mouseButton.button == sf::Mouse::Left&&event.type == sf::Event::EventType::MouseButtonPressed)
+
+		else if (event.key.code == sf::Keyboard::Num3&&event.type == sf::Event::EventType::KeyPressed)
+		{
+			LoadMap("ai_zombie_test.tmx");
+		}
+		else if (event.key.code == sf::Keyboard::I&&event.type == sf::Event::EventType::KeyPressed)
+		{
+			player->AddAmmo({ static_cast<int>(player->currentWeapon->weapon_ammo_type),5 });
+		}
+		else if (event.key.code == sf::Keyboard::P&&event.type == sf::Event::EventType::KeyPressed)
+		{
+			std::cout << player->body->GetPosition().x << std::endl;
+			std::cout << player->body->GetPosition().y << std::endl;
+			std::cout << std::endl;
+			std::cout << this->current_map << std::endl;
+			std::cout << std::endl;
+		}
+		else if (event.mouseButton.button == sf::Mouse::Left&&event.type == sf::Event::EventType::MouseButtonPressed)
 		{
 			if (player->items->isActive&&player->items->isEmpty())
 			{
@@ -1433,64 +2527,7 @@ public:
 				}
 			}
 
-			if (!Channels->empty())
-			{
-				for (size_t i = 0; i < Channels->size(); i++)
-				{
-					bool res;
-					Channels->at(i)->isPlaying(&res);
-					if (Channels->at(i) == NULL)
-					{
-						if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
-						{
-							FMOD_RESULT res;
-							res = context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName("pistol_fire2")->sound, 0, false, &Channels->at(i));
-							if (res != FMOD_OK)
-							{
-								std::cout << "Error playing sound. Name: " << context->game->Resources->getSoundResourceDataByName("pistol_fire2")->name.c_str() << "Filename: " << context->game->Resources->getSoundResourceDataByName("pistol_fire2")->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
-							}
 
-						}
-						if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_RIFLE)
-						{
-							FMOD_RESULT res;
-							res = context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName("fire1")->sound, 0, false, &Channels->at(i));
-							if (res != FMOD_OK)
-							{
-								std::cout << "Error playing sound. Name: " << context->game->Resources->getSoundResourceDataByName("fire1")->name.c_str() << "Filename: " << context->game->Resources->getSoundResourceDataByName("fire1")->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
-							}
-
-
-							break;
-						}
-						else if (res == false)
-						{
-							if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
-							{
-								FMOD_RESULT res;
-								res = context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName("pistol_fire2")->sound, 0, false, &Channels->at(i));
-								if (res != FMOD_OK)
-								{
-									std::cout << "Error playing sound. Name: " << context->game->Resources->getSoundResourceDataByName("pistol_fire2")->name.c_str() << "Filename: " << context->game->Resources->getSoundResourceDataByName("pistol_fire2")->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
-								}
-
-							}
-							if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_RIFLE)
-							{
-								FMOD_RESULT res;
-								res = context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName("fire1")->sound, 0, false, &Channels->at(i));
-								if (res != FMOD_OK)
-								{
-									std::cout << "Error playing sound. Name: " << context->game->Resources->getSoundResourceDataByName("fire1")->name.c_str() << "Filename: " << context->game->Resources->getSoundResourceDataByName("fire1")->filename.c_str() << "Error: " << FMOD_ErrorString(res) << std::endl;
-								}
-
-							}
-
-						}
-					}
-
-				}
-			}
 			this->world;
 			this->context->game->GetStateByName("PlayState")->world;
 			Animation::Animation blood_a = context->game->animationsData->getAnimationDataByName("blood_a");
@@ -1503,86 +2540,245 @@ public:
 			diff.x = mousePos.x - player->GetObjectPosition().x;
 			diff.y = mousePos.y - player->GetObjectPosition().y;
 
-			if (player->currentWeapon->ammoInTheClip <= 0)
+
+
+			if (player->currentWeapon->weaponType != WEAPON_TYPE_TAD_KNIFE)
 			{
-				if (player->currentWeapon->clips > 0)
+				if (player->currentWeapon->ammoInTheClip <= 0 && player->currentWeapon->clips > 0)
 				{
-					player->currentWeapon->clips -= 1;
-					player->currentWeapon->ammoInTheClip = player->currentWeapon->ammoPerClip;
-				}
-				else
-				{
-					return;
-				}
-			}
-			if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_RIFLE)
-			{
-				proje* bullet = new proje(sf::Vector2f(0, 0), 10.f, 10.f, 50.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
+					player->is_reloading = true;
 
-				bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-				{
-					bullet->projectileOnCollision(object, this->context, "PlayState");
-				};
-				bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-				{
-					bullet->projectileOnLeftCollision(object, this->context, "PlayState");
-				};
-
-				bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
-				player->Projectiles->push_back(bullet);
-				player->currentWeapon->ammoInTheClip -= 1;
-
-			}
-			else if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_PISTOL)
-			{
-
-				projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
-
-				bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-				{
-
-					bullet->projectileOnCollision(object, this->context, "PlayState");
-				};
-				bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-				{
-					bullet->projectileOnLeftCollision(object, this->context, "PlayState");
-				};
-
-				bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
-				player->Projectiles->push_back(bullet);
-				player->currentWeapon->ammoInTheClip -= 1;
-			}
-
-
-		}
-		if (event.mouseButton.button == sf::Mouse::Right&&event.type == sf::Event::EventType::MouseButtonPressed)
-		{
-			/*projObj->SetObjectPosition(sf::Vector2f(player->GetObjectRectangle().left, player->GetObjectRectangle().top));
-			dest = sf::Vector2f(event.mouseButton.x, event.mouseButton.y);
-			diff = dest - player->GetObjectPosition();
-			int vo = 0;*/
-			/*	if (!Channels->empty())
-				{
-					for (size_t i = 0; i < Channels->size(); i++)
+					if (player->reload_sound_channel_id == -1)
 					{
-						bool res;
-						Channels->at(i)->isPlaying(&res);
-						if (res == false)
+						this->PlaySound(player->currentWeapon->reload_sound_name, player->reload_sound_channel_id);
+
+						if (player->reload_sound_channel_id != -1)
 						{
-							context->game->lowSoundSystem->playSound(shoot2, 0, false, &Channels->at(i));
-
-							break;
+							bool isPlaying = false;
+							context->game->Channels->at(player->reload_sound_channel_id)->isPlaying(&isPlaying);
+							if (isPlaying)
+							{
+								FMOD_VECTOR pos;
+								pos.z = 0;
+								pos.x = player->body->GetPosition().x;
+								pos.y = player->body->GetPosition().y;
+								FMOD_RESULT r = context->game->Channels->at(player->reload_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+								if (r != FMOD_OK)
+								{
+									std::cout << FMOD_ErrorString(r) << " -\"Reload\" Sound 3D positioning on Handle Event" << std::endl;
+								}
+							}
 						}
-						else if (Channels->at(i) == NULL)
+					}
+				}
+			}
+
+			if (!player->is_shooting)
+			{
+
+				if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_KNIFE)
+				{
+					//knifes hit is made by shooting projectile in the direction of the attack
+					//that's the sipliest way of doing that
+
+					player->is_shooting = true;
+
+					sf::Transform tr;
+					tr.rotate(player->RotationAngle, 0, 0);
+
+					sf::Vector2f pointPos = player->GetChildByName("rifle_shoot_point")->GetObjectPosition();
+					pointPos = tr.transformPoint(pointPos);
+
+					pointPos += sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y);
+					/*diff.x = mousePos.x - pointPos.x;
+					diff.y = mousePos.y - pointPos.y;*/
+					
+					//player can only hit few dm(meter/10) in front of him/her-self
+					knife_attack_projectile* bullet = new knife_attack_projectile(sf::Vector2f(0, 0), 15.f, 15.f, 5.0f, player->currentWeapon->projectileSpeed * 10);
+					bullet->owner = player;
+					bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						bullet->projectileOnCollision(object, fixtureA, fixtureB, this->context, "PlayState");
+					};
+					bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+					{
+						bullet->projectileOnLeftCollision(object, this->context, "PlayState");
+					};
+
+					bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), pointPos/*sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y)*/, this->world, filter);
+					player->Projectiles->push_back(bullet);
+					/*player->currentWeapon->ammoInTheClip -= 1;*/
+
+					int channel_id = -1;
+					int num = m_get_random_number(1, 3);
+					PlaySound(player->currentWeapon->shoot_sound_name + std::to_string(num), channel_id);
+
+					if (channel_id != -1)
+					{
+						if (channel_id != -1)
 						{
-							context->game->lowSoundSystem->playSound(shoot2, 0, false, &Channels->at(i));
+							player->shooting_sound_channel_ids->push_back(channel_id);
 
-							break;
+							bool isPlaying = false;
+
+							if (context->game->Channels->at(channel_id) != NULL)
+							{
+								context->game->Channels->at(channel_id)->isPlaying(&isPlaying);
+								if (isPlaying)
+								{
+									FMOD_VECTOR pos;
+									pos.z = 0;
+									pos.x = player->body->GetPosition().x;
+									pos.y = player->body->GetPosition().y;
+									context->game->Channels->at(channel_id)->set3DAttributes(&pos, 0);
+								}
+							}
 						}
-
 					}
 
-				}*/
+					
+				}
+				else if (!player->is_reloading)
+				{
+					player->is_shooting = true;
+					if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
+					{
+						if (player->currentWeapon->ammoInTheClip > 0)
+						{
+							for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
+							{
+
+								if (player->currentWeapon->ammoInTheClip <= 0)
+								{
+									int channel_id = -1;
+									this->PlaySound(player->currentWeapon->empty_clip_sound, channel_id);
+									if (channel_id != -1)
+									{
+										player->shooting_sound_channel_ids->push_back(channel_id);
+									}
+
+
+
+									break;
+								}
+
+								projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
+
+								bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+								{
+
+									bullet->projectileOnCollision(object, fixtureA, fixtureB, this->context, "PlayState");
+								};
+								bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+								{
+									bullet->projectileOnLeftCollision(object, this->context, "PlayState");
+								};
+								bullet->owner = player;
+								bullet->Launch(static_cast<float>((atan2(diff.y, diff.x) + i/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
+								player->Projectiles->push_back(bullet);
+
+
+								int channel_id = -1;
+								PlaySound(player->currentWeapon->shoot_sound_name, channel_id);
+
+								if (channel_id != -1)
+								{
+									if (channel_id != -1)
+									{
+										player->shooting_sound_channel_ids->push_back(channel_id);
+
+										bool isPlaying = false;
+
+										if (context->game->Channels->at(channel_id) != NULL)
+										{
+											context->game->Channels->at(channel_id)->isPlaying(&isPlaying);
+											if (isPlaying)
+											{
+												FMOD_VECTOR pos;
+												pos.z = 0;
+												pos.x = player->body->GetPosition().x;
+												pos.y = player->body->GetPosition().y;
+												context->game->Channels->at(channel_id)->set3DAttributes(&pos, 0);
+											}
+										}
+									}
+								}
+
+							}
+							player->currentWeapon->ammoInTheClip -= 1;
+						}
+					}
+					else
+					{
+						for (int i = 0; i < player->currentWeapon->bullets_per_shot; i++)
+						{
+							if (player->currentWeapon->ammoInTheClip <= 0)
+							{
+								this->PlaySound(player->currentWeapon->empty_clip_sound);
+								break;
+							}
+
+
+							sf::Transform tr;
+							tr.rotate(player->RotationAngle, 0, 0);
+
+							sf::Vector2f pointPos = player->GetChildByName("rifle_shoot_point")->GetObjectPosition();
+							pointPos = tr.transformPoint(pointPos);
+
+							pointPos += sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y);
+							/*diff.x = mousePos.x - pointPos.x;
+							diff.y = mousePos.y - pointPos.y;*/
+
+							projectile* bullet = new projectile(sf::Vector2f(0, 0), 5.f, 5.f, 500.0f, player->currentWeapon->projectileSpeed * 10, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
+							bullet->owner = player;
+							bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+							{
+
+								bullet->projectileOnCollision(object, fixtureA, fixtureB, this->context, "PlayState");
+							};
+							bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
+							{
+								bullet->projectileOnLeftCollision(object, this->context, "PlayState");
+							};
+
+							bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), pointPos/*sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y)*/, this->world, filter);
+							player->Projectiles->push_back(bullet);
+							player->currentWeapon->ammoInTheClip -= 1;
+
+							int channel_id = -1;
+							PlaySound(player->currentWeapon->shoot_sound_name, channel_id);
+
+							if (channel_id != -1)
+							{
+								if (channel_id != -1)
+								{
+									player->shooting_sound_channel_ids->push_back(channel_id);
+
+									bool isPlaying = false;
+
+									if (context->game->Channels->at(channel_id) != NULL)
+									{
+										context->game->Channels->at(channel_id)->isPlaying(&isPlaying);
+										if (isPlaying)
+										{
+											FMOD_VECTOR pos;
+											pos.z = 0;
+											pos.x = player->body->GetPosition().x;
+											pos.y = player->body->GetPosition().y;
+											context->game->Channels->at(channel_id)->set3DAttributes(&pos, 0);
+										}
+									}
+								}
+							}
+						}
+					}
+
+				}
+				int k = 0;
+			}
+		}
+		else if (event.mouseButton.button == sf::Mouse::Right&&event.type == sf::Event::EventType::MouseButtonPressed)
+		{
 
 			for (size_t i = 0; i < StateObjects->size(); i++)
 			{
@@ -1591,83 +2787,8 @@ public:
 					StateObjects->at(i)->applyImpulse(b2Vec2(100, 100));
 				}
 			}
-			Animation::Animation blood_a = Animation::Animation("blood_a");
-			blood_a.FrameIndexes->push_back(Animation::CellIndex(0, 0));
-			blood_a.FrameIndexes->push_back(Animation::CellIndex(0, 1));
-			blood_a.FrameIndexes->push_back(Animation::CellIndex(0, 2));
-			blood_a.FrameIndexes->push_back(Animation::CellIndex(0, 3));
-			blood_a.FrameIndexes->push_back(Animation::CellIndex(0, 4));
-			blood_a.FrameIndexes->push_back(Animation::CellIndex(0, 5));
-			blood_a.FrameIndexes->push_back(Animation::CellIndex(0, 6));
-			blood_a.FrameIndexes->push_back(Animation::CellIndex(0, 7));
-
-			b2Filter filter;
-			filter.categoryBits = 1;
-
-			sf::Vector2f diff;
-
-			diff.x = event.mouseButton.x - player->GetObjectPosition().x;
-			diff.y = event.mouseButton.y - player->GetObjectPosition().y;
-
-			projectile* bullet = new projectile(sf::Vector2f(0, 0), 10.f, 10.f, 50.0f, player->currentWeapon->projectileSpeed, sf::Sprite(context->game->Resources->getTextureResourceDataByName("proj")->texture));
-
-			bullet->OnCollision = [this, blood_a, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-			{
-
-				if (dynamic_cast<projectile*>(object)) { return; }
-				if (dynamic_cast<Player*>(object)) { return; }
-				bullet->CollidingObjects->push_back(object);
-
-
-				sf::Vector2f diff;
-				/*diff.x = object->GetObjectPosition().x - bullet->Origin.x;
-				diff.y = object->GetObjectPosition().y - bullet->Origin.y;*/
-
-				//Use location where bullet hit rather then hitted object's location(looks more realistic)
-				diff.x = bullet->body->GetPosition().x - bullet->Origin.x;
-				diff.y = bullet->body->GetPosition().y - bullet->Origin.y;
-
-
-				float a = static_cast<float>((atan2(diff.x, diff.y)*(180 / M_PI)));
-				Decal*blood;
-				if (dynamic_cast<npc_zombie*>(object))
-				{
-
-
-					blood = new Decal(sf::Vector2f(bullet->body->GetPosition().x, bullet->body->GetPosition().y), 0.05f, true, 0.3f, 512, 512, sf::Sprite(context->game->Resources->getTextureResourceDataByName("blood_a_anim")->texture), 100, 100);
-					blood->Anim->sprite.setRotation(-a - 270.f);
-					blood->Init();
-					blood->animations->push_back(blood_a);
-					blood->SetAnimation("blood_a");
-					this->StateObjects->push_back(blood);
-				}
-				else
-				{
-
-
-					blood = new Decal(sf::Vector2f(bullet->body->GetPosition().x, bullet->body->GetPosition().y), 0.05f, true, 0.3f, 512, 512, sf::Sprite(context->game->Resources->getTextureResourceDataByName("blood_a_anim")->texture), 100, 100);
-					blood->Anim->sprite.setRotation(-a - 270.f);
-					blood->Init();
-					blood->animations->push_back(blood_a);
-					blood->SetAnimation("blood_a");
-					this->StateObjects->push_back(blood);
-				}
-			};
-			bullet->LeftCollision = [this, bullet](Object*object, b2Fixture *fixtureA, b2Fixture *fixtureB)
-			{
-				if (!bullet->CollidingObjects->empty())
-				{
-					if (std::find(bullet->CollidingObjects->begin(), bullet->CollidingObjects->end(), object) != bullet->CollidingObjects->end())
-					{
-						bullet->CollidingObjects->erase(std::find(bullet->CollidingObjects->begin(), bullet->CollidingObjects->end(), object));
-					}
-				}
-			};
-
-			bullet->Launch(static_cast<float>((atan2(diff.y, diff.x)/**(180 / M_PI)*/)), sf::Vector2f(player->body->GetPosition().x, player->body->GetPosition().y), this->world, filter);
-			player->Projectiles->push_back(bullet);
 		}
-		if (event.type == sf::Event::EventType::MouseWheelScrolled)
+		else if (event.type == sf::Event::EventType::MouseWheelScrolled)
 		{
 			int wid = player->weapon_id;
 			if ((wid + event.mouseWheel.delta) < 0)
@@ -1685,7 +2806,7 @@ public:
 			}
 
 		}
-		if (event.type == sf::Event::EventType::MouseMoved)
+		else if (event.type == sf::Event::EventType::MouseMoved)
 		{
 			sf::Vector2f mousePos = sf::Vector2f(event.mouseMove.x + player->GetObjectPosition().x - (SCREENWIDTH / 2), event.mouseMove.y + player->GetObjectPosition().y - (SCREENHEIGHT / 2));
 			sf::Vector2f diff;
@@ -1697,106 +2818,42 @@ public:
 		/*	player->Anim->sprite.setRotation((atan2(diff.y, diff.x)*(180 / M_PI)));*/
 			player->RotationAngle = (atan2(diff.y, diff.x)*(180 / M_PI));
 		}
-		if (event.key.code == sf::Keyboard::Left&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::Left&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			WalkLeft = true;
 		}
-		if (event.key.code == sf::Keyboard::Right&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::Right&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			WalkRight = true;
 		}
-		if (event.key.code == sf::Keyboard::Up&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::Up&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			WalkUp = true;
 		}
-		if (event.key.code == sf::Keyboard::Down&&event.type == sf::Event::EventType::KeyPressed)
+		else if (event.key.code == sf::Keyboard::Down&&event.type == sf::Event::EventType::KeyPressed)
 		{
 			WalkDown = true;
 		}
 
 
-		if (event.key.code == sf::Keyboard::Left&&event.type == sf::Event::EventType::KeyReleased)
+		else if (event.key.code == sf::Keyboard::Left&&event.type == sf::Event::EventType::KeyReleased)
 		{
 			WalkLeft = false;
 		}
-		if (event.key.code == sf::Keyboard::Right&&event.type == sf::Event::EventType::KeyReleased)
+		else if (event.key.code == sf::Keyboard::Right&&event.type == sf::Event::EventType::KeyReleased)
 		{
 			WalkRight = false;
 		}
-		if (event.key.code == sf::Keyboard::Up&&event.type == sf::Event::EventType::KeyReleased)
+		else if (event.key.code == sf::Keyboard::Up&&event.type == sf::Event::EventType::KeyReleased)
 		{
 			WalkUp = false;
 		}
-		if (event.key.code == sf::Keyboard::Down&&event.type == sf::Event::EventType::KeyReleased)
+		else if (event.key.code == sf::Keyboard::Down&&event.type == sf::Event::EventType::KeyReleased)
 		{
 			WalkDown = false;
 		}
 
-		/*if (WalkLeft)
-		{
 
-			player->AddVelocity(sf::Vector2f(-(player->accel), 0.f));
-			if (player->Velocity.x < -player->MaxSpeed)
-			{
-				player->Velocity.x = -player->MaxSpeed;
-			}
-		}
-		else if (!WalkLeft)
-		{
-			player->AddVelocity(sf::Vector2f((player->accel), 0.f));
-			if (player->Velocity.x > player->MaxSpeed)
-			{
-				player->Velocity.x = player->MaxSpeed;
-			}
-		}
-		if (WalkRight)
-		{
-			player->AddVelocity(sf::Vector2f((player->accel), 0.f));
-			if (player->Velocity.x > player->MaxSpeed)
-			{
-				player->Velocity.x = player->MaxSpeed;
-			}
-		}
-		else if (!WalkRight)
-		{
-			player->AddVelocity(sf::Vector2f(-(player->accel), 0.f));
-			if (player->Velocity.x < -player->MaxSpeed)
-			{
-				player->Velocity.x = -player->MaxSpeed;
-			}
-		}
-		if (WalkUp)
-		{
-			player->AddVelocity(sf::Vector2f(0.f, -(player->accel)));
-			if (player->Velocity.y < -player->MaxSpeed)
-			{
-				player->Velocity.y = -player->MaxSpeed;
-			}
-		}
-		else if (!WalkUp)
-		{
-			player->AddVelocity(sf::Vector2f(0.f, (player->accel)));
-			if (player->Velocity.y > player->MaxSpeed)
-			{
-				player->Velocity.y = player->MaxSpeed;
-			}
-		}
-		if (WalkDown)
-		{
-			player->AddVelocity(sf::Vector2f(0.f, (player->accel)));
-			if (player->Velocity.y > player->MaxSpeed)
-			{
-				player->Velocity.y = player->MaxSpeed;
-			}
-		}
-		else if (!WalkDown)
-		{
-			player->AddVelocity(sf::Vector2f(0.f, -(player->accel)));
-			if (player->Velocity.y < -player->MaxSpeed)
-			{
-				player->Velocity.y = -player->MaxSpeed;
-			}
-		}*/
 
 		if (WalkLeft)
 		{
@@ -1814,7 +2871,7 @@ public:
 			}
 
 		}
-		else if (!WalkRight && !WalkLeft)
+		if (!WalkRight && !WalkLeft)
 		{
 			if (player->Velocity.x > 0.f) {
 				player->AddVelocity(sf::Vector2f(-(player->accel), 0.f));
@@ -1848,46 +2905,14 @@ public:
 
 		}
 
-		/*if (WalkLeft)
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(-m);
-		}
-		if (WalkRight)
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(m);
-		}
-		if (WalkUp)
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(-m2);
-		}
-		if (WalkDown)
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(m2);
-		}*/
-
-
-		/*if (sf::Keyboard::isKeyPressed(sf::Keyboard::Left))
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(-m);
-		}
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Right))
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(m);
-		}
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Up))
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(-m2);
-		}
-		if (sf::Keyboard::isKeyPressed(sf::Keyboard::Down))
-		{
-			dynamic_cast<SceneActor*>(this->StateObjects->at(0))->sprite.move(m2);
-		}*/
+		
 
 	}
 
 	virtual void Update(sf::Time dt) override
 	{
 
+		
 		if (_map_is_loaded != true)
 		{
 			if (current_map != "")
@@ -1909,38 +2934,255 @@ public:
 		player->body->SetLinearVelocity(b2Vec2(player->Velocity.x * 5, player->Velocity.y * 5));
 		if (!worldIsPaused)
 		{
-			world.Step(1.f / dt.asSeconds(), 35, 20);
+			world.Step(1.f / dt.asSeconds(), 5, 5);
 		}
 
 		player->Update(dt);
+		
 		if (player->body->GetLinearVelocity().x != 0 || player->body->GetLinearVelocity().y != 0)
 		{
+
 			if (player->footsteps_sound_channel_id >= 0)
 			{
 				bool isPlaying = false;
-				Channels->at(player->footsteps_sound_channel_id)->isPlaying(&isPlaying);
+				context->game->Channels->at(player->footsteps_sound_channel_id)->isPlaying(&isPlaying);
 				if (!isPlaying)
 				{
-					int channel_id = 0;
-					std::string filename = "footstep_concrete" + std::to_string(m_get_random_number(1, 4));
-					this->PlaySound(filename,channel_id);
-					player->footsteps_sound_channel_id = channel_id;				
+					if (player->time_footstep_elapsed >= player->time_per_footstep)
+					{
+						int channel_id = 0;
+
+						this->PlaySound(player->GetFootstepSoundName(), player->footsteps_sound_channel_id);
+						player->time_footstep_elapsed = 0.f;
+
+						FMOD_VECTOR pos;
+						pos.z = 0;
+						pos.x = player->body->GetPosition().x;
+						pos.y = player->body->GetPosition().y;
+						FMOD_RESULT r = context->game->Channels->at(player->footsteps_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+						if (r != FMOD_OK)
+						{
+							std::cout << FMOD_ErrorString(r) << "aaa" << std::endl;
+						}
+					}
+					else
+					{
+						player->time_footstep_elapsed += dt.asSeconds();				
+					}
+					
+				}
+				else
+				{
+					if (player->time_footstep_elapsed >= player->time_per_footstep)
+					{
+						int channel_id = 0;
+
+						this->PlaySound(player->GetFootstepSoundName(), player->footsteps_sound_channel_id);
+						player->time_footstep_elapsed = 0.f;
+					}
+					else
+					{
+						player->time_footstep_elapsed += dt.asSeconds();				
+					}
+
+					FMOD_VECTOR pos;
+					pos.z = 0;
+					pos.x = player->body->GetPosition().x;
+					pos.y = player->body->GetPosition().y;
+					FMOD_RESULT r = context->game->Channels->at(player->footsteps_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+					if (r != FMOD_OK)
+					{
+						std::cout << FMOD_ErrorString(r) <<"0"<< std::endl;
+					}
 				}
 			}
 			else
 			{
 				int channel_id = 0;
-				std::string filename = "footstep_concrete" + std::to_string(m_get_random_number(1, 4));
-				this->PlaySound(filename, channel_id);
-				player->footsteps_sound_channel_id = channel_id;
+				this->PlaySound(player->GetFootstepSoundName(), player->footsteps_sound_channel_id);
+				player->time_footstep_elapsed = 0.f;			
+
+				FMOD_VECTOR pos;
+				pos.z = 0;
+				pos.x = player->body->GetPosition().x;
+				pos.y = player->body->GetPosition().y;
+				FMOD_RESULT r = context->game->Channels->at(player->footsteps_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+				if (r != FMOD_OK)
+				{
+					std::cout << FMOD_ErrorString(r) <<"1"<< std::endl;
+				}
 			}
+			if (context->game->Channels->at(player->footsteps_sound_channel_id) != NULL)
+			{
+				
+			}
+		}
+	
+		if (player->is_reloading)
+		{
 			
+			if (player->_time_in_reload >= player->currentWeapon->reload_time)
+			{
+				if (player->currentWeapon->clips > 0)
+				{
+					if (!player->ammoData->empty())
+					{
+						for (size_t i = 0; i < player->ammoData->size(); i++)
+						{
+							if (player->ammoData->at(i).ammo_type == player->currentWeapon->weapon_ammo_type)
+							{
+								player->ammoData->at(i).clip_amount--;
+							}
+						}
+					}
+					player->currentWeapon->clips -= 1;
+					if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
+					{
+						player->currentWeapon->ammoInTheClip += 1;
+						if (player->currentWeapon->ammoInTheClip >= player->currentWeapon->ammoPerClip)
+						{
+							player->is_reloading = false;
+						}
+						else
+						{
+							if (player->currentWeapon->clips <= 0)
+							{
+								player->is_reloading = false;
+							}
+							else
+							{
+								this->PlaySound(player->currentWeapon->reload_sound_name, player->reload_sound_channel_id);
+
+								bool isPlaying = false;
+								context->game->Channels->at(player->reload_sound_channel_id)->isPlaying(&isPlaying);
+								if (isPlaying)
+								{
+									FMOD_VECTOR pos;
+									pos.z = 0;
+									pos.x = player->body->GetPosition().x;
+									pos.y = player->body->GetPosition().y;
+									FMOD_RESULT r = context->game->Channels->at(player->reload_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+									if (r != FMOD_OK)
+									{
+										std::cout << FMOD_ErrorString(r) << " -\"Reload\" Sound 3D positioning on Update" << std::endl;
+									}
+								}
+							}
+							
+							
+						}
+					}
+					else
+					{
+						player->currentWeapon->ammoInTheClip = player->currentWeapon->ammoPerClip;
+						player->is_reloading = false;
+					}
+
+					
+				}			
+				
+				player->_time_in_reload = 0.f;
+			}
+			else
+			{
+				player->_time_in_reload += dt.asSeconds();
+
+				bool isPlaying = false;
+				context->game->Channels->at(player->reload_sound_channel_id)->isPlaying(&isPlaying);
+				if(isPlaying)
+				{
+					FMOD_VECTOR pos;
+					pos.z = 0;
+					pos.x = player->body->GetPosition().x;
+					pos.y = player->body->GetPosition().y;
+					FMOD_RESULT r = context->game->Channels->at(player->reload_sound_channel_id)->set3DAttributes(&pos, 0, 0);
+					if (r != FMOD_OK)
+					{
+						std::cout << FMOD_ErrorString(r) << " -\"Reload\" Sound 3D positioning on Update" << std::endl;
+					}
+				}	
+			}
+		}
+		else
+		{
+			if (player->reload_sound_channel_id != -1)
+			{
+				context->game->Channels->at(player->reload_sound_channel_id)->stop();
+				player->reload_sound_channel_id = -1;
+			}
+		}
+
+		FMOD_VECTOR playerPos;
+		playerPos.x = player->body->GetPosition().x;
+		playerPos.y = player->body->GetPosition().y;
+		playerPos.z = 0;
+		
+		int num = 0;
+		context->game->lowSoundSystem->get3DNumListeners(&num);
+		for (int i = 0; i <= num; i++)
+		{
+			context->game->lowSoundSystem->set3DListenerAttributes(i, &playerPos, 0, 0, 0);
+		}
+		
+
+		if (!player->shooting_sound_channel_ids->empty())
+		{
+			for (size_t i = 0; i < player->shooting_sound_channel_ids->size(); i++)
+			{
+				if (player->shooting_sound_channel_ids->at(i) != -1)
+				{
+					bool isPlaying = false;
+
+					if (context->game->Channels->at(player->shooting_sound_channel_ids->at(i)) != NULL)
+					{
+						context->game->Channels->at(player->shooting_sound_channel_ids->at(i))->isPlaying(&isPlaying);
+						if (isPlaying)
+						{
+							FMOD_VECTOR pos;
+							pos.z = 0;
+							pos.x = player->body->GetPosition().x;
+							pos.y = player->body->GetPosition().y;
+							context->game->Channels->at(player->shooting_sound_channel_ids->at(i))->set3DAttributes(&pos, 0);
+						}
+						else
+						{
+							auto it = std::find(player->shooting_sound_channel_ids->begin(), player->shooting_sound_channel_ids->end(), player->shooting_sound_channel_ids->at(i));
+							player->shooting_sound_channel_ids->erase(it);
+						}
+					}
+				}
+			}
 		}
 		projObj->Update(dt);
 
 		dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("weapon_name"))->text.setString(player->currentWeapon->name);
 		dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("health"))->text.setString(std::to_string(static_cast<int>(player->health)));
 
+		if (player->currentWeapon != NULL)
+		{
+			if (player->currentWeapon->weaponType != WEAPON_TYPE_TAD_KNIFE)
+			{
+				PlayerUI->GetComponentByName("ammo_in_clip")->IsVisible = true;
+				PlayerUI->GetComponentByName("clips")->IsVisible = true;
+
+				if (player->currentWeapon->weaponType == WEAPON_TYPE_TAD_SHOTGUN)
+				{
+					dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("ammo_in_clip"))->text.setString(std::to_string(player->currentWeapon->ammoInTheClip) + "/");
+					dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("clips"))->text.setString(std::to_string(player->currentWeapon->clips));
+				}
+				else
+				{
+					dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("ammo_in_clip"))->text.setString(std::to_string(player->currentWeapon->ammoInTheClip) + "/");
+					dynamic_cast<GUI::Label*>(PlayerUI->GetComponentByName("clips"))->text.setString(std::to_string(player->currentWeapon->clips*player->currentWeapon->ammoPerClip));
+				}
+			}
+			else
+			{
+				PlayerUI->GetComponentByName("ammo_in_clip")->IsVisible = false;
+				PlayerUI->GetComponentByName("clips")->IsVisible = false;
+			}
+		}
+		
 		if (!PlayerUI->Components->empty())
 		{
 			for (size_t i = 0; i < PlayerUI->Components->size(); i++)
@@ -1953,154 +3195,48 @@ public:
 		view.setSize(SCREENWIDTH, SCREENHEIGHT);
 		view.setCenter(player->GetObjectPosition());;
 		context->window->setView(view);
-		/*CheckPlayerCollision();
+	
+		this->Current_area_id = player->area_id;
+
+		//do before updating to avoid pointless updates
+		this->finishDestoy();
+
 		if (!StateObjects->empty())
 		{
-			for (size_t i = 0; i < StateObjects->size(); i++)
-			{
-				CheckObjectCollision(StateObjects->at(i));
-			}
-		}*/
-		/*dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->Update(dt);
-		dynamic_cast<npc_test_turret*>(StateObjects->at(2))->Update(dt);*/
-		if (!StateObjects->empty())
-		{
-			for (size_t i = 0; i < StateObjects->size(); i++)
+			size_t objAmount = StateObjects->size();
+			for (size_t i = 0; i < objAmount; i++)
 			{
 				if (this->StateObjects->at(i)->physBodyInitialized)
 				{
 					if (this->StateObjects->at(i)->area_id != this->Current_area_id)
 					{
-						this->StateObjects->at(i)->body->SetAwake(false);
+						this->StateObjects->at(i)->body->SetActive(false);
+					}
+					else
+					{
+						this->StateObjects->at(i)->body->SetActive(true);
 					}
 				}
 				StateObjects->at(i)->Update(dt);
 				if (PropPhysics*pp = dynamic_cast<PropPhysics*>(StateObjects->at(i)))
 				{
-
 					if (StateObjects->at(i)->body->GetLinearVelocity().x != 0 || StateObjects->at(i)->body->GetLinearVelocity().y != 0)
 					{
 						if (pp->StateSoundChannelId == -1)
 						{
-							for (size_t ind = 0; ind < Channels->size(); ind++)
+							if (pp->GetMaterialTypeMovementSoundName() != "")
 							{
-								bool res;
-								Channels->at(ind)->isPlaying(&res);
-								if (Channels->at(ind) == NULL)
-								{
-									if (pp->MaterialType == MAT_TYPE_PLASTIC_BARREL)
-									{
-										if (pp->mass >= 100.f)
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BARREL_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BARREL_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-									}
+								PlaySound(pp->GetMaterialTypeMovementSoundName(), pp->StateSoundChannelId);
+							}
 
-									if (pp->MaterialType == MAT_TYPE_PLASTIC_BOX)
-									{
-										if (pp->mass >= 100.f)
-										{
-
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BOX_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BOX_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-									}
-
-									if (pp->MaterialType == MAT_TYPE_WOOD)
-									{
-										if (pp->mass >= 100.f)
-										{
-
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_BOX_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_BOX_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-
-									}
-
-									pp->StateSoundChannelId = ind;
-									break;
-								}
-								else if (res == false)
-								{
-									if (pp->MaterialType == MAT_TYPE_PLASTIC_BARREL)
-									{
-										if (pp->mass >= 100.f)
-										{
-
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BARREL_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BARREL_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-									}
-
-									if (pp->MaterialType == MAT_TYPE_PLASTIC_BOX)
-									{
-										if (pp->mass >= 100.f)
-										{
-
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BOX_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_PLASTIC_BOX_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-									}
-
-									if (pp->MaterialType == MAT_TYPE_WOOD_CRATE)
-									{
-										if (pp->mass >= 100.f)
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_CRATE_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_CRATE_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-
-									}
-									if (pp->MaterialType == MAT_TYPE_WOOD_PLANK)
-									{
-										if (pp->mass >= 100.f)
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_PLANK_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_PLANK_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-
-									}
-									if (pp->MaterialType == MAT_TYPE_WOOD_BOX)
-									{
-										if (pp->mass >= 100.f)
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_BOX_HARD_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-										else
-										{
-											context->game->lowSoundSystem->playSound(context->game->Resources->getSoundResourceDataByName(MAT_TYPE_WOOD_BOX_LIGHT_NAME)->sound, 0, false, &Channels->at(ind));
-										}
-
-									}
-
-									pp->StateSoundChannelId = ind;
-
-
-									break;
-								}
-
+							FMOD_VECTOR pos;
+							pos.z = 0;
+							pos.x = pp->body->GetPosition().x;
+							pos.y = pp->body->GetPosition().y;
+							FMOD_RESULT r = context->game->Channels->at(pp->StateSoundChannelId)->set3DAttributes(&pos, 0, 0);
+							if (r != FMOD_OK)
+							{
+								std::cout << FMOD_ErrorString(r) << std::endl;
 							}
 						}
 						else
@@ -2108,41 +3244,472 @@ public:
 							FMOD_VECTOR pos;
 							pos.z = 0;
 							pos.x = pp->body->GetPosition().x;
-							pos.y = -pp->body->GetPosition().y;
-							Channels->at(pp->StateSoundChannelId)->set3DAttributes(&pos, 0, 0);
+							pos.y = pp->body->GetPosition().y;
+							FMOD_RESULT r = context->game->Channels->at(pp->StateSoundChannelId)->set3DAttributes(&pos, 0, 0);
+							if (r != FMOD_OK)
+							{
+								std::cout << FMOD_ErrorString(r) << std::endl;
+							}
+
+							
 							/*Channels->at(pp->StateSoundChannelId)->setVolume(50);*/
 						}
+
 					}
+
 					else
 					{
 						StateObjects->at(i)->body->SetAwake(false);
 						if (pp->StateSoundChannelId != -1)
 						{
-							FMOD_RESULT r = Channels->at(pp->StateSoundChannelId)->stop();
+							FMOD_RESULT r = context->game->Channels->at(pp->StateSoundChannelId)->stop();
 							pp->StateSoundChannelId = -1;
 						}
 					}
 
 				}
 
-
-				if (Decal*d = dynamic_cast<Decal*>(StateObjects->at(i)))
+				else if (Decal*d = dynamic_cast<Decal*>(StateObjects->at(i)))
 				{
 					if (d->IsDone())
 					{
 						if (std::find(StateObjects->begin(), StateObjects->end(), StateObjects->at(i)) != StateObjects->end())
 						{
 							StateObjects->erase(std::find(StateObjects->begin(), StateObjects->end(), StateObjects->at(i)));
+							if (objAmount > 0)
+							{
+								objAmount--;
+							}
+							else
+							{
+								break;
+							}
 						}
 					}
 				}
+
+				else if (SoundSourceObject*sso = dynamic_cast<SoundSourceObject*>(StateObjects->at(i)))
+				{
+					if (sso->sound_is_active)
+					{
+						if (sso->sound_channel_id == -1)
+						{
+							int ch_id = 0;
+							this->PlaySound(sso->sound_name, ch_id);
+							sso->sound_channel_id = ch_id;
+						}
+						else
+						{
+							bool isPlaying = false;
+							context->game->Channels->at(sso->sound_channel_id)->isPlaying(&isPlaying);
+							if (!isPlaying)
+							{
+								if (sso->sound_is_looped)
+								{
+									int ch_id = 0;
+									this->PlaySound(sso->sound_name, ch_id);
+									sso->sound_channel_id = ch_id;
+								}
+							}
+							else
+							{
+								FMOD_VECTOR pos;
+								pos.x = sso->GetObjectPosition().x;
+								pos.y = sso->GetObjectPosition().y;
+								pos.z = 0;
+								context->game->Channels->at(sso->sound_channel_id)->set3DAttributes(&pos, 0);
+							}
+						}
+					}
+					else
+					{
+						if (sso->sound_channel_id != -1)
+						{
+							bool isPlaying = false;
+							context->game->Channels->at(sso->sound_channel_id)->isPlaying(&isPlaying);
+							if (isPlaying)
+							{
+								context->game->Channels->at(sso->sound_channel_id)->stop();
+								sso->sound_channel_id = -1;
+							}
+						}
+
+					}
+				}
+
+				else if (npc_zombie_base*nz = dynamic_cast<npc_zombie_base*>(StateObjects->at(i)))
+				{
+					if (nz->isDead())
+					{
+						if (nz->physBodyInitialized)
+						{
+							nz->body->GetWorld()->DestroyBody(nz->body);
+							nz->physBodyInitialized = false;
+						}
+						
+					}
+					else if (nz->body->GetLinearVelocity().x != 0 || nz->body->GetLinearVelocity().y != 0)
+					{
+
+						if (nz->footsteps_sound_channel_id >= 0)
+						{
+							bool isPlaying = false;
+							context->game->Channels->at(nz->footsteps_sound_channel_id)->isPlaying(&isPlaying);
+							if (!isPlaying)
+							{
+								if (nz->time_footstep_elapsed >= nz->time_per_footstep)
+								{
+									int channel_id = 0;
+									std::string filename = "";
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_CONCRETE)
+									{
+										std::string name = MAT_SOUND_TYPE_CONCRETE_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_CHAINLINK)
+									{
+										std::string name = MAT_SOUND_TYPE_CHAINLINK_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_DIRT)
+									{
+										std::string name = MAT_SOUND_TYPE_DIRT_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_DUCT)
+									{
+										std::string name = MAT_SOUND_TYPE_DUCT_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_GRASS)
+									{
+										std::string name = MAT_SOUND_TYPE_GRASS_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_GRAVEL)
+									{
+										std::string name = MAT_SOUND_TYPE_GRAVEL_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_LADDER)
+									{
+										std::string name = MAT_SOUND_TYPE_LADDER_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_METAL)
+									{
+										std::string name = MAT_SOUND_TYPE_METAL_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_METALGRATE)
+									{
+										std::string name = MAT_SOUND_TYPE_METALGRATE_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_MUD)
+									{
+										std::string name = MAT_SOUND_TYPE_MUD_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_SAND)
+									{
+										std::string name = MAT_SOUND_TYPE_SAND_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_SLOSH)
+									{
+										std::string name = MAT_SOUND_TYPE_SLOSH_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_TILE)
+									{
+										std::string name = MAT_SOUND_TYPE_TILE_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_WADE)
+									{
+										std::string name = MAT_SOUND_TYPE_WADE_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_WOOD)
+									{
+										std::string name = MAT_SOUND_TYPE_WOOD_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_WOODPANEL)
+									{
+										std::string name = MAT_SOUND_TYPE_WOODPANEL_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+
+
+
+
+									this->PlaySound(filename, nz->footsteps_sound_channel_id);
+									nz->time_footstep_elapsed = 0.f;
+								}
+								else
+								{
+									nz->time_footstep_elapsed += dt.asSeconds();
+								}
+							}
+							else
+							{
+								if (nz->time_footstep_elapsed >= nz->time_per_footstep)
+								{
+									int channel_id = 0;
+									std::string filename = "";
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_CONCRETE)
+									{
+										std::string name = MAT_SOUND_TYPE_CONCRETE_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_CHAINLINK)
+									{
+										std::string name = MAT_SOUND_TYPE_CHAINLINK_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_DIRT)
+									{
+										std::string name = MAT_SOUND_TYPE_DIRT_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_DUCT)
+									{
+										std::string name = MAT_SOUND_TYPE_DUCT_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_GRASS)
+									{
+										std::string name = MAT_SOUND_TYPE_GRASS_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_GRAVEL)
+									{
+										std::string name = MAT_SOUND_TYPE_GRAVEL_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_LADDER)
+									{
+										std::string name = MAT_SOUND_TYPE_LADDER_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_METAL)
+									{
+										std::string name = MAT_SOUND_TYPE_METAL_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_METALGRATE)
+									{
+										std::string name = MAT_SOUND_TYPE_METALGRATE_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_MUD)
+									{
+										std::string name = MAT_SOUND_TYPE_MUD_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_SAND)
+									{
+										std::string name = MAT_SOUND_TYPE_SAND_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_SLOSH)
+									{
+										std::string name = MAT_SOUND_TYPE_SLOSH_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_TILE)
+									{
+										std::string name = MAT_SOUND_TYPE_TILE_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_WADE)
+									{
+										std::string name = MAT_SOUND_TYPE_WADE_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_WOOD)
+									{
+										std::string name = MAT_SOUND_TYPE_WOOD_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									if (nz->footstep_sound_type == MAT_SOUND_TYPE_WOODPANEL)
+									{
+										std::string name = MAT_SOUND_TYPE_WOODPANEL_NAME;
+										filename = name + std::to_string(m_get_random_number(1, 4));
+									}
+									this->PlaySound(filename, nz->footsteps_sound_channel_id);
+									nz->time_footstep_elapsed = 0.f;
+								}
+								else
+								{
+									
+								}
+							}
+							
+						}
+						else
+						{
+							int channel_id = 0;
+							std::string filename = "";
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_CONCRETE)
+							{
+								std::string name = MAT_SOUND_TYPE_CONCRETE_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_CHAINLINK)
+							{
+								std::string name = MAT_SOUND_TYPE_CHAINLINK_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_DIRT)
+							{
+								std::string name = MAT_SOUND_TYPE_DIRT_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_DUCT)
+							{
+								std::string name = MAT_SOUND_TYPE_DUCT_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_GRASS)
+							{
+								std::string name = MAT_SOUND_TYPE_GRASS_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_GRAVEL)
+							{
+								std::string name = MAT_SOUND_TYPE_GRAVEL_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_LADDER)
+							{
+std::string name = MAT_SOUND_TYPE_LADDER_NAME;
+filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_METAL)
+							{
+								std::string name = MAT_SOUND_TYPE_METAL_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_METALGRATE)
+							{
+								std::string name = MAT_SOUND_TYPE_METALGRATE_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_MUD)
+							{
+								std::string name = MAT_SOUND_TYPE_MUD_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_SAND)
+							{
+								std::string name = MAT_SOUND_TYPE_SAND_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_SLOSH)
+							{
+								std::string name = MAT_SOUND_TYPE_SLOSH_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_TILE)
+							{
+								std::string name = MAT_SOUND_TYPE_TILE_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_WADE)
+							{
+								std::string name = MAT_SOUND_TYPE_WADE_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_WOOD)
+							{
+								std::string name = MAT_SOUND_TYPE_WOOD_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+							if (player->footstep_sound_type == MAT_SOUND_TYPE_WOODPANEL)
+							{
+								std::string name = MAT_SOUND_TYPE_WOODPANEL_NAME;
+								filename = name + std::to_string(m_get_random_number(1, 4));
+							}
+
+
+
+
+							this->PlaySound(filename, nz->footsteps_sound_channel_id);
+							nz->time_footstep_elapsed = 0.f;
+						}
+
+						nz->time_footstep_elapsed += dt.asSeconds();
+						FMOD_VECTOR pos;
+						pos.x = nz->body->GetPosition().x;
+						pos.y = nz->body->GetPosition().y;
+						pos.z = 0;
+						context->game->Channels->at(nz->footsteps_sound_channel_id)->set3DAttributes(&pos, 0);
+
+						if (nz->zombie_footstep_sound_channel_id >= 0)
+						{
+							bool isPlaying = false;
+							context->game->Channels->at(nz->zombie_footstep_sound_channel_id)->isPlaying(&isPlaying);
+							if (!isPlaying)
+							{
+								if (nz->time_footstep_elapsed >= nz->time_per_footstep)
+								{
+									context->game->PlaySound("zombie_foot" + std::to_string(m_get_random_number(1, 3)), nz->zombie_footstep_sound_channel_id);
+								}
+							}
+							else
+							{
+
+								if (nz->time_footstep_elapsed >= nz->time_per_footstep)
+								{
+									context->game->PlaySound("zombie_foot" + std::to_string(m_get_random_number(1, 3)), nz->zombie_footstep_sound_channel_id);
+								}
+
+							}
+						}
+						else
+						{
+							context->game->PlaySound("zombie_foot" + std::to_string(m_get_random_number(1, 3)), nz->zombie_footstep_sound_channel_id);
+						}
+
+						nz->time_footstep_elapsed += dt.asSeconds();
+						FMOD_VECTOR pos1;
+						pos1.x = nz->body->GetPosition().x;
+						pos1.y = nz->body->GetPosition().y;
+						pos1.z = 0;
+						context->game->Channels->at(nz->zombie_footstep_sound_channel_id)->set3DAttributes(&pos1, 0);
+					}
+
+					if (nz->voice_sound_channel_id != -1)
+					{
+						if (context->game->Channels->at(nz->voice_sound_channel_id) != NULL)
+						{
+							bool isPlaying = false;
+							context->game->Channels->at(nz->voice_sound_channel_id)->isPlaying(&isPlaying);
+							if (isPlaying)
+							{
+								FMOD_VECTOR pos;
+								pos.z = 0;
+								pos.x = nz->body->GetPosition().x;
+								pos.y = nz->body->GetPosition().y;
+
+
+								FMOD_RESULT r=  context->game->Channels->at(nz->voice_sound_channel_id)->set3DAttributes(&pos, 0);
+								if (r != FMOD_OK)
+								{
+									std::cout << FMOD_ErrorString(r) << " -\"Zombie Voice\" Channel 3D positioning" << std::endl;
+								}
+							}
+						}
+					}
+				}
+
+				if (i >= objAmount) { break; }
 			}
 		}
-		/*if (dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->dirIndex == dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->Pattern->size() - 1)
-		{
-			cursorParticles.Stop();
-		}*/
-		/*	cursorParticles.setEmitter(dynamic_cast<npc_moving_helper*>(StateObjects->at(1))->GetObjectPosition());*/
+	
 		for (size_t i = 0; i < pixelParticleSystems->size(); i++)
 		{
 			pixelParticleSystems->at(i).update(dt);
@@ -2150,13 +3717,63 @@ public:
 		}
 		cursorParticles.update(dt);
 
-		FMOD_VECTOR playerPos;
-		playerPos.x = player->body->GetPosition().x;
-		playerPos.y = -player->body->GetPosition().y;
-		playerPos.z = 0;
-		context->game->lowSoundSystem->set3DListenerAttributes(0, &playerPos, 0, 0, 0);
+		
 
 		context->game->lowSoundSystem->update();
+
+		/*for (size_t i = 0; i < context->game->Channels->size(); i++)
+		{
+			
+			if (context->game->Channels->at(i) != NULL)
+			{
+				bool ip = false;
+				context->game->Channels->at(i)->isPlaying(&ip);
+				if (ip)
+				{
+					float v = 0;
+					context->game->Channels->at(i)->getVolume(&v);
+
+					std::cout << v << std::endl;
+				}
+				
+			}
+		}*/
 	}
 
+	//can be used instead of ~
+	virtual void release()
+	{
+		if (!StateObjects->empty())
+		{
+			for (size_t i = 0; i < StateObjects->size(); i++)
+			{
+				delete StateObjects->at(i);
+			}
+		}
+		/*if (!reverbs->empty())
+		{
+			for (size_t i = 0; i < reverbs->size(); i++)
+			{
+				reverbs->at(i)->release();
+			}
+			reverbs->clear();
+		}*/
+
+		//delete StateObjects;
+		delete player;
+		/*world.~b2World();*/
+		current_map.~basic_string();
+	}
+	~PlayState()
+	{
+		/*if (!StateObjects->empty())
+		{
+			for (size_t i = 0; i < StateObjects->size(); i++)
+			{
+				delete StateObjects->at(i);
+			}
+		}
+		StateObjects->~vector();
+		delete player;*/
+	}
 };
